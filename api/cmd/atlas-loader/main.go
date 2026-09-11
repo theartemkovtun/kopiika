@@ -13,6 +13,7 @@ import (
 func main() {
 	stmts, err := gormschema.New("postgres").Load(
 		&models.User{},
+		&models.Account{},
 	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to load gorm schema: %v\n", err)
