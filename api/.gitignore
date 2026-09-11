@@ -1,0 +1,31 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+
+# Environment files
+.env
+
+# IDE and OS specific files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Dependency directory (unused with Go modules)
+/vendor
+
+# Compiled application binary
+/kopiika-api-go
+/build
+
+# Generated swagger docs are committed on purpose: main.go imports the
+# docs package, so the project would not build from a clean clone without it.
