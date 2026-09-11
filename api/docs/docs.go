@@ -15,7 +15,73 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/users": {
+        "/health": {
+            "get": {
+                "description": "Reports that the process is serving requests. Checks no dependencies.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Health check",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.HealthSchema"
+                        }
+                    }
+                }
+            }
+        },
+        "/health/live": {
+            "get": {
+                "description": "Reports that the process is alive. Always 200 while the server is up, so a failure means the process should be restarted.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Liveness probe",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.HealthSchema"
+                        }
+                    }
+                }
+            }
+        },
+        "/health/ready": {
+            "get": {
+                "description": "Reports whether the service can serve traffic, verifying the database connection. Returns 503 when a dependency is unavailable.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "health"
+                ],
+                "summary": "Readiness probe",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.ReadinessSchema"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.ReadinessSchema"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/users": {
             "post": {
                 "security": [
                     {
@@ -52,7 +118,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/me": {
+        "/v1/users/me": {
             "get": {
                 "security": [
                     {
@@ -137,6 +203,31 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "schemas.HealthSchema": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
+        "schemas.ReadinessSchema": {
+            "type": "object",
+            "properties": {
+                "database": {
+                    "type": "string",
+                    "example": "ok"
+                },
+                "error": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "example": "ok"
+                }
+            }
+        },
         "schemas.UpdateUserSchema": {
             "type": "object",
             "properties": {
@@ -190,7 +281,7 @@ const docTemplate = `{
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "localhost:8080",
-	BasePath:         "/v1",
+	BasePath:         "/",
 	Schemes:          []string{"http", "https"},
 	Title:            "Kopiika API",
 	Description:      "Personal finance API for accounts, transactions and budgets",

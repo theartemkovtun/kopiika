@@ -5,7 +5,7 @@ package main
 // @description Personal finance API for accounts, transactions and budgets
 
 // @host localhost:8080
-// @BasePath /v1
+// @BasePath /
 // @schemes http https
 
 // @securityDefinitions.apikey BearerAuth
@@ -15,10 +15,10 @@ package main
 
 import (
 	"log"
-	"net/http"
 	"strings"
 	"time"
 
+	"kopiika-api-go/src/api/health"
 	routes "kopiika-api-go/src/api/v1"
 	"kopiika-api-go/src/core"
 
@@ -62,11 +62,7 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	engine.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
-		})
-	})
+	health.RegisterHealthRoutes(engine)
 
 	engine.GET("/api/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 

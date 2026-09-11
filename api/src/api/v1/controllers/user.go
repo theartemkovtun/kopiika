@@ -19,7 +19,7 @@ import (
 // @Security BearerAuth
 // @Success 200 {object} schemas.UserSchema
 // @Failure 401 {object} map[string]string
-// @Router /users/me [get]
+// @Router /v1/users/me [get]
 func GetCurrentUser(c *gin.Context) {
 	userId, _ := c.Get("user_id")
 
@@ -43,7 +43,7 @@ func GetCurrentUser(c *gin.Context) {
 // @Security BearerAuth
 // @Success 200 {object} schemas.UserSchema
 // @Failure 400 {object} map[string]string
-// @Router /users [post]
+// @Router /v1/users [post]
 func SetupUser(c *gin.Context) {
 	userId, _ := c.Get("user_id")
 
@@ -68,7 +68,7 @@ func SetupUser(c *gin.Context) {
 // @Param payload body schemas.UpdateUserSchema true "User configuration"
 // @Success 200 {object} schemas.UserSchema
 // @Failure 400 {object} map[string]string
-// @Router /users/me [put]
+// @Router /v1/users/me [put]
 func UpdateCurrentUser(c *gin.Context) {
 	userId, _ := c.Get("user_id")
 
