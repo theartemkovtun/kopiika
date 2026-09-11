@@ -16,5 +16,13 @@ func RegisterV1Routes(router *gin.Engine) {
 			userRoutes.PUT("/me", middleware.RequireAuth(), controllers.UpdateCurrentUser)
 			userRoutes.POST("", middleware.RequireAuth(), controllers.SetupUser)
 		}
+
+		accountRoutes := v1.Group("/accounts")
+		{
+			accountRoutes.POST("", middleware.RequireAuth(), controllers.CreateAccount)
+			accountRoutes.GET("", middleware.RequireAuth(), controllers.ListAccounts)
+			accountRoutes.GET("/:accountId", middleware.RequireAuth(), controllers.GetAccount)
+			accountRoutes.DELETE("/:accountId", middleware.RequireAuth(), controllers.DeleteAccount)
+		}
 	}
 }
