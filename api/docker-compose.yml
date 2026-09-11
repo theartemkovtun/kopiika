@@ -1,0 +1,34 @@
+services:
+  kopiika-api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgres://postgres:password@db:5432/kopiika?sslmode=disable
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
+      - COGNITO_REGION=${COGNITO_REGION}
+      - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
+    depends_on:
+      - db
+    networks:
+      - kopiika-network
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=kopiika
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - kopiika-network
+
+volumes:
+  postgres-data:
+
+networks:
+  kopiika-network:
+    driver: bridge
