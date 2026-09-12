@@ -17,7 +17,8 @@ import { Slot } from "radix-ui";
  *   ghost    no chrome at all; the sidebar and icon buttons
  *
  * `income` and `expense` are `outline` in its selected state, which the design
- * paints in the semantic colour rather than in ink.
+ * paints in the semantic colour rather than in ink; `danger` is the same red,
+ * for confirming a delete.
  */
 const buttonVariants = cva(
     "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap font-sans transition-[color,background-color,border-color,opacity] disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:shrink-0",
@@ -33,6 +34,10 @@ const buttonVariants = cva(
                 icon: "bg-transparent text-mute hover:text-blue",
                 income: "border border-green bg-green text-white hover:opacity-85",
                 expense: "border border-red bg-red text-white hover:opacity-85",
+                /** Confirming a delete. Shares `expense`'s red, not its
+                    meaning: the design signals destructive with --red and has
+                    no other mark for it. */
+                danger: "border border-red bg-red text-white hover:opacity-85",
             },
             size: {
                 /** The primary action at the foot of a form. */

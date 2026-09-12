@@ -2,9 +2,17 @@
 
 import * as React from "react";
 import { cn } from "cn";
-import { CheckIcon } from "lucide-react";
 import { Checkbox as CheckboxPrimitive } from "radix-ui";
 
+/**
+ * shadcn's Checkbox, restyled to the design's filter box.
+ *
+ * There is no tick. The design marks a checked box by filling it in the
+ * emphasis colour and darkening its border — the same "a fill or a rule, never
+ * a colour shift" rule the rest of the app follows — so the indicator would
+ * have nothing to draw and is left out entirely. The box is 12px, small enough
+ * to sit on the baseline of 13px type beside it.
+ */
 function Checkbox({
     className,
     ...props
@@ -13,18 +21,13 @@ function Checkbox({
         <CheckboxPrimitive.Root
             data-slot="checkbox"
             className={cn(
-                "peer size-4 shrink-0 rounded-[4px] border border-input shadow-xs transition-shadow outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:bg-input/30 dark:aria-invalid:ring-destructive/40 dark:data-[state=checked]:bg-primary",
+                "peer size-3 shrink-0 cursor-pointer border border-rule bg-transparent outline-none transition-colors",
+                "data-[state=checked]:border-blue data-[state=checked]:bg-blue",
+                "disabled:cursor-not-allowed disabled:opacity-50",
                 className,
             )}
             {...props}
-        >
-            <CheckboxPrimitive.Indicator
-                data-slot="checkbox-indicator"
-                className="grid place-content-center text-current transition-none"
-            >
-                <CheckIcon className="size-3.5" />
-            </CheckboxPrimitive.Indicator>
-        </CheckboxPrimitive.Root>
+        />
     );
 }
 
