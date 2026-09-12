@@ -169,25 +169,15 @@ func toTransactionSchema(transaction models.Transaction, converter CurrencyConve
 // and account attached. The write endpoints answer with it, so a client sees the
 // stored result of what it just sent.
 func GetTransactionById(userId uuid.UUID, transactionId uuid.UUID) (schemas.TransactionSchema, error) {
-	var transaction models.Transaction
-
-	err := core.DB.
-		Preload("Category").
-		Preload("Account").
-		First(&transaction, "id = ? AND user_id = ? AND deleted_at IS NULL", transactionId, userId).Error
+	// One statement: the transaction, its category and account, and the rate
+	// for the transaction's own date — a transaction is worth what it was worth
+	// on the day it happened, not what it would be worth today.
+	row, err := queries.GetTransaction(core.DB, userId, transactionId)
 	if err != nil {
 		return schemas.TransactionSchema{}, err
 	}
 
-	// Localized at the rate for the transaction's own date: a transaction is
-	// worth what it was worth on the day it happened, not what it would be
-	// worth today.
-	converter, err := converterForUserOnDate(userId, transaction.Date)
-	if err != nil {
-		return schemas.TransactionSchema{}, err
-	}
-
-	return toTransactionSchema(transaction, converter)
+	return toTransactionSchema(row.Transaction(), converterForRow(row))
 }
 
 // CreateTransaction records a transaction and moves the balance of the account
@@ -322,54 +312,6 @@ func DeleteTransaction(userId uuid.UUID, transactionId uuid.UUID) error {
 	})
 }
 
-// toDateTransactionSchemas groups transactions under the days they happened on,
-// keeping the order of the dates it is given, and localizes every amount at the
-// rate for its own day.
-//
-// A date with no matching transactions still comes back as an empty group. That
-// cannot happen through the list endpoint, where the dates are derived from the
-// transactions, but it keeps the function honest for a caller that names a day
-// itself.
-func toDateTransactionSchemas(
-	userId uuid.UUID,
-	dates []time.Time,
-	transactions []models.Transaction,
-) ([]schemas.DateTransactionsSchema, error) {
-	converters, err := convertersForUserOnDates(userId, dates)
-	if err != nil {
-		return nil, err
-	}
-
-	grouped := map[string][]schemas.TransactionSchema{}
-	for _, transaction := range transactions {
-		day := transaction.Date.Format(dateLayout)
-
-		schema, err := toTransactionSchema(transaction, converters[day])
-		if err != nil {
-			return nil, err
-		}
-
-		grouped[day] = append(grouped[day], schema)
-	}
-
-	groups := make([]schemas.DateTransactionsSchema, 0, len(dates))
-	for _, date := range dates {
-		day := date.Format(dateLayout)
-
-		items := grouped[day]
-		if items == nil {
-			items = []schemas.TransactionSchema{}
-		}
-
-		groups = append(groups, schemas.DateTransactionsSchema{
-			Date:         day,
-			Transactions: items,
-		})
-	}
-
-	return groups, nil
-}
-
 // ListTransactions returns the user's transactions grouped by the day they
 // happened on, newest day first.
 //
@@ -377,6 +319,10 @@ func toDateTransactionSchemas(
 // of ten can hold any number of transactions. That is what the plpgsql
 // list_transactions function did with its temp table of distinct dates, and it
 // is the shape the clients render.
+//
+// The whole listing is one database round trip. The rows arrive already ordered
+// by day, so grouping them is a walk rather than a map: a row whose day differs
+// from the one before it opens the next group.
 func ListTransactions(
 	userId uuid.UUID,
 	filters schemas.ListTransactionsFilters,
@@ -389,27 +335,30 @@ func ListTransactions(
 		Items: []schemas.DateTransactionsSchema{},
 	}
 
-	dates, total, err := queries.ListTransactionDates(core.DB, userId, filters, page, take)
+	rows, total, err := queries.ListTransactions(core.DB, userId, filters, page, take)
 	if err != nil {
 		return response, err
 	}
 
 	response.Total = total
-	if len(dates) == 0 {
-		return response, nil
-	}
 
-	transactions, err := queries.ListTransactionsOnDates(core.DB, userId, filters, dates)
-	if err != nil {
-		return response, err
-	}
+	for _, row := range rows {
+		schema, err := toTransactionSchema(row.Transaction(), converterForRow(row))
+		if err != nil {
+			return response, err
+		}
 
-	groups, err := toDateTransactionSchemas(userId, dates, transactions)
-	if err != nil {
-		return response, err
-	}
+		day := row.Date.Format(dateLayout)
+		if len(response.Items) == 0 || response.Items[len(response.Items)-1].Date != day {
+			response.Items = append(response.Items, schemas.DateTransactionsSchema{
+				Date:         day,
+				Transactions: []schemas.TransactionSchema{},
+			})
+		}
 
-	response.Items = groups
+		group := &response.Items[len(response.Items)-1]
+		group.Transactions = append(group.Transactions, schema)
+	}
 
 	return response, nil
 }
@@ -419,28 +368,30 @@ func ListTransactions(
 // It answers nothing at all for a day with no transactions, rather than an empty
 // group, because that is the response the clients already read.
 func GetTransactionsByDate(userId uuid.UUID, date time.Time) (*schemas.DateTransactionsSchema, error) {
-	var transactions []models.Transaction
-
-	err := core.DB.
-		Preload("Category").
-		Preload("Account").
-		Where("user_id = ? AND date = ? AND deleted_at IS NULL", userId, date).
-		Order("created_at DESC, id DESC").
-		Find(&transactions).Error
+	rows, err := queries.TransactionsOnDate(core.DB, userId, date)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(transactions) == 0 {
+	if len(rows) == 0 {
 		return nil, nil
 	}
 
-	groups, err := toDateTransactionSchemas(userId, []time.Time{date}, transactions)
-	if err != nil {
-		return nil, err
+	group := schemas.DateTransactionsSchema{
+		Date:         date.Format(dateLayout),
+		Transactions: make([]schemas.TransactionSchema, 0, len(rows)),
 	}
 
-	return &groups[0], nil
+	for _, row := range rows {
+		schema, err := toTransactionSchema(row.Transaction(), converterForRow(row))
+		if err != nil {
+			return nil, err
+		}
+
+		group.Transactions = append(group.Transactions, schema)
+	}
+
+	return &group, nil
 }
 
 // GetLatestTransactions returns the user's most recent transactions, newest
@@ -448,35 +399,13 @@ func GetTransactionsByDate(userId uuid.UUID, date time.Time) (*schemas.DateTrans
 func GetLatestTransactions(userId uuid.UUID, limit int) ([]schemas.TransactionSchema, error) {
 	response := []schemas.TransactionSchema{}
 
-	var transactions []models.Transaction
-
-	err := core.DB.
-		Preload("Category").
-		Preload("Account").
-		Where("user_id = ? AND deleted_at IS NULL", userId).
-		Order("date DESC, created_at DESC, id DESC").
-		Limit(limit).
-		Find(&transactions).Error
+	rows, err := queries.LatestTransactions(core.DB, userId, limit)
 	if err != nil {
 		return response, err
 	}
 
-	if len(transactions) == 0 {
-		return response, nil
-	}
-
-	dates := make([]time.Time, 0, len(transactions))
-	for _, transaction := range transactions {
-		dates = append(dates, transaction.Date)
-	}
-
-	converters, err := convertersForUserOnDates(userId, dates)
-	if err != nil {
-		return response, err
-	}
-
-	for _, transaction := range transactions {
-		schema, err := toTransactionSchema(transaction, converters[transaction.Date.Format(dateLayout)])
+	for _, row := range rows {
+		schema, err := toTransactionSchema(row.Transaction(), converterForRow(row))
 		if err != nil {
 			return response, err
 		}
@@ -489,7 +418,8 @@ func GetLatestTransactions(userId uuid.UUID, limit int) ([]schemas.TransactionSc
 
 // GetTransactionsConfiguration bundles what a client needs to fill in the
 // transaction form: the categories it may label with, and the accounts it may
-// post to. It is one request rather than three.
+// post to. It is one request rather than three, and one statement rather than
+// two.
 func GetTransactionsConfiguration(userId uuid.UUID) (schemas.TransactionsConfigurationSchema, error) {
 	response := schemas.TransactionsConfigurationSchema{
 		Categories: []schemas.CategorySchema{},
@@ -498,19 +428,13 @@ func GetTransactionsConfiguration(userId uuid.UUID) (schemas.TransactionsConfigu
 		Tags: []string{},
 	}
 
-	categories, err := ListCategories(userId)
+	categories, accounts, err := queries.TransactionsConfiguration(core.DB, userId)
 	if err != nil {
 		return response, err
 	}
-	response.Categories = categories
 
-	var accounts []models.Account
-	err = core.DB.
-		Where("user_id = ? AND deleted_at IS NULL", userId).
-		Order("created_at").
-		Find(&accounts).Error
-	if err != nil {
-		return response, err
+	for _, category := range categories {
+		response.Categories = append(response.Categories, toCategorySchema(category))
 	}
 
 	for _, account := range accounts {
