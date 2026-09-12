@@ -64,8 +64,7 @@
         "date": "Date",
         "categories": "Categories",
         "accounts": "Accounts",
-        "noMatch": "No entries match these filters.",
-        "end": "Earliest entry reached."
+        "noMatch": "No entries match these filters."
     },
     "reports": {
         "difference": "Difference",
