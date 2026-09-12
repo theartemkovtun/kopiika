@@ -2,6 +2,9 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	"sort"
+	"time"
 
 	"kopiika-api-go/src/core"
 	"kopiika-api-go/src/models"
@@ -16,7 +19,16 @@ import (
 // negative starting balance.
 var ErrNegativeAccountValue = errors.New("account value must not be negative")
 
-func toAccountSchema(account models.Account) schemas.AccountSchema {
+// ErrRateUnavailable is returned when an account holds a currency that has no
+// recorded rate into the user's own currency, so it cannot be localized.
+var ErrRateUnavailable = errors.New("currency rate unavailable")
+
+func toAccountSchema(account models.Account, converter CurrencyConverter) (schemas.AccountSchema, error) {
+	localized, ok := converter.Convert(account.Value, account.Currency)
+	if !ok {
+		return schemas.AccountSchema{}, fmt.Errorf("%w: %s to %s", ErrRateUnavailable, account.Currency, converter.Target())
+	}
+
 	return schemas.AccountSchema{
 		Id:          account.Id,
 		Name:        account.Name,
@@ -26,7 +38,29 @@ func toAccountSchema(account models.Account) schemas.AccountSchema {
 			Value:    account.Value,
 			Currency: account.Currency,
 		},
+		LocalizedAmount: schemas.AmountSchema{
+			Value:    localized,
+			Currency: converter.Target(),
+		},
+	}, nil
+}
+
+// converterForUser resolves today's rates into the user's own currency.
+func converterForUser(userId uuid.UUID) (CurrencyConverter, error) {
+	var user models.User
+	if err := core.DB.First(&user, "id = ? AND deleted_at IS NULL", userId).Error; err != nil {
+		return CurrencyConverter{}, err
 	}
+
+	return NewCurrencyConverter(time.Now(), user.Currency)
+}
+
+// sortByLocalizedAmountDesc orders accounts by what they are worth in the
+// user's currency, richest first.
+func sortByLocalizedAmountDesc(accounts []schemas.AccountSchema) {
+	sort.SliceStable(accounts, func(i, j int) bool {
+		return accounts[i].LocalizedAmount.Value.GreaterThan(accounts[j].LocalizedAmount.Value)
+	})
 }
 
 func CreateAccount(userId uuid.UUID, schema schemas.CreateAccountSchema) (schemas.AccountSchema, error) {
@@ -38,12 +72,17 @@ func CreateAccount(userId uuid.UUID, schema schemas.CreateAccountSchema) (schema
 		return schemas.AccountSchema{}, ErrNegativeAccountValue
 	}
 
+	converter, err := converterForUser(userId)
+	if err != nil {
+		return schemas.AccountSchema{}, err
+	}
+
 	account := models.Account{
 		BaseModel:   models.BaseModel{Id: uuid.New()},
 		Name:        schema.Name,
 		Description: schema.Description,
 		Value:       value,
-		Currency:    schema.Currency,
+		Currency:    normalizeCurrency(schema.Currency),
 		ColorHex:    schema.ColorHex,
 		UserId:      userId,
 	}
@@ -52,7 +91,7 @@ func CreateAccount(userId uuid.UUID, schema schemas.CreateAccountSchema) (schema
 		return schemas.AccountSchema{}, err
 	}
 
-	return toAccountSchema(account), nil
+	return toAccountSchema(account, converter)
 }
 
 func ListAccounts(userId uuid.UUID, page int, take int) (schemas.PaginatedResponse[schemas.AccountSchema], error) {
@@ -76,9 +115,24 @@ func ListAccounts(userId uuid.UUID, page int, take int) (schemas.PaginatedRespon
 		return response, err
 	}
 
-	for _, account := range accounts {
-		response.Items = append(response.Items, toAccountSchema(account))
+	converter, err := converterForUser(userId)
+	if err != nil {
+		return response, err
 	}
+
+	for _, account := range accounts {
+		schema, err := toAccountSchema(account, converter)
+		if err != nil {
+			return response, err
+		}
+		response.Items = append(response.Items, schema)
+	}
+
+	// Pagination is by created_at but the page itself is ordered by localized
+	// amount, which is how the Python endpoint behaves. It means the ordering is
+	// only consistent within a page; changing it would reshuffle what each page
+	// contains, so it is left alone until the parity sweep.
+	sortByLocalizedAmountDesc(response.Items)
 
 	return response, nil
 }
@@ -90,7 +144,45 @@ func GetAccountById(userId uuid.UUID, accountId uuid.UUID) (schemas.AccountSchem
 		return schemas.AccountSchema{}, err
 	}
 
-	return toAccountSchema(account), nil
+	converter, err := converterForUser(userId)
+	if err != nil {
+		return schemas.AccountSchema{}, err
+	}
+
+	return toAccountSchema(account, converter)
+}
+
+// GetAccountsBalance returns every one of the user's accounts together with
+// their combined worth in the user's own currency.
+func GetAccountsBalance(userId uuid.UUID) (schemas.AccountsBalanceSchema, error) {
+	converter, err := converterForUser(userId)
+	if err != nil {
+		return schemas.AccountsBalanceSchema{}, err
+	}
+
+	response := schemas.AccountsBalanceSchema{
+		Total:    schemas.AmountSchema{Value: decimal.Zero, Currency: converter.Target()},
+		Accounts: []schemas.AccountSchema{},
+	}
+
+	var accounts []models.Account
+	if err := core.DB.Where("user_id = ? AND deleted_at IS NULL", userId).Find(&accounts).Error; err != nil {
+		return schemas.AccountsBalanceSchema{}, err
+	}
+
+	for _, account := range accounts {
+		schema, err := toAccountSchema(account, converter)
+		if err != nil {
+			return schemas.AccountsBalanceSchema{}, err
+		}
+		response.Accounts = append(response.Accounts, schema)
+		response.Total.Value = response.Total.Value.Add(schema.LocalizedAmount.Value)
+	}
+
+	response.Total.Value = response.Total.Value.Round(amountScale)
+	sortByLocalizedAmountDesc(response.Accounts)
+
+	return response, nil
 }
 
 // DeleteAccount soft deletes the account. It is idempotent: deleting an account

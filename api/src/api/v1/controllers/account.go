@@ -49,6 +49,7 @@ func paginationParams(c *gin.Context) (int, int) {
 // @Success 201 {object} schemas.AccountSchema
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /v1/accounts [post]
 func CreateAccount(c *gin.Context) {
 	userId, _ := c.Get("user_id")
@@ -68,6 +69,12 @@ func CreateAccount(c *gin.Context) {
 		})
 		return
 	}
+	if errors.Is(err, services.ErrRateUnavailable) {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "No currency rate available to localize the account",
+		})
+		return
+	}
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Failed to create account",
@@ -80,7 +87,7 @@ func CreateAccount(c *gin.Context) {
 
 // ListAccounts handles listing the user's accounts
 // @Summary List accounts
-// @Description List the authenticated user's accounts, oldest first
+// @Description List the authenticated user's accounts. Pages are cut by creation order; within a page accounts are ordered by their localized amount, richest first
 // @Tags accounts
 // @Accept json
 // @Produce json
@@ -89,6 +96,7 @@ func CreateAccount(c *gin.Context) {
 // @Param take query int false "Items per page" default(10)
 // @Success 200 {object} schemas.PaginatedResponse[schemas.AccountSchema]
 // @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
 // @Router /v1/accounts [get]
 func ListAccounts(c *gin.Context) {
 	userId, _ := c.Get("user_id")
@@ -96,6 +104,12 @@ func ListAccounts(c *gin.Context) {
 	page, take := paginationParams(c)
 
 	accounts, err := services.ListAccounts(userId.(uuid.UUID), page, take)
+	if errors.Is(err, services.ErrRateUnavailable) {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "No currency rate available to localize every account",
+		})
+		return
+	}
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to list accounts",
@@ -104,6 +118,37 @@ func ListAccounts(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, accounts)
+}
+
+// GetAccountsBalance handles the user's combined account balance
+// @Summary Get accounts balance
+// @Description Every account the authenticated user holds plus their combined worth in the user's own currency, richest first
+// @Tags accounts
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} schemas.AccountsBalanceSchema
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /v1/accounts/balance [get]
+func GetAccountsBalance(c *gin.Context) {
+	userId, _ := c.Get("user_id")
+
+	balance, err := services.GetAccountsBalance(userId.(uuid.UUID))
+	if errors.Is(err, services.ErrRateUnavailable) {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "No currency rate available to localize every account",
+		})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get accounts balance",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, balance)
 }
 
 // GetAccount handles retrieving a single account
@@ -134,6 +179,12 @@ func GetAccount(c *gin.Context) {
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "Account not found",
+		})
+		return
+	}
+	if errors.Is(err, services.ErrRateUnavailable) {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "No currency rate available to localize the account",
 		})
 		return
 	}

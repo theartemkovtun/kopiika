@@ -13,14 +13,29 @@ definitions:
       id:
         example: 123e4567-e89b-12d3-a456-426614174000
         type: string
+      localizedAmount:
+        allOf:
+        - $ref: '#/definitions/schemas.AmountSchema'
+        description: |-
+          LocalizedAmount is Amount converted into the user's own currency, so a
+          client can total accounts that are denominated differently.
       name:
         example: Monobank card
         type: string
     type: object
+  schemas.AccountsBalanceSchema:
+    properties:
+      accounts:
+        items:
+          $ref: '#/definitions/schemas.AccountSchema'
+        type: array
+      total:
+        $ref: '#/definitions/schemas.AmountSchema'
+    type: object
   schemas.AmountSchema:
     properties:
       currency:
-        example: UAH
+        example: uah
         type: string
       value:
         example: "1250.50"
@@ -33,7 +48,7 @@ definitions:
         maxLength: 7
         type: string
       currency:
-        example: UAH
+        example: uah
         type: string
       defaultValue:
         example: "1250.50"
@@ -84,7 +99,7 @@ definitions:
   schemas.UpdateUserSchema:
     properties:
       currency:
-        example: UAH
+        example: uah
         type: string
       language:
         example: uk
@@ -93,7 +108,7 @@ definitions:
   schemas.UserSchema:
     properties:
       currency:
-        example: UAH
+        example: uah
         type: string
       id:
         example: 123e4567-e89b-12d3-a456-426614174000
@@ -164,7 +179,9 @@ paths:
     get:
       consumes:
       - application/json
-      description: List the authenticated user's accounts, oldest first
+      description: List the authenticated user's accounts. Pages are cut by creation
+        order; within a page accounts are ordered by their localized amount, richest
+        first
       parameters:
       - default: 1
         description: Page number, 1-indexed
@@ -185,6 +202,12 @@ paths:
             $ref: '#/definitions/schemas.PaginatedResponse-schemas_AccountSchema'
         "401":
           description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -220,6 +243,12 @@ paths:
             type: object
         "401":
           description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
           schema:
             additionalProperties:
               type: string
@@ -300,6 +329,36 @@ paths:
       security:
       - BearerAuth: []
       summary: Get account
+      tags:
+      - accounts
+  /v1/accounts/balance:
+    get:
+      consumes:
+      - application/json
+      description: Every account the authenticated user holds plus their combined
+        worth in the user's own currency, richest first
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.AccountsBalanceSchema'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get accounts balance
       tags:
       - accounts
   /v1/users:

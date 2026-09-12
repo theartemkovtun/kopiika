@@ -12,7 +12,7 @@ import (
 
 const (
 	defaultLanguage = "en"
-	defaultCurrency = "UAH"
+	defaultCurrency = "uah"
 )
 
 func toUserSchema(user models.User) schemas.UserSchema {
@@ -74,7 +74,7 @@ func UpdateUser(userId uuid.UUID, schema schemas.UpdateUserSchema) (schemas.User
 		updates["language"] = *schema.Language
 	}
 	if schema.Currency != nil {
-		updates["currency"] = *schema.Currency
+		updates["currency"] = normalizeCurrency(*schema.Currency)
 	}
 
 	if len(updates) > 0 {

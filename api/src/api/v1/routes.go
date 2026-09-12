@@ -21,6 +21,7 @@ func RegisterV1Routes(router *gin.Engine) {
 		{
 			accountRoutes.POST("", middleware.RequireAuth(), controllers.CreateAccount)
 			accountRoutes.GET("", middleware.RequireAuth(), controllers.ListAccounts)
+			accountRoutes.GET("/balance", middleware.RequireAuth(), controllers.GetAccountsBalance)
 			accountRoutes.GET("/:accountId", middleware.RequireAuth(), controllers.GetAccount)
 			accountRoutes.DELETE("/:accountId", middleware.RequireAuth(), controllers.DeleteAccount)
 		}

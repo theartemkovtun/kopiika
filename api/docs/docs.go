@@ -88,7 +88,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "List the authenticated user's accounts, oldest first",
+                "description": "List the authenticated user's accounts. Pages are cut by creation order; within a page accounts are ordered by their localized amount, richest first",
                 "consumes": [
                     "application/json"
                 ],
@@ -124,6 +124,15 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -179,6 +188,61 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/accounts/balance": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Every account the authenticated user holds plus their combined worth in the user's own currency, richest first",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "accounts"
+                ],
+                "summary": "Get accounts balance",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.AccountsBalanceSchema"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -443,9 +507,31 @@ const docTemplate = `{
                     "type": "string",
                     "example": "123e4567-e89b-12d3-a456-426614174000"
                 },
+                "localizedAmount": {
+                    "description": "LocalizedAmount is Amount converted into the user's own currency, so a\nclient can total accounts that are denominated differently.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/schemas.AmountSchema"
+                        }
+                    ]
+                },
                 "name": {
                     "type": "string",
                     "example": "Monobank card"
+                }
+            }
+        },
+        "schemas.AccountsBalanceSchema": {
+            "type": "object",
+            "properties": {
+                "accounts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.AccountSchema"
+                    }
+                },
+                "total": {
+                    "$ref": "#/definitions/schemas.AmountSchema"
                 }
             }
         },
@@ -454,7 +540,7 @@ const docTemplate = `{
             "properties": {
                 "currency": {
                     "type": "string",
-                    "example": "UAH"
+                    "example": "uah"
                 },
                 "value": {
                     "type": "string",
@@ -477,7 +563,7 @@ const docTemplate = `{
                 },
                 "currency": {
                     "type": "string",
-                    "example": "UAH"
+                    "example": "uah"
                 },
                 "defaultValue": {
                     "type": "string",
@@ -545,7 +631,7 @@ const docTemplate = `{
             "properties": {
                 "currency": {
                     "type": "string",
-                    "example": "UAH"
+                    "example": "uah"
                 },
                 "language": {
                     "type": "string",
@@ -558,7 +644,7 @@ const docTemplate = `{
             "properties": {
                 "currency": {
                     "type": "string",
-                    "example": "UAH"
+                    "example": "uah"
                 },
                 "id": {
                     "type": "string",
