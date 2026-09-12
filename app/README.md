@@ -69,11 +69,14 @@ src/
     (main)/       signed-in shell — overview, transactions, accounts,
                   reports, new entry, settings
   components/
+    entry/        the new-entry screen: calendar, day list, form
     layout/       sidebar, page header, period strip, mobile drawer
+    ledger/       the transactions screen: rows, filter rail, detail dialog
     ui/           shadcn primitives, restyled
   contexts/       user, preferences, period
+  hooks/          react-query hooks over src/api, one file per resource
   i18n/           next-intl routing, navigation helpers, request config
-  lib/            fonts, locales, money, nav
+  lib/            categories, dates, fonts, locales, money, nav
   middlewares/    locale → auth, composed in src/middleware.ts
   providers/      query, theme, amplify
 messages/         en.json, uk.json
@@ -139,15 +142,81 @@ Both are easy to get wrong and neither fails loudly:
 Also worth knowing: `GET /v1/transactions` pages by **day**, not by row —
 `total` counts days, and one page can hold any number of entries.
 
+### The entry screen
+
+`/add` is wired end to end and worth reading before the screens that are not,
+because it is where the three API conventions above actually bite.
+
+The calendar on the left _is_ the date field — there is no date row in the form
+— so the selected day is the one piece of state the two halves share. Its dots
+come from `GET /v1/transactions`, which pages by day: a single page of 31 is the
+whole month, and the days it answers with are exactly the days with something on
+them. The list under it is `GET /v1/transactions/date/{date}`, which answers
+`null` rather than an empty group for a day with nothing on it.
+
+Two rules on the form come from the API rather than from the design. An entry
+posted to an account has to be in that account's currency, which is why the
+account list is filtered by the currency picked above it and why changing that
+currency drops an account that no longer matches. And the amount is normalised
+as _text_ — a comma becomes a point, grouping spaces go — so that the decimal
+string reaching the wire never passes through a float.
+
+Creating an entry drops both the `transactions` and the `accounts` query trees:
+the ledger moved, and so did a balance.
+
+One last thing the wire types do not say: the API seeds ten global categories
+whose `name` is a **slug** — `food`, `transportation` — and `messages/*.json`
+translates exactly those ten. A category a user creates carries the name they
+typed, in the language they typed it, and is shown as written. `categoryLabel`
+in `src/lib/categories.ts` picks between the two by id, because the seed
+reserves 1..11 and the sequence starts above it.
+
+### The ledger
+
+`/transactions` is the entry screen's other half: everything already written,
+newest first.
+
+Paging follows the API rather than the calendar. `GET /v1/transactions` cuts a
+page by **day**, so the ledger asks for twenty days at a time and "is there
+more" is days seen against days available — never rows, which would over- or
+under-count on any day holding more than one entry. A sentinel at the foot of
+the list asks for the next page as it comes into view, and a `···` marker says
+more is coming; the list simply stops when there is none.
+
+Narrowing keeps what is on screen. The query holds the previous answer
+(`placeholderData: keepPreviousData`) rather than blanking to a loading state,
+because the rail is used while the ledger is being read — a list that empties on
+every checkbox is one you are aiming at blind. Paging pauses while those
+stand-in rows are up: they belong to a filter set nobody is reading any more.
+
+Two details in the rows are load-bearing and easy to lose in a refactor. A day
+with more than one entry writes its date **once**, and the hairline between
+those rows starts at 86px — the 72px date column plus the 14px gap — so the
+rows under one date read as a single day. The last row of a month carries no
+rule at all: the month heading underneath is the separator.
+
+Editing is where the design and the API disagree, and the API wins twice. The
+design's dialog offers a date field, but `PUT /v1/transactions` deliberately has
+none — an entry cannot be moved to another day — so the row is shown and not
+editable, and moving an entry means deleting it and writing it again. The
+currency is fixed for the same reason the entry form filters accounts: an entry
+posted to an account has to match it. And the update **replaces every field**,
+so an omitted description would be cleared — the dialog does not edit the
+description but carries it through untouched.
+
+One addition the design does not have: deleting asks first. A delete is the one
+action here with nothing behind it, and `detail.confirm` was already in the
+dictionary waiting for it.
+
 ## State of play
 
 Built: the shell, sidebar, routing, contexts, API client, theme, the Settings
-screen, and signing in.
+screen, the new-entry screen, the ledger, and signing in.
 
-Stubbed, each screen showing what belongs in it: the Overview panels, the
-ledger and its filter rail, Accounts, Reports and the entry form. So are the
-email/password screens — sign-up, confirmation and password reset — and nothing
-links to them, because Google is the only way in.
+Stubbed, each screen showing what belongs in it: the Overview panels, Accounts
+and Reports. So are the email/password
+screens — sign-up, confirmation and password reset — and nothing links to them,
+because Google is the only way in.
 
 ## Known gap
 
