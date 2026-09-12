@@ -539,6 +539,206 @@
                 }
             }
         },
+        "/v1/transactions": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update one of the authenticated user's transactions, identified by the id in the body. Every field is replaced, so an omitted description, category or account clears it. The date cannot be changed. Balances are rebalanced, including when the transaction moves between accounts",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transactions"
+                ],
+                "summary": "Update transaction",
+                "parameters": [
+                    {
+                        "description": "Transaction to update",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.UpdateTransactionSchema"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.TransactionSchema"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a transaction for the authenticated user. When it names an account, the account's balance moves with it: income adds the value, outcome subtracts it, and the transaction currency must match the account's",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transactions"
+                ],
+                "summary": "Create transaction",
+                "parameters": [
+                    {
+                        "description": "Transaction to create",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.CreateTransactionSchema"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.TransactionSchema"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/transactions/{transactionId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft delete one of the authenticated user's transactions, taking its effect back off the account balance. Idempotent: a repeat delete does not move the balance again",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transactions"
+                ],
+                "summary": "Delete transaction",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Transaction id",
+                        "name": "transactionId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/v1/users": {
             "post": {
                 "security": [
@@ -661,6 +861,31 @@
         }
     },
     "definitions": {
+        "schemas.AccountBaseSchema": {
+            "type": "object",
+            "properties": {
+                "colorHex": {
+                    "type": "string",
+                    "example": "#1E88E5"
+                },
+                "currency": {
+                    "type": "string",
+                    "example": "uah"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Main salary card"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Monobank card"
+                }
+            }
+        },
         "schemas.AccountSchema": {
             "type": "object",
             "properties": {
@@ -800,6 +1025,73 @@
                 }
             }
         },
+        "schemas.CreateTransactionSchema": {
+            "type": "object",
+            "required": [
+                "currency",
+                "day",
+                "month",
+                "title",
+                "type",
+                "value",
+                "year"
+            ],
+            "properties": {
+                "accountId": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "categoryId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "currency": {
+                    "type": "string",
+                    "example": "uah"
+                },
+                "day": {
+                    "type": "integer",
+                    "maximum": 31,
+                    "minimum": 1,
+                    "example": 12
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 256,
+                    "example": "Weekly shop"
+                },
+                "month": {
+                    "type": "integer",
+                    "maximum": 12,
+                    "minimum": 1,
+                    "example": 9
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "Groceries"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "income",
+                        "outcome"
+                    ],
+                    "example": "outcome"
+                },
+                "value": {
+                    "description": "Value is a pointer so that a missing value is rejected while an explicit\nzero is still accepted, as in Python.",
+                    "type": "string",
+                    "example": "125.40"
+                },
+                "year": {
+                    "type": "integer",
+                    "maximum": 2200,
+                    "minimum": 1900,
+                    "example": 2026
+                }
+            }
+        },
         "schemas.HealthSchema": {
             "type": "object",
             "properties": {
@@ -842,6 +1134,106 @@
                 "status": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "schemas.TransactionSchema": {
+            "type": "object",
+            "properties": {
+                "account": {
+                    "$ref": "#/definitions/schemas.AccountBaseSchema"
+                },
+                "amount": {
+                    "$ref": "#/definitions/schemas.AmountSchema"
+                },
+                "category": {
+                    "$ref": "#/definitions/schemas.CategorySchema"
+                },
+                "date": {
+                    "type": "string",
+                    "example": "2026-09-12"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Weekly shop"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "localizedAmount": {
+                    "description": "LocalizedAmount is Amount converted into the user's own currency at the\nrate for the transaction's own date, not today's.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/schemas.AmountSchema"
+                        }
+                    ]
+                },
+                "tags": {
+                    "description": "Tags is always empty: tags are not ported yet, and the key is kept so the\nresponse shape stays the one the clients already read.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "description": "Title and Description are what the user typed, not a derived label.",
+                    "type": "string",
+                    "example": "Groceries"
+                },
+                "type": {
+                    "type": "string",
+                    "example": "outcome"
+                }
+            }
+        },
+        "schemas.UpdateTransactionSchema": {
+            "type": "object",
+            "required": [
+                "currency",
+                "id",
+                "title",
+                "type",
+                "value"
+            ],
+            "properties": {
+                "accountId": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "categoryId": {
+                    "type": "integer",
+                    "example": 1
+                },
+                "currency": {
+                    "type": "string",
+                    "example": "uah"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 256,
+                    "example": "Weekly shop"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "title": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "Groceries"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "income",
+                        "outcome"
+                    ],
+                    "example": "outcome"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "125.40"
                 }
             }
         },

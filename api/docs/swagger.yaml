@@ -1,5 +1,23 @@
 basePath: /
 definitions:
+  schemas.AccountBaseSchema:
+    properties:
+      colorHex:
+        example: '#1E88E5'
+        type: string
+      currency:
+        example: uah
+        type: string
+      description:
+        example: Main salary card
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      name:
+        example: Monobank card
+        type: string
+    type: object
   schemas.AccountSchema:
     properties:
       amount:
@@ -103,6 +121,61 @@ definitions:
     - icon
     - name
     type: object
+  schemas.CreateTransactionSchema:
+    properties:
+      accountId:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      categoryId:
+        example: 1
+        type: integer
+      currency:
+        example: uah
+        type: string
+      day:
+        example: 12
+        maximum: 31
+        minimum: 1
+        type: integer
+      description:
+        example: Weekly shop
+        maxLength: 256
+        type: string
+      month:
+        example: 9
+        maximum: 12
+        minimum: 1
+        type: integer
+      title:
+        example: Groceries
+        maxLength: 64
+        type: string
+      type:
+        enum:
+        - income
+        - outcome
+        example: outcome
+        type: string
+      value:
+        description: |-
+          Value is a pointer so that a missing value is rejected while an explicit
+          zero is still accepted, as in Python.
+        example: "125.40"
+        type: string
+      year:
+        example: 2026
+        maximum: 2200
+        minimum: 1900
+        type: integer
+    required:
+    - currency
+    - day
+    - month
+    - title
+    - type
+    - value
+    - year
+    type: object
   schemas.HealthSchema:
     properties:
       status:
@@ -132,6 +205,83 @@ definitions:
       status:
         example: ok
         type: string
+    type: object
+  schemas.TransactionSchema:
+    properties:
+      account:
+        $ref: '#/definitions/schemas.AccountBaseSchema'
+      amount:
+        $ref: '#/definitions/schemas.AmountSchema'
+      category:
+        $ref: '#/definitions/schemas.CategorySchema'
+      date:
+        example: "2026-09-12"
+        type: string
+      description:
+        example: Weekly shop
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      localizedAmount:
+        allOf:
+        - $ref: '#/definitions/schemas.AmountSchema'
+        description: |-
+          LocalizedAmount is Amount converted into the user's own currency at the
+          rate for the transaction's own date, not today's.
+      tags:
+        description: |-
+          Tags is always empty: tags are not ported yet, and the key is kept so the
+          response shape stays the one the clients already read.
+        items:
+          type: string
+        type: array
+      title:
+        description: Title and Description are what the user typed, not a derived
+          label.
+        example: Groceries
+        type: string
+      type:
+        example: outcome
+        type: string
+    type: object
+  schemas.UpdateTransactionSchema:
+    properties:
+      accountId:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      categoryId:
+        example: 1
+        type: integer
+      currency:
+        example: uah
+        type: string
+      description:
+        example: Weekly shop
+        maxLength: 256
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      title:
+        example: Groceries
+        maxLength: 64
+        type: string
+      type:
+        enum:
+        - income
+        - outcome
+        example: outcome
+        type: string
+      value:
+        example: "125.40"
+        type: string
+    required:
+    - currency
+    - id
+    - title
+    - type
+    - value
     type: object
   schemas.UpdateUserSchema:
     properties:
@@ -511,6 +661,141 @@ paths:
       summary: Delete category
       tags:
       - categories
+  /v1/transactions:
+    post:
+      consumes:
+      - application/json
+      description: 'Create a transaction for the authenticated user. When it names
+        an account, the account''s balance moves with it: income adds the value, outcome
+        subtracts it, and the transaction currency must match the account''s'
+      parameters:
+      - description: Transaction to create
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CreateTransactionSchema'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/schemas.TransactionSchema'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create transaction
+      tags:
+      - transactions
+    put:
+      consumes:
+      - application/json
+      description: Update one of the authenticated user's transactions, identified
+        by the id in the body. Every field is replaced, so an omitted description,
+        category or account clears it. The date cannot be changed. Balances are rebalanced,
+        including when the transaction moves between accounts
+      parameters:
+      - description: Transaction to update
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.UpdateTransactionSchema'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.TransactionSchema'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update transaction
+      tags:
+      - transactions
+  /v1/transactions/{transactionId}:
+    delete:
+      consumes:
+      - application/json
+      description: 'Soft delete one of the authenticated user''s transactions, taking
+        its effect back off the account balance. Idempotent: a repeat delete does
+        not move the balance again'
+      parameters:
+      - description: Transaction id
+        in: path
+        name: transactionId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete transaction
+      tags:
+      - transactions
   /v1/users:
     post:
       consumes:

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"time"
 
 	"kopiika-api-go/src/core"
 	"kopiika-api-go/src/models"
@@ -43,16 +42,6 @@ func toAccountSchema(account models.Account, converter CurrencyConverter) (schem
 			Currency: converter.Target(),
 		},
 	}, nil
-}
-
-// converterForUser resolves today's rates into the user's own currency.
-func converterForUser(userId uuid.UUID) (CurrencyConverter, error) {
-	var user models.User
-	if err := core.DB.First(&user, "id = ? AND deleted_at IS NULL", userId).Error; err != nil {
-		return CurrencyConverter{}, err
-	}
-
-	return NewCurrencyConverter(time.Now(), user.Currency)
 }
 
 // sortByLocalizedAmountDesc orders accounts by what they are worth in the

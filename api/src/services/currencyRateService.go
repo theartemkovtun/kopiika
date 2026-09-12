@@ -8,6 +8,7 @@ import (
 	"kopiika-api-go/src/models"
 	"kopiika-api-go/src/schemas"
 
+	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
 
@@ -124,4 +125,20 @@ func NewCurrencyConverter(onOrBefore time.Time, targetCurrency string) (Currency
 	}
 
 	return converter, nil
+}
+
+// converterForUserOnDate resolves the rates into the user's own currency as they
+// stood on the given date.
+func converterForUserOnDate(userId uuid.UUID, onOrBefore time.Time) (CurrencyConverter, error) {
+	var user models.User
+	if err := core.DB.First(&user, "id = ? AND deleted_at IS NULL", userId).Error; err != nil {
+		return CurrencyConverter{}, err
+	}
+
+	return NewCurrencyConverter(onOrBefore, user.Currency)
+}
+
+// converterForUser resolves today's rates into the user's own currency.
+func converterForUser(userId uuid.UUID) (CurrencyConverter, error) {
+	return converterForUserOnDate(userId, time.Now())
 }

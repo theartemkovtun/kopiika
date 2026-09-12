@@ -30,6 +30,16 @@ type AccountSchema struct {
 	LocalizedAmount AmountSchema `json:"localizedAmount"`
 }
 
+// AccountBaseSchema is an account without its balance, for embedding in another
+// resource's response.
+type AccountBaseSchema struct {
+	Id          uuid.UUID `json:"id" example:"123e4567-e89b-12d3-a456-426614174000"`
+	Name        string    `json:"name" example:"Monobank card"`
+	Description *string   `json:"description" example:"Main salary card"`
+	Currency    string    `json:"currency" example:"uah"`
+	ColorHex    string    `json:"colorHex" example:"#1E88E5"`
+}
+
 // AccountsBalanceSchema is every account the user holds plus their combined
 // worth in the user's own currency.
 type AccountsBalanceSchema struct {
