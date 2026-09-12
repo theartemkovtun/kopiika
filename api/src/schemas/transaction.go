@@ -1,6 +1,8 @@
 package schemas
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )
@@ -56,4 +58,88 @@ type TransactionSchema struct {
 	// Tags is always empty: tags are not ported yet, and the key is kept so the
 	// response shape stays the one the clients already read.
 	Tags []string `json:"tags"`
+}
+
+// DateTransactionsSchema is one day's transactions grouped under the day they
+// share. The list endpoint pages over these rather than over transactions: a
+// page is ten days of spending, not ten rows.
+type DateTransactionsSchema struct {
+	Date         string              `json:"date" example:"2026-09-12"`
+	Transactions []TransactionSchema `json:"transactions"`
+}
+
+// TransactionsConfigurationSchema is everything a client needs to render the
+// transaction form in one response.
+type TransactionsConfigurationSchema struct {
+	Categories []CategorySchema    `json:"categories"`
+	Accounts   []AccountBaseSchema `json:"accounts"`
+	// Tags is always empty: tags are not ported yet, and the key is kept so the
+	// response shape stays the one the clients already read.
+	Tags []string `json:"tags"`
+}
+
+// ListTransactionsQuery is the list endpoint's query string. Repeated
+// parameters carry the id filters — categoryIds=1&categoryIds=2 — which is the
+// shape the Python endpoint takes.
+//
+// Page and take are read separately, with the same defaults as the other
+// paginated resources.
+type ListTransactionsQuery struct {
+	Type     string `form:"type" binding:"omitempty,oneof=income outcome" example:"outcome"`
+	Search   string `form:"search" example:"groceries"`
+	FromDate string `form:"fromDate" binding:"omitempty,datetime=2006-01-02" example:"2026-09-01"`
+	ToDate   string `form:"toDate" binding:"omitempty,datetime=2006-01-02" example:"2026-09-30"`
+	// CategoryIds and AccountIds filter to the named categories and accounts.
+	// They are not checked for ownership: an id that is not the user's simply
+	// matches none of their transactions.
+	CategoryIds []int    `form:"categoryIds"`
+	AccountIds  []string `form:"accountIds" binding:"omitempty,dive,uuid"`
+}
+
+// ListTransactionsFilters narrows a transaction listing. Every field is
+// optional, and an unset one is not applied.
+type ListTransactionsFilters struct {
+	Type        string
+	Search      string
+	FromDate    *time.Time
+	ToDate      *time.Time
+	CategoryIds []int
+	AccountIds  []uuid.UUID
+}
+
+// Filters turns the parsed query string into the filters the service applies.
+// The binding tags have already rejected a malformed date or id, so the parse
+// errors here are the ones a caller could only reach by bypassing binding.
+func (query ListTransactionsQuery) Filters() (ListTransactionsFilters, error) {
+	filters := ListTransactionsFilters{
+		Type:        query.Type,
+		Search:      query.Search,
+		CategoryIds: query.CategoryIds,
+	}
+
+	if query.FromDate != "" {
+		date, err := time.Parse(DateLayout, query.FromDate)
+		if err != nil {
+			return filters, err
+		}
+		filters.FromDate = &date
+	}
+
+	if query.ToDate != "" {
+		date, err := time.Parse(DateLayout, query.ToDate)
+		if err != nil {
+			return filters, err
+		}
+		filters.ToDate = &date
+	}
+
+	for _, id := range query.AccountIds {
+		accountId, err := uuid.Parse(id)
+		if err != nil {
+			return filters, err
+		}
+		filters.AccountIds = append(filters.AccountIds, accountId)
+	}
+
+	return filters, nil
 }

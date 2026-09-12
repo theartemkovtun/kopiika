@@ -37,6 +37,15 @@ func RegisterV1Routes(router *gin.Engine) {
 		{
 			transactionRoutes.POST("", middleware.RequireAuth(), controllers.CreateTransaction)
 			transactionRoutes.PUT("", middleware.RequireAuth(), controllers.UpdateTransaction)
+			transactionRoutes.GET("", middleware.RequireAuth(), controllers.ListTransactions)
+			// The fixed paths are registered before /:transactionId. FastAPI
+			// matched routes in declaration order and tolerated them coming
+			// last; Gin routes on a prefix tree, so a wildcard sibling that is
+			// in place first would claim /latest as an id.
+			transactionRoutes.GET("/latest", middleware.RequireAuth(), controllers.GetLatestTransactions)
+			transactionRoutes.GET("/configuration", middleware.RequireAuth(), controllers.GetTransactionsConfiguration)
+			transactionRoutes.GET("/date/:date", middleware.RequireAuth(), controllers.GetTransactionsByDate)
+			transactionRoutes.GET("/:transactionId", middleware.RequireAuth(), controllers.GetTransaction)
 			transactionRoutes.DELETE("/:transactionId", middleware.RequireAuth(), controllers.DeleteTransaction)
 		}
 	}

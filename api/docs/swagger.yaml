@@ -176,6 +176,16 @@ definitions:
     - value
     - year
     type: object
+  schemas.DateTransactionsSchema:
+    properties:
+      date:
+        example: "2026-09-12"
+        type: string
+      transactions:
+        items:
+          $ref: '#/definitions/schemas.TransactionSchema'
+        type: array
+    type: object
   schemas.HealthSchema:
     properties:
       status:
@@ -187,6 +197,19 @@ definitions:
       items:
         items:
           $ref: '#/definitions/schemas.AccountSchema'
+        type: array
+      page:
+        type: integer
+      take:
+        type: integer
+      total:
+        type: integer
+    type: object
+  schemas.PaginatedResponse-schemas_DateTransactionsSchema:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/schemas.DateTransactionsSchema'
         type: array
       page:
         type: integer
@@ -244,6 +267,24 @@ definitions:
       type:
         example: outcome
         type: string
+    type: object
+  schemas.TransactionsConfigurationSchema:
+    properties:
+      accounts:
+        items:
+          $ref: '#/definitions/schemas.AccountBaseSchema'
+        type: array
+      categories:
+        items:
+          $ref: '#/definitions/schemas.CategorySchema'
+        type: array
+      tags:
+        description: |-
+          Tags is always empty: tags are not ported yet, and the key is kept so the
+          response shape stays the one the clients already read.
+        items:
+          type: string
+        type: array
     type: object
   schemas.UpdateTransactionSchema:
     properties:
@@ -662,6 +703,86 @@ paths:
       tags:
       - categories
   /v1/transactions:
+    get:
+      consumes:
+      - application/json
+      description: List the authenticated user's transactions grouped by the day they
+        happened on, newest day first. The page is cut by day rather than by transaction,
+        so total counts days and one page can hold any number of transactions
+      parameters:
+      - default: 1
+        description: Page number, 1-indexed
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Days per page
+        in: query
+        name: take
+        type: integer
+      - description: Only income or only outcome
+        enum:
+        - income
+        - outcome
+        in: query
+        name: type
+        type: string
+      - description: Matches anywhere in the title, case-insensitively
+        in: query
+        name: search
+        type: string
+      - description: Earliest day to include (YYYY-MM-DD)
+        in: query
+        name: fromDate
+        type: string
+      - description: Latest day to include (YYYY-MM-DD)
+        in: query
+        name: toDate
+        type: string
+      - collectionFormat: multi
+        description: Only these categories
+        in: query
+        items:
+          type: integer
+        name: categoryIds
+        type: array
+      - collectionFormat: multi
+        description: Only these accounts
+        in: query
+        items:
+          type: string
+        name: accountIds
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.PaginatedResponse-schemas_DateTransactionsSchema'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List transactions
+      tags:
+      - transactions
     post:
       consumes:
       - application/json
@@ -794,6 +915,164 @@ paths:
       security:
       - BearerAuth: []
       summary: Delete transaction
+      tags:
+      - transactions
+    get:
+      consumes:
+      - application/json
+      description: Get one of the authenticated user's transactions, with its category
+        and account attached
+      parameters:
+      - description: Transaction id
+        in: path
+        name: transactionId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.TransactionSchema'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get transaction
+      tags:
+      - transactions
+  /v1/transactions/configuration:
+    get:
+      consumes:
+      - application/json
+      description: Get the categories the authenticated user may label a transaction
+        with and the accounts they may post it to, in one response. Tags are not ported
+        and come back as an empty array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.TransactionsConfigurationSchema'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get transactions configuration
+      tags:
+      - transactions
+  /v1/transactions/date/{date}:
+    get:
+      consumes:
+      - application/json
+      description: Get everything the authenticated user spent or earned on one day.
+        Answers null for a day with no transactions
+      parameters:
+      - description: Day to fetch (YYYY-MM-DD)
+        in: path
+        name: date
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.DateTransactionsSchema'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get transactions for a date
+      tags:
+      - transactions
+  /v1/transactions/latest:
+    get:
+      consumes:
+      - application/json
+      description: Get the authenticated user's most recent transactions, newest first
+        by the day the money moved
+      parameters:
+      - default: 5
+        description: How many to return
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/schemas.TransactionSchema'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get latest transactions
       tags:
       - transactions
   /v1/users:

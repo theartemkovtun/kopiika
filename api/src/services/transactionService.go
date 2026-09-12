@@ -7,6 +7,7 @@ import (
 
 	"kopiika-api-go/src/core"
 	"kopiika-api-go/src/models"
+	"kopiika-api-go/src/queries"
 	"kopiika-api-go/src/schemas"
 
 	"github.com/google/uuid"
@@ -157,13 +158,8 @@ func toTransactionSchema(transaction models.Transaction, converter CurrencyConve
 	}
 
 	if transaction.Account != nil {
-		schema.Account = &schemas.AccountBaseSchema{
-			Id:          transaction.Account.Id,
-			Name:        transaction.Account.Name,
-			Description: transaction.Account.Description,
-			Currency:    transaction.Account.Currency,
-			ColorHex:    transaction.Account.ColorHex,
-		}
+		account := toAccountBaseSchema(*transaction.Account)
+		schema.Account = &account
 	}
 
 	return schema, nil
@@ -324,4 +320,202 @@ func DeleteTransaction(userId uuid.UUID, transactionId uuid.UUID) error {
 
 		return db.Model(&transaction).Update("deleted_at", gorm.Expr("CURRENT_TIMESTAMP")).Error
 	})
+}
+
+// toDateTransactionSchemas groups transactions under the days they happened on,
+// keeping the order of the dates it is given, and localizes every amount at the
+// rate for its own day.
+//
+// A date with no matching transactions still comes back as an empty group. That
+// cannot happen through the list endpoint, where the dates are derived from the
+// transactions, but it keeps the function honest for a caller that names a day
+// itself.
+func toDateTransactionSchemas(
+	userId uuid.UUID,
+	dates []time.Time,
+	transactions []models.Transaction,
+) ([]schemas.DateTransactionsSchema, error) {
+	converters, err := convertersForUserOnDates(userId, dates)
+	if err != nil {
+		return nil, err
+	}
+
+	grouped := map[string][]schemas.TransactionSchema{}
+	for _, transaction := range transactions {
+		day := transaction.Date.Format(dateLayout)
+
+		schema, err := toTransactionSchema(transaction, converters[day])
+		if err != nil {
+			return nil, err
+		}
+
+		grouped[day] = append(grouped[day], schema)
+	}
+
+	groups := make([]schemas.DateTransactionsSchema, 0, len(dates))
+	for _, date := range dates {
+		day := date.Format(dateLayout)
+
+		items := grouped[day]
+		if items == nil {
+			items = []schemas.TransactionSchema{}
+		}
+
+		groups = append(groups, schemas.DateTransactionsSchema{
+			Date:         day,
+			Transactions: items,
+		})
+	}
+
+	return groups, nil
+}
+
+// ListTransactions returns the user's transactions grouped by the day they
+// happened on, newest day first.
+//
+// The page is cut by day, not by transaction, so total counts days and a page
+// of ten can hold any number of transactions. That is what the plpgsql
+// list_transactions function did with its temp table of distinct dates, and it
+// is the shape the clients render.
+func ListTransactions(
+	userId uuid.UUID,
+	filters schemas.ListTransactionsFilters,
+	page int,
+	take int,
+) (schemas.PaginatedResponse[schemas.DateTransactionsSchema], error) {
+	response := schemas.PaginatedResponse[schemas.DateTransactionsSchema]{
+		Page:  page,
+		Take:  take,
+		Items: []schemas.DateTransactionsSchema{},
+	}
+
+	dates, total, err := queries.ListTransactionDates(core.DB, userId, filters, page, take)
+	if err != nil {
+		return response, err
+	}
+
+	response.Total = total
+	if len(dates) == 0 {
+		return response, nil
+	}
+
+	transactions, err := queries.ListTransactionsOnDates(core.DB, userId, filters, dates)
+	if err != nil {
+		return response, err
+	}
+
+	groups, err := toDateTransactionSchemas(userId, dates, transactions)
+	if err != nil {
+		return response, err
+	}
+
+	response.Items = groups
+
+	return response, nil
+}
+
+// GetTransactionsByDate returns everything the user spent or earned on one day.
+//
+// It answers nothing at all for a day with no transactions, rather than an empty
+// group, because that is the response the clients already read.
+func GetTransactionsByDate(userId uuid.UUID, date time.Time) (*schemas.DateTransactionsSchema, error) {
+	var transactions []models.Transaction
+
+	err := core.DB.
+		Preload("Category").
+		Preload("Account").
+		Where("user_id = ? AND date = ? AND deleted_at IS NULL", userId, date).
+		Order("created_at DESC, id DESC").
+		Find(&transactions).Error
+	if err != nil {
+		return nil, err
+	}
+
+	if len(transactions) == 0 {
+		return nil, nil
+	}
+
+	groups, err := toDateTransactionSchemas(userId, []time.Time{date}, transactions)
+	if err != nil {
+		return nil, err
+	}
+
+	return &groups[0], nil
+}
+
+// GetLatestTransactions returns the user's most recent transactions, newest
+// first — by the day the money moved, not by the day the row was written.
+func GetLatestTransactions(userId uuid.UUID, limit int) ([]schemas.TransactionSchema, error) {
+	response := []schemas.TransactionSchema{}
+
+	var transactions []models.Transaction
+
+	err := core.DB.
+		Preload("Category").
+		Preload("Account").
+		Where("user_id = ? AND deleted_at IS NULL", userId).
+		Order("date DESC, created_at DESC, id DESC").
+		Limit(limit).
+		Find(&transactions).Error
+	if err != nil {
+		return response, err
+	}
+
+	if len(transactions) == 0 {
+		return response, nil
+	}
+
+	dates := make([]time.Time, 0, len(transactions))
+	for _, transaction := range transactions {
+		dates = append(dates, transaction.Date)
+	}
+
+	converters, err := convertersForUserOnDates(userId, dates)
+	if err != nil {
+		return response, err
+	}
+
+	for _, transaction := range transactions {
+		schema, err := toTransactionSchema(transaction, converters[transaction.Date.Format(dateLayout)])
+		if err != nil {
+			return response, err
+		}
+
+		response = append(response, schema)
+	}
+
+	return response, nil
+}
+
+// GetTransactionsConfiguration bundles what a client needs to fill in the
+// transaction form: the categories it may label with, and the accounts it may
+// post to. It is one request rather than three.
+func GetTransactionsConfiguration(userId uuid.UUID) (schemas.TransactionsConfigurationSchema, error) {
+	response := schemas.TransactionsConfigurationSchema{
+		Categories: []schemas.CategorySchema{},
+		Accounts:   []schemas.AccountBaseSchema{},
+		// Tags are not ported. The key stays so the response shape holds.
+		Tags: []string{},
+	}
+
+	categories, err := ListCategories(userId)
+	if err != nil {
+		return response, err
+	}
+	response.Categories = categories
+
+	var accounts []models.Account
+	err = core.DB.
+		Where("user_id = ? AND deleted_at IS NULL", userId).
+		Order("created_at").
+		Find(&accounts).Error
+	if err != nil {
+		return response, err
+	}
+
+	for _, account := range accounts {
+		response.Accounts = append(response.Accounts, toAccountBaseSchema(account))
+	}
+
+	return response, nil
 }

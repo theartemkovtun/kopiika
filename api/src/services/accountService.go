@@ -44,6 +44,18 @@ func toAccountSchema(account models.Account, converter CurrencyConverter) (schem
 	}, nil
 }
 
+// toAccountBaseSchema is the account without its balance, for embedding in
+// another resource's response.
+func toAccountBaseSchema(account models.Account) schemas.AccountBaseSchema {
+	return schemas.AccountBaseSchema{
+		Id:          account.Id,
+		Name:        account.Name,
+		Description: account.Description,
+		Currency:    account.Currency,
+		ColorHex:    account.ColorHex,
+	}
+}
+
 // sortByLocalizedAmountDesc orders accounts by what they are worth in the
 // user's currency, richest first.
 func sortByLocalizedAmountDesc(accounts []schemas.AccountSchema) {

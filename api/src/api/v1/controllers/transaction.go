@@ -3,6 +3,8 @@ package controllers
 import (
 	"errors"
 	"net/http"
+	"strconv"
+	"time"
 
 	"kopiika-api-go/src/schemas"
 	"kopiika-api-go/src/services"
@@ -11,6 +13,10 @@ import (
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
+
+// defaultLatestLimit is how many transactions /latest returns when the client
+// does not say.
+const defaultLatestLimit = 5
 
 // writeTransactionError answers the failures the create and update paths share.
 // It reports whether it handled the error, so a caller can add its own cases.
@@ -165,4 +171,217 @@ func DeleteTransaction(c *gin.Context) {
 	}
 
 	c.Status(http.StatusNoContent)
+}
+
+// ListTransactions handles listing transactions grouped by day
+// @Summary List transactions
+// @Description List the authenticated user's transactions grouped by the day they happened on, newest day first. The page is cut by day rather than by transaction, so total counts days and one page can hold any number of transactions
+// @Tags transactions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param page query int false "Page number, 1-indexed" default(1)
+// @Param take query int false "Days per page" default(10)
+// @Param type query string false "Only income or only outcome" Enums(income, outcome)
+// @Param search query string false "Matches anywhere in the title, case-insensitively"
+// @Param fromDate query string false "Earliest day to include (YYYY-MM-DD)"
+// @Param toDate query string false "Latest day to include (YYYY-MM-DD)"
+// @Param categoryIds query []int false "Only these categories" collectionFormat(multi)
+// @Param accountIds query []string false "Only these accounts" collectionFormat(multi)
+// @Success 200 {object} schemas.PaginatedResponse[schemas.DateTransactionsSchema]
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /v1/transactions [get]
+func ListTransactions(c *gin.Context) {
+	userId, _ := c.Get("user_id")
+	page, take := paginationParams(c)
+
+	var query schemas.ListTransactionsQuery
+	if err := c.ShouldBindQuery(&query); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid query parameters",
+		})
+		return
+	}
+
+	filters, err := query.Filters()
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid query parameters",
+		})
+		return
+	}
+
+	transactions, err := services.ListTransactions(userId.(uuid.UUID), filters, page, take)
+	if err != nil {
+		if errors.Is(err, services.ErrRateUnavailable) {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "No currency rate available to localize the transactions",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to list transactions",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, transactions)
+}
+
+// GetTransaction handles fetching a single transaction
+// @Summary Get transaction
+// @Description Get one of the authenticated user's transactions, with its category and account attached
+// @Tags transactions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param transactionId path string true "Transaction id"
+// @Success 200 {object} schemas.TransactionSchema
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /v1/transactions/{transactionId} [get]
+func GetTransaction(c *gin.Context) {
+	userId, _ := c.Get("user_id")
+
+	transactionId, err := uuid.Parse(c.Param("transactionId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid transaction id",
+		})
+		return
+	}
+
+	transaction, err := services.GetTransactionById(userId.(uuid.UUID), transactionId)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Transaction not found",
+		})
+		return
+	}
+	if err != nil {
+		if errors.Is(err, services.ErrRateUnavailable) {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "No currency rate available to localize the transaction",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get transaction",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, transaction)
+}
+
+// GetTransactionsByDate handles fetching one day's transactions
+// @Summary Get transactions for a date
+// @Description Get everything the authenticated user spent or earned on one day. Answers null for a day with no transactions
+// @Tags transactions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param date path string true "Day to fetch (YYYY-MM-DD)"
+// @Success 200 {object} schemas.DateTransactionsSchema
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /v1/transactions/date/{date} [get]
+func GetTransactionsByDate(c *gin.Context) {
+	userId, _ := c.Get("user_id")
+
+	date, err := time.Parse(schemas.DateLayout, c.Param("date"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid date",
+		})
+		return
+	}
+
+	transactions, err := services.GetTransactionsByDate(userId.(uuid.UUID), date)
+	if err != nil {
+		if errors.Is(err, services.ErrRateUnavailable) {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "No currency rate available to localize the transactions",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get transactions",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, transactions)
+}
+
+// GetLatestTransactions handles fetching the most recent transactions
+// @Summary Get latest transactions
+// @Description Get the authenticated user's most recent transactions, newest first by the day the money moved
+// @Tags transactions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param limit query int false "How many to return" default(5)
+// @Success 200 {array} schemas.TransactionSchema
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /v1/transactions/latest [get]
+func GetLatestTransactions(c *gin.Context) {
+	userId, _ := c.Get("user_id")
+
+	// The parameter is limit rather than take: this is a top-N, not a page, and
+	// limit is what the clients already send.
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil || limit < 1 {
+		limit = defaultLatestLimit
+	}
+	if limit > maxTake {
+		limit = maxTake
+	}
+
+	transactions, err := services.GetLatestTransactions(userId.(uuid.UUID), limit)
+	if err != nil {
+		if errors.Is(err, services.ErrRateUnavailable) {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "No currency rate available to localize the transactions",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get latest transactions",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, transactions)
+}
+
+// GetTransactionsConfiguration handles fetching the transaction form options
+// @Summary Get transactions configuration
+// @Description Get the categories the authenticated user may label a transaction with and the accounts they may post it to, in one response. Tags are not ported and come back as an empty array
+// @Tags transactions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} schemas.TransactionsConfigurationSchema
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /v1/transactions/configuration [get]
+func GetTransactionsConfiguration(c *gin.Context) {
+	userId, _ := c.Get("user_id")
+
+	configuration, err := services.GetTransactionsConfiguration(userId.(uuid.UUID))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get transactions configuration",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, configuration)
 }
