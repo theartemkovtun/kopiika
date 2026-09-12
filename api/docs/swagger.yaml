@@ -492,6 +492,24 @@ definitions:
         example: uk
         type: string
     type: object
+  schemas.UserProfileSchema:
+    properties:
+      email:
+        example: john@example.com
+        type: string
+      externalProvider:
+        description: |-
+          ExternalProvider is the federated identity the user signed in through, and
+          is null for a user who signed up with a password.
+        example: Apple
+        type: string
+      name:
+        example: John Doe
+        type: string
+      picture:
+        example: https://example.com/picture.png
+        type: string
+    type: object
   schemas.UserSchema:
     properties:
       currency:
@@ -509,6 +527,12 @@ definitions:
       pictureUrl:
         example: https://example.com/picture.png
         type: string
+      profile:
+        allOf:
+        - $ref: '#/definitions/schemas.UserProfileSchema'
+        description: |-
+          Profile is filled in only when the request asks for it, because filling it
+          in costs a call to the user pool.
     type: object
 host: localhost:8080
 info:
@@ -1330,7 +1354,14 @@ paths:
     get:
       consumes:
       - application/json
-      description: Get the currently authenticated user's configuration
+      description: Get the currently authenticated user's configuration, optionally
+        with the identity provider's profile attached
+      parameters:
+      - description: Attach the identity provider's profile block. Costs one call
+          to the user pool
+        in: query
+        name: profile
+        type: boolean
       produces:
       - application/json
       responses:
@@ -1340,6 +1371,12 @@ paths:
             $ref: '#/definitions/schemas.UserSchema'
         "401":
           description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "502":
+          description: Bad Gateway
           schema:
             additionalProperties:
               type: string

@@ -14,13 +14,15 @@ import (
 
 // GetCurrentUser handles retrieving the current user
 // @Summary Get current user
-// @Description Get the currently authenticated user's configuration
+// @Description Get the currently authenticated user's configuration, optionally with the identity provider's profile attached
 // @Tags users
 // @Accept json
 // @Produce json
 // @Security BearerAuth
+// @Param profile query bool false "Attach the identity provider's profile block. Costs one call to the user pool"
 // @Success 200 {object} schemas.UserSchema
 // @Failure 401 {object} map[string]string
+// @Failure 502 {object} map[string]string
 // @Router /v1/users/me [get]
 func GetCurrentUser(c *gin.Context) {
 	userId, _ := c.Get("user_id")
@@ -31,6 +33,21 @@ func GetCurrentUser(c *gin.Context) {
 			"error": "User not found",
 		})
 		return
+	}
+
+	// The profile is opt-in because it is a call out to the identity provider,
+	// and this endpoint is read on every page load. A failure there is the
+	// provider's, not the caller's, so it is reported apart from the 401 a
+	// missing local row gives.
+	if c.Query("profile") == "true" {
+		profile, err := services.GetUserProfile(userId.(uuid.UUID))
+		if err != nil {
+			c.JSON(http.StatusBadGateway, gin.H{
+				"error": "Failed to fetch the user profile from the identity provider",
+			})
+			return
+		}
+		user.Profile = &profile
 	}
 
 	c.JSON(http.StatusOK, user)

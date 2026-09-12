@@ -2,8 +2,11 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/MicahParks/keyfunc/v3"
@@ -43,18 +46,96 @@ func InitCognito() error {
 	return nil
 }
 
+// CognitoUserDetails is what the user pool holds about a user, beyond the id
+// the token already carries.
 type CognitoUserDetails struct {
+	Email      string
 	Name       string
 	PictureURL *string
+	// ExternalProvider is the federated identity the user signed in through --
+	// "Google", "Apple" -- and is empty for a user who signed up with a password.
+	ExternalProvider string
 }
 
-// GetCognitoUserDetails fetches name and picture URL for the given user sub from Cognito.
+// cognitoDetailsTTL is how long a user pool lookup is reused. Names, pictures
+// and providers change approximately never, and the alternative is an AWS round
+// trip on every read of the profile.
+const cognitoDetailsTTL = 5 * time.Minute
+
+// cognitoCallTimeout bounds the lookup. Without it a stalled AWS call holds the
+// request goroutine open indefinitely.
+const cognitoCallTimeout = 5 * time.Second
+
+type cachedCognitoDetails struct {
+	details   CognitoUserDetails
+	expiresAt time.Time
+}
+
+// cognitoDetailsCache is process-local, so it is a per-instance saving rather
+// than a shared one. That is enough: it exists to collapse the repeated reads of
+// a single session, not to be a system of record.
+var cognitoDetailsCache sync.Map
+
+// cognitoIdentity is one entry of the identities attribute, which Cognito stores
+// as a JSON string rather than as structured data.
+type cognitoIdentity struct {
+	ProviderName string `json:"providerName"`
+}
+
+// externalProvider reads the federated provider out of the identities attribute.
+// Cognito spells the Apple provider "SignInWithApple" while Google and Facebook
+// are named plainly, so the prefix is stripped to leave the brand on its own.
+//
+// An attribute that is absent or unparseable is a user who signed up with a
+// password, and yields "" rather than an error: a profile is worth answering
+// with even when the provider cannot be named.
+func externalProvider(identities string) string {
+	if identities == "" {
+		return ""
+	}
+
+	var parsed []cognitoIdentity
+	if err := json.Unmarshal([]byte(identities), &parsed); err != nil || len(parsed) == 0 {
+		return ""
+	}
+
+	return strings.TrimPrefix(parsed[0].ProviderName, "SignInWith")
+}
+
+// firstNonEmpty returns the first value that is set, so an attribute can fall
+// back to its alternate spelling in the pool.
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+// GetCognitoUserDetails fetches the user pool's view of the given sub. Results
+// are cached for cognitoDetailsTTL.
+//
+// The lookup is a ListUsers filtered on sub rather than an AdminGetUser: a
+// federated user's pool username is their provider id ("google_1234..."), not
+// their sub, so addressing them by sub directly would fail for exactly the users
+// whose provider this is trying to report.
 func GetCognitoUserDetails(userID uuid.UUID) (CognitoUserDetails, error) {
 	if cognitoClient == nil {
 		return CognitoUserDetails{}, errors.New("cognito client not initialized")
 	}
 
-	out, err := cognitoClient.ListUsers(context.Background(), &cognitoidentityprovider.ListUsersInput{
+	if cached, ok := cognitoDetailsCache.Load(userID); ok {
+		entry := cached.(cachedCognitoDetails)
+		if time.Now().Before(entry.expiresAt) {
+			return entry.details, nil
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), cognitoCallTimeout)
+	defer cancel()
+
+	out, err := cognitoClient.ListUsers(ctx, &cognitoidentityprovider.ListUsersInput{
 		UserPoolId: aws.String(Config.CognitoUserPoolID),
 		Filter:     aws.String(fmt.Sprintf(`sub = "%s"`, userID.String())),
 		Limit:      aws.Int32(1),
@@ -66,17 +147,27 @@ func GetCognitoUserDetails(userID uuid.UUID) (CognitoUserDetails, error) {
 		return CognitoUserDetails{}, fmt.Errorf("cognito user not found for sub %s", userID)
 	}
 
-	var details CognitoUserDetails
+	attributes := make(map[string]string, len(out.Users[0].Attributes))
 	for _, attr := range out.Users[0].Attributes {
-		switch aws.ToString(attr.Name) {
-		case "name":
-			details.Name = aws.ToString(attr.Value)
-		case "picture":
-			if attr.Value != nil {
-				details.PictureURL = attr.Value
-			}
-		}
+		attributes[aws.ToString(attr.Name)] = aws.ToString(attr.Value)
 	}
+
+	// A pool may spell either of these two ways depending on how the user was
+	// created, so each falls back to its alternate.
+	details := CognitoUserDetails{
+		Email:            attributes["email"],
+		Name:             firstNonEmpty(attributes["name"], attributes["given_name"]),
+		ExternalProvider: externalProvider(attributes["identities"]),
+	}
+	if picture := firstNonEmpty(attributes["picture"], attributes["picture_url"]); picture != "" {
+		details.PictureURL = &picture
+	}
+
+	cognitoDetailsCache.Store(userID, cachedCognitoDetails{
+		details:   details,
+		expiresAt: time.Now().Add(cognitoDetailsTTL),
+	})
+
 	return details, nil
 }
 

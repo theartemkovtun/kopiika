@@ -91,6 +91,32 @@ func SetupUser(userId uuid.UUID, schema schemas.ConfigureUserSchema) (schemas.Us
 	return toUserSchema(user), nil
 }
 
+// optionalString reports an absent value as null rather than as an empty string,
+// which is how the profile the Python API served is shaped.
+func optionalString(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
+}
+
+// GetUserProfile is the identity provider's view of the user. It is a separate
+// call from GetUserById because it costs a round trip to the user pool, and the
+// plain read is on the path of every page load.
+func GetUserProfile(userId uuid.UUID) (schemas.UserProfileSchema, error) {
+	details, err := core.GetCognitoUserDetails(userId)
+	if err != nil {
+		return schemas.UserProfileSchema{}, fmt.Errorf("failed to fetch user details from Cognito: %w", err)
+	}
+
+	return schemas.UserProfileSchema{
+		Email:            details.Email,
+		Name:             optionalString(details.Name),
+		Picture:          details.PictureURL,
+		ExternalProvider: optionalString(details.ExternalProvider),
+	}, nil
+}
+
 func UpdateUser(userId uuid.UUID, schema schemas.UpdateUserSchema) (schemas.UserSchema, error) {
 	var user models.User
 	if err := core.DB.First(&user, "id = ? AND deleted_at IS NULL", userId).Error; err != nil {

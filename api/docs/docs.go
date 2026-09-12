@@ -1238,7 +1238,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get the currently authenticated user's configuration",
+                "description": "Get the currently authenticated user's configuration, optionally with the identity provider's profile attached",
                 "consumes": [
                     "application/json"
                 ],
@@ -1249,6 +1249,14 @@ const docTemplate = `{
                     "users"
                 ],
                 "summary": "Get current user",
+                "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Attach the identity provider's profile block. Costs one call to the user pool",
+                        "name": "profile",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1258,6 +1266,15 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "502": {
+                        "description": "Bad Gateway",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1981,6 +1998,28 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.UserProfileSchema": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "john@example.com"
+                },
+                "externalProvider": {
+                    "description": "ExternalProvider is the federated identity the user signed in through, and\nis null for a user who signed up with a password.",
+                    "type": "string",
+                    "example": "Apple"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "John Doe"
+                },
+                "picture": {
+                    "type": "string",
+                    "example": "https://example.com/picture.png"
+                }
+            }
+        },
         "schemas.UserSchema": {
             "type": "object",
             "properties": {
@@ -2003,6 +2042,14 @@ const docTemplate = `{
                 "pictureUrl": {
                     "type": "string",
                     "example": "https://example.com/picture.png"
+                },
+                "profile": {
+                    "description": "Profile is filled in only when the request asks for it, because filling it\nin costs a call to the user pool.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/schemas.UserProfileSchema"
+                        }
+                    ]
                 }
             }
         }
