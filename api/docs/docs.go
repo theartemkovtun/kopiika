@@ -367,6 +367,180 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/categories": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "List the authenticated user's own categories together with the global defaults, ordered by id. Unpaginated",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "List categories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/schemas.CategorySchema"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Create a new category owned by the authenticated user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Create category",
+                "parameters": [
+                    {
+                        "description": "Category to create",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.CreateCategorySchema"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.CategorySchema"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/categories/{categoryId}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Soft delete one of the authenticated user's own categories. Idempotent, and global default categories are never deletable",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Delete category",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Category id",
+                        "name": "categoryId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/v1/users": {
             "post": {
                 "security": [
@@ -548,6 +722,27 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.CategorySchema": {
+            "type": "object",
+            "properties": {
+                "hexColor": {
+                    "type": "string",
+                    "example": "#43A047"
+                },
+                "icon": {
+                    "type": "string",
+                    "example": "shopping-cart"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 12
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Groceries"
+                }
+            }
+        },
         "schemas.CreateAccountSchema": {
             "type": "object",
             "required": [
@@ -578,6 +773,32 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 64,
                     "example": "Monobank card"
+                }
+            }
+        },
+        "schemas.CreateCategorySchema": {
+            "type": "object",
+            "required": [
+                "hexColor",
+                "icon",
+                "name"
+            ],
+            "properties": {
+                "hexColor": {
+                    "description": "HexColor is spelled this way, rather than the accounts colorHex, because\nthat is the key the existing clients send and read.",
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "#43A047"
+                },
+                "icon": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "shopping-cart"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "Groceries"
                 }
             }
         },

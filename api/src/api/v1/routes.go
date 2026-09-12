@@ -25,5 +25,12 @@ func RegisterV1Routes(router *gin.Engine) {
 			accountRoutes.GET("/:accountId", middleware.RequireAuth(), controllers.GetAccount)
 			accountRoutes.DELETE("/:accountId", middleware.RequireAuth(), controllers.DeleteAccount)
 		}
+
+		categoryRoutes := v1.Group("/categories")
+		{
+			categoryRoutes.POST("", middleware.RequireAuth(), controllers.CreateCategory)
+			categoryRoutes.GET("", middleware.RequireAuth(), controllers.ListCategories)
+			categoryRoutes.DELETE("/:categoryId", middleware.RequireAuth(), controllers.DeleteCategory)
+		}
 	}
 }
