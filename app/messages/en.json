@@ -33,7 +33,9 @@
         "error": "Something went wrong.",
         "retry": "Try again",
         "noAccount": "No account",
-        "noCategory": "No category"
+        "noCategory": "No category",
+        "today": "Today",
+        "yesterday": "Yesterday"
     },
     "period": {
         "year": "Year",
@@ -62,9 +64,7 @@
         "categories": "Categories",
         "accounts": "Accounts",
         "noMatch": "No entries match these filters.",
-        "end": "Earliest entry reached.",
-        "today": "Today",
-        "yesterday": "Yesterday"
+        "end": "Earliest entry reached."
     },
     "reports": {
         "difference": "Difference",

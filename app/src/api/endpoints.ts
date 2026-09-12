@@ -82,9 +82,9 @@ export const transactions = {
             query: { fromDate, toDate, full },
         }),
 
-    /** `date` is YYYY-MM-DD. */
+    /** `date` is YYYY-MM-DD. Answers null for a day with nothing on it. */
     byDate: (date: string) =>
-        api.get<DateTransactions>(`/v1/transactions/date/${date}`),
+        api.get<DateTransactions | null>(`/v1/transactions/date/${date}`),
 
     get: (transactionId: string) =>
         api.get<Transaction>(`/v1/transactions/${transactionId}`),
@@ -124,6 +124,10 @@ export const queryKeys = {
         all: ["transactions"] as const,
         list: (query: ListTransactionsQuery) =>
             ["transactions", "list", query] as const,
+        /** The ledger's paged-as-you-scroll listing. The page is not in the
+            key: one cache entry holds every page of a filter set. */
+        infinite: (query: ListTransactionsQuery) =>
+            ["transactions", "list", "infinite", query] as const,
         latest: (limit: number) => ["transactions", "latest", limit] as const,
         configuration: () => ["transactions", "configuration"] as const,
         statistics: (query: StatisticsQuery) =>
