@@ -5,7 +5,7 @@ package models
 type User struct {
 	BaseModel
 	Language   string  `gorm:"column:language;type:varchar(2);not null;default:en" json:"language"`
-	Currency   string  `gorm:"column:currency;type:varchar(3);not null;default:UAH" json:"currency"`
+	Currency   string  `gorm:"column:currency;type:varchar(3);not null;default:uah" json:"currency"`
 	Name       string  `gorm:"column:name;type:varchar(255);not null" json:"name"`
 	PictureUrl *string `gorm:"column:picture_url;type:varchar(255)" json:"pictureUrl"`
 }

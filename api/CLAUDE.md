@@ -41,6 +41,16 @@ the schema from `cmd/atlas-loader`, so every new model must be registered in tha
 file's `gormschema.New("postgres").Load(...)` call or it will be silently missing
 from the diff.
 
+The one exception is the `currency` schema. `currency.currency_rates` and the
+`currency.add_currency_rates(json)` function it is written through belong to the
+separate `kopiika-currency-fetch` service; this API only reads the table. They are
+created by a hand-written migration and `models.CurrencyRate` is deliberately *not*
+registered in `cmd/atlas-loader`. For that to hold, the Atlas dev URL in `atlas.hcl`
+is scoped with `?search_path=public` — without it, Atlas sees the schema in the
+replayed migration state, does not see it in the desired state, and emits a
+`DROP SCHEMA "currency" CASCADE` into the next diff. If you change `atlas.hcl`,
+re-run `make migrate-diff` on a no-op and confirm it reports no changes.
+
 ## Architecture
 
 Go REST API using Gin with GORM and PostgreSQL. Personal finance domain (kopiika).
@@ -73,6 +83,12 @@ creates the local row on first login, seeding name and picture from the user poo
 - Model to DTO conversion goes through a `toXSchema` helper in the service
 - Global `core.DB` for database access
 - Soft deletes via `deleted_at`; queries must filter `deleted_at IS NULL`
+- Currency codes are stored **lower case** (`uah`, `usd`) everywhere — that is what
+  the rates table holds and what clients send. Normalize input with
+  `services.normalizeCurrency` rather than comparing raw strings
+- Monetary amounts that cross currencies are localized through a
+  `services.CurrencyConverter`, which reports a missing rate rather than
+  silently converting to zero
 - Pagination uses `page` (1-indexed) and `take`, returned in `schemas.PaginatedResponse[T]`
 - Config is validated at boot: a missing required env var is a fatal error
 
