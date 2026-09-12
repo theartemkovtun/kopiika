@@ -155,14 +155,16 @@
         "confirm": "Видалити цей запис?"
     },
     "categories": {
-        "income": "Дохід",
-        "housing": "Житло",
-        "groceries": "Продукти",
-        "cafes": "Кафе",
-        "transport": "Транспорт",
-        "utilities": "Комунальні",
+        "food": "Їжа",
+        "transportation": "Транспорт",
+        "entertainment": "Розваги та дозвілля",
+        "education": "Навчання",
         "health": "Здоров’я",
-        "leisure": "Дозвілля"
+        "house": "Дім",
+        "savings": "Заощадження",
+        "charity": "Благодійність",
+        "clothing": "Одяг і аксесуари",
+        "other": "Інше"
     },
     "auth": {
         "loginTitle": "Вхід",

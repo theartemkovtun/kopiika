@@ -155,14 +155,16 @@
         "confirm": "Delete this entry?"
     },
     "categories": {
-        "income": "Income",
-        "housing": "Housing",
-        "groceries": "Groceries",
-        "cafes": "Cafés",
-        "transport": "Transport",
-        "utilities": "Utilities",
+        "food": "Food",
+        "transportation": "Transportation",
+        "entertainment": "Entertainment",
+        "education": "Education",
         "health": "Health",
-        "leisure": "Leisure"
+        "house": "House",
+        "savings": "Savings",
+        "charity": "Charity",
+        "clothing": "Clothing",
+        "other": "Other"
     },
     "auth": {
         "loginTitle": "Log in",
