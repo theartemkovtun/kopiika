@@ -1,6 +1,7 @@
-h1:FF2gvGb/02RsrxJ28Z4CUHzsjMeZHBhip+NE4gvldVE=
+h1:MIlH7JCIBvm0hfIaDVgl0e1XVaTcr0wbeWZG5a9jmww=
 20260911191314_init.sql h1:oX5H9PzKZl2WFzlevYTCQOodXEmwdeIC65Jz9HWZ6XE=
 20260911194055_accounts.sql h1:rWgiG9mLtEUNElFscjTTNepdpRrqeW2qMR4uH1yhfYo=
 20260912072851_currency_rates.sql h1:koxxgzG1OSfKJ+lj/JxJtl4yHH5eh/ZgtmCzZ9uizw0=
 20260912073007_lowercase_currency_default.sql h1:HnovL9JwsBc5MBRUfH4hQNv7G7H1NoDqu/ComQT639k=
 20260912080809_categories.sql h1:s4nMmsG95ymMn560SROB+h5w6w3HNcQIcVl88GVIaJM=
+20260912081523_seed_default_categories.sql h1:W8aLw4GakRxTmYyBnKNp/tA4rQauGOv0Apl8ZAmwXuQ=
