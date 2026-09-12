@@ -1,0 +1,189 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* next-themes writes data-theme on <html>. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ---------------------------------------------------------------------------
+   Design tokens, lifted verbatim from the Claude Design canvas, so that any
+   rule copied out of the design keeps working unchanged.
+
+   --blue is an emphasis role, not a hue: it resolves to --ink in both themes
+   and marks the active nav item, the selected chip and the one link colour.
+   --ch1..--ch6 are the categorical series, held at one lightness and one
+   chroma so no slice of a pie reads as louder than its neighbours.
+--------------------------------------------------------------------------- */
+
+:root {
+    --bg: #f7f4ee;
+    --ink: #1b2230;
+    --mute: #7a7466;
+    --rule: #d9d3c7;
+    --rule2: #e6e1d6;
+    --blue: #1b2230;
+    --blue-soft: #e8e3d8;
+    --green: #1d6b3a;
+    --red: #a83a32;
+
+    --ch1: oklch(0.58 0.11 255);
+    --ch2: oklch(0.58 0.11 35);
+    --ch3: oklch(0.58 0.11 150);
+    --ch4: oklch(0.58 0.11 305);
+    --ch5: oklch(0.58 0.11 85);
+    --ch6: oklch(0.58 0.11 200);
+
+    --overlay: rgb(24 22 18 / 0.36);
+
+    color-scheme: light;
+}
+
+[data-theme="dark"] {
+    --bg: #16171a;
+    --ink: #ece7dc;
+    --mute: #8f8a7e;
+    --rule: #3b3d43;
+    --rule2: #2a2c31;
+    --blue: #ece7dc;
+    --blue-soft: #2a2c31;
+    --green: #5fc08a;
+    --red: #e07a72;
+
+    --ch1: oklch(0.74 0.11 255);
+    --ch2: oklch(0.74 0.11 35);
+    --ch3: oklch(0.74 0.11 150);
+    --ch4: oklch(0.74 0.11 305);
+    --ch5: oklch(0.74 0.11 85);
+    --ch6: oklch(0.74 0.11 200);
+
+    --overlay: rgb(0 0 0 / 0.52);
+
+    color-scheme: dark;
+}
+
+/* ---------------------------------------------------------------------------
+   Tailwind theme. The design vocabulary (bg / ink / mute / rule) comes first;
+   the shadcn token names are aliases onto the same values, so an unmodified
+   shadcn component already lands inside the design instead of next to it.
+--------------------------------------------------------------------------- */
+
+@theme inline {
+    /* design vocabulary */
+    --color-bg: var(--bg);
+    --color-ink: var(--ink);
+    --color-mute: var(--mute);
+    --color-rule: var(--rule);
+    --color-rule2: var(--rule2);
+    --color-blue: var(--blue);
+    --color-blue-soft: var(--blue-soft);
+    --color-green: var(--green);
+    --color-red: var(--red);
+
+    --color-ch1: var(--ch1);
+    --color-ch2: var(--ch2);
+    --color-ch3: var(--ch3);
+    --color-ch4: var(--ch4);
+    --color-ch5: var(--ch5);
+    --color-ch6: var(--ch6);
+
+    /* shadcn aliases */
+    --color-background: var(--bg);
+    --color-foreground: var(--ink);
+    --color-card: var(--bg);
+    --color-card-foreground: var(--ink);
+    --color-popover: var(--bg);
+    --color-popover-foreground: var(--ink);
+    --color-primary: var(--ink);
+    --color-primary-foreground: var(--bg);
+    --color-secondary: var(--blue-soft);
+    --color-secondary-foreground: var(--ink);
+    --color-muted: var(--rule2);
+    --color-muted-foreground: var(--mute);
+    --color-accent: var(--blue-soft);
+    --color-accent-foreground: var(--ink);
+    --color-destructive: var(--red);
+    --color-destructive-foreground: var(--bg);
+    --color-border: var(--rule);
+    --color-input: var(--rule);
+    --color-ring: var(--ink);
+
+    --color-chart-1: var(--ch1);
+    --color-chart-2: var(--ch2);
+    --color-chart-3: var(--ch3);
+    --color-chart-4: var(--ch4);
+    --color-chart-5: var(--ch5);
+
+    /* Nothing in this design is rounded. Keeping the scale at zero means a
+       stock shadcn component picked up later is square without being edited. */
+    --radius-xs: 0px;
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
+    --radius-xl: 0px;
+    --radius-2xl: 0px;
+    --radius-3xl: 0px;
+
+    --font-sans:
+        var(--font-instrument-sans), "Helvetica Neue", Helvetica, Arial,
+        sans-serif;
+    --font-serif: var(--font-gentium), Georgia, "Times New Roman", Times, serif;
+    --font-mono:
+        var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo,
+        monospace;
+    --font-script: var(--font-bad-script), "Brush Script MT", cursive;
+
+    /* The sidebar column and the reading column, as the design measures them. */
+    --spacing-sidebar: 208px;
+    --spacing-content: 1120px;
+}
+
+@layer base {
+    * {
+        border-color: var(--rule);
+    }
+
+    html {
+        /* The design is a lining-figure, tabular-number layout: amounts in a
+           column have to align on the decimal point, in every font. */
+        font-feature-settings: "tnum" 1;
+    }
+
+    body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--font-sans);
+        font-size: 15px;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    ::selection {
+        background: var(--ink);
+        color: var(--bg);
+    }
+
+    button:focus,
+    select:focus {
+        outline: none;
+    }
+
+    :focus-visible {
+        outline: 1px solid var(--ink);
+        outline-offset: 2px;
+    }
+
+    /* The native date control paints its indicator near-black, which
+       disappears against the dark ground. */
+    [data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
+        filter: invert(1) opacity(0.55);
+    }
+}
+
+@utility no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    &::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;
+    }
+}
