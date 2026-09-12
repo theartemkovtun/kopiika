@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -11,6 +12,16 @@ import (
 )
 
 var DB *gorm.DB
+
+// Connection pool limits. GORM's postgres driver runs pgx through database/sql,
+// whose defaults (unbounded open connections, only 2 idle) would reopen a
+// connection per request under any real concurrency.
+const (
+	maxOpenConns    = 80
+	maxIdleConns    = 20
+	connMaxLifetime = 30 * time.Minute
+	connMaxIdleTime = 4 * time.Minute
+)
 
 func InitDB() error {
 	var err error
@@ -20,6 +31,16 @@ func InitDB() error {
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
+
+	sqlDB, err := DB.DB()
+	if err != nil {
+		return fmt.Errorf("failed to get sql handle: %w", err)
+	}
+
+	sqlDB.SetMaxOpenConns(maxOpenConns)
+	sqlDB.SetMaxIdleConns(maxIdleConns)
+	sqlDB.SetConnMaxLifetime(connMaxLifetime)
+	sqlDB.SetConnMaxIdleTime(connMaxIdleTime)
 
 	return nil
 }
