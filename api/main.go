@@ -72,7 +72,7 @@ func main() {
 
 	routes.RegisterV1Routes(engine)
 
-	if err := engine.Run(":8080"); err != nil {
+	if err := engine.Run(":" + core.Config.Port); err != nil {
 		log.Fatal(err)
 	}
 }

@@ -8,17 +8,27 @@ import (
 )
 
 type config struct {
+	Port               string
 	DatabaseUrl        string
 	CORSAllowedOrigins string
 	CognitoRegion      string
 	CognitoUserPoolID  string
 }
 
+// defaultPort is used when PORT is unset. Container platforms inject their own
+// value and expect the process to honour it.
+const defaultPort = "8080"
+
 var Config = &config{}
 
 func LoadConfig() error {
 
 	godotenv.Load()
+
+	Config.Port = os.Getenv("PORT")
+	if Config.Port == "" {
+		Config.Port = defaultPort
+	}
 
 	Config.DatabaseUrl = os.Getenv("DATABASE_URL")
 	Config.CORSAllowedOrigins = os.Getenv("CORS_ALLOWED_ORIGINS")

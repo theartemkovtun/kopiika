@@ -95,6 +95,7 @@ creates the local row on first login, seeding name and picture from the user poo
 ## Environment Variables
 
 ```
+PORT=8080                      # optional; container platforms inject their own
 DATABASE_URL=postgres://user:password@host:5432/dbname
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 COGNITO_REGION=us-east-1
