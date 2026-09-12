@@ -150,6 +150,13 @@ definitions:
         example: 12
         type: integer
     type: object
+  schemas.ConfigureUserSchema:
+    properties:
+      countryCode:
+        example: ua
+        maxLength: 2
+        type: string
+    type: object
   schemas.CreateAccountSchema:
     properties:
       colorHex:
@@ -1293,8 +1300,14 @@ paths:
     post:
       consumes:
       - application/json
-      description: Create the local configuration for the authenticated Cognito user.
-        Idempotent.
+      description: Create the local configuration for the authenticated Cognito user,
+        deriving the starting language and currency from the country code. Idempotent.
+      parameters:
+      - description: Country the defaults are derived from
+        in: body
+        name: payload
+        schema:
+          $ref: '#/definitions/schemas.ConfigureUserSchema'
       produces:
       - application/json
       responses:

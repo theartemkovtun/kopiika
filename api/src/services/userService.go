@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"strings"
 
 	"kopiika-api-go/src/core"
 	"kopiika-api-go/src/models"
@@ -13,7 +14,30 @@ import (
 const (
 	defaultLanguage = "en"
 	defaultCurrency = "uah"
+
+	ukraineCountryCode = "ua"
+	ukrainianLanguage  = "uk"
+	ukrainianCurrency  = "uah"
+	// foreignCurrency is what a user outside Ukraine starts with.
+	foreignCurrency = "usd"
 )
+
+// defaultsForCountry picks the language and currency a new user starts with:
+// Ukraine gets Ukrainian and hryvnia, anywhere else gets English and dollars.
+//
+// A request that names no country keeps the defaults the API used before the
+// country code existed, rather than guessing at dollars for a client that has
+// simply not been updated yet.
+func defaultsForCountry(countryCode string) (string, string) {
+	switch strings.ToLower(strings.TrimSpace(countryCode)) {
+	case "":
+		return defaultLanguage, defaultCurrency
+	case ukraineCountryCode:
+		return ukrainianLanguage, ukrainianCurrency
+	default:
+		return defaultLanguage, foreignCurrency
+	}
+}
 
 func toUserSchema(user models.User) schemas.UserSchema {
 	return schemas.UserSchema{
@@ -36,8 +60,10 @@ func GetUserById(id uuid.UUID) (schemas.UserSchema, error) {
 }
 
 // SetupUser creates the local user row for an authenticated Cognito user,
-// seeding name and picture from the user pool. It is idempotent.
-func SetupUser(userId uuid.UUID) (schemas.UserSchema, error) {
+// seeding name and picture from the user pool and the starting language and
+// currency from the country the client reports. It is idempotent: a user who
+// already exists is returned as they are and the payload is ignored.
+func SetupUser(userId uuid.UUID, schema schemas.ConfigureUserSchema) (schemas.UserSchema, error) {
 	var existing models.User
 	if err := core.DB.First(&existing, "id = ?", userId).Error; err == nil {
 		return toUserSchema(existing), nil
@@ -48,12 +74,14 @@ func SetupUser(userId uuid.UUID) (schemas.UserSchema, error) {
 		return schemas.UserSchema{}, fmt.Errorf("failed to fetch user details from Cognito: %w", err)
 	}
 
+	language, currency := defaultsForCountry(schema.CountryCode)
+
 	user := models.User{
 		BaseModel: models.BaseModel{
 			Id: userId,
 		},
-		Language:   defaultLanguage,
-		Currency:   defaultCurrency,
+		Language:   language,
+		Currency:   currency,
 		Name:       cognitoDetails.Name,
 		PictureUrl: cognitoDetails.PictureURL,
 	}

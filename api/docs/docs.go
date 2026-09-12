@@ -1191,7 +1191,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create the local configuration for the authenticated Cognito user. Idempotent.",
+                "description": "Create the local configuration for the authenticated Cognito user, deriving the starting language and currency from the country code. Idempotent.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1202,6 +1202,16 @@ const docTemplate = `{
                     "users"
                 ],
                 "summary": "Setup user",
+                "parameters": [
+                    {
+                        "description": "Country the defaults are derived from",
+                        "name": "payload",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.ConfigureUserSchema"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -1514,6 +1524,16 @@ const docTemplate = `{
                 "totalTransactions": {
                     "type": "integer",
                     "example": 12
+                }
+            }
+        },
+        "schemas.ConfigureUserSchema": {
+            "type": "object",
+            "properties": {
+                "countryCode": {
+                    "type": "string",
+                    "maxLength": 2,
+                    "example": "ua"
                 }
             }
         },

@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"errors"
+	"io"
 	"net/http"
 
 	"kopiika-api-go/src/schemas"
@@ -36,18 +38,31 @@ func GetCurrentUser(c *gin.Context) {
 
 // SetupUser handles creating the local user record
 // @Summary Setup user
-// @Description Create the local configuration for the authenticated Cognito user. Idempotent.
+// @Description Create the local configuration for the authenticated Cognito user, deriving the starting language and currency from the country code. Idempotent.
 // @Tags users
 // @Accept json
 // @Produce json
 // @Security BearerAuth
+// @Param payload body schemas.ConfigureUserSchema false "Country the defaults are derived from"
 // @Success 200 {object} schemas.UserSchema
 // @Failure 400 {object} map[string]string
 // @Router /v1/users [post]
 func SetupUser(c *gin.Context) {
 	userId, _ := c.Get("user_id")
 
-	user, err := services.SetupUser(userId.(uuid.UUID))
+	// The body is optional: clients that predate the country code send none, and
+	// those users keep the defaults the API has always used. Only a body that is
+	// present and malformed is rejected, which is what the io.EOF check leaves
+	// through.
+	var payload schemas.ConfigureUserSchema
+	if err := c.ShouldBindJSON(&payload); err != nil && !errors.Is(err, io.EOF) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request body",
+		})
+		return
+	}
+
+	user, err := services.SetupUser(userId.(uuid.UUID), payload)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Failed to create user",
