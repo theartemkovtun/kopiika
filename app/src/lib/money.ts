@@ -41,6 +41,26 @@ export function toNumber(value: string | number | null | undefined): number {
     return Number.isFinite(parsed) ? parsed : 0;
 }
 
+/**
+ * What someone typed in an amount field, as the decimal string the API takes —
+ * or null when it is not an amount above zero.
+ *
+ * The value is normalised as *text*: a comma becomes a point, grouping spaces
+ * are dropped, and the digits themselves are handed on untouched. The parse to
+ * a number is only ever used to answer "is this above zero", so an amount still
+ * never reaches the wire by way of a float.
+ */
+export function parseAmountInput(input: string): string | null {
+    // \s covers the non-breaking and narrow spaces `toLocaleString` groups
+    // with, so a figure copied back out of the UI parses.
+    const normalized = input.replace(/\s/g, "").replace(",", ".");
+
+    if (!/^(\d+(\.\d*)?|\.\d+)$/.test(normalized)) return null;
+    if (!(Number(normalized) > 0)) return null;
+
+    return normalized;
+}
+
 export type FormatOptions = {
     locale?: SupportedLocale;
     /** Two decimal places, or none. Mirrors the design's `showCents`. */
