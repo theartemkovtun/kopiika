@@ -2,6 +2,8 @@
 
 import { createContext, use, useCallback, useMemo, useState } from "react";
 
+import { FIRST_YEAR, daysInMonth, toIsoDate } from "@/lib/dates";
+
 /**
  * The period the Overview is looking at: one month, or a whole year.
  *
@@ -12,9 +14,6 @@ import { createContext, use, useCallback, useMemo, useState } from "react";
  * The selection is also what the API wants: every read is bounded by a
  * `fromDate`/`toDate` pair, which `range` derives.
  */
-
-/** The earliest year the year arrows will walk back to. */
-const FIRST_YEAR = 2020;
 
 export type Period = {
     /** 0-indexed, like a JS Date. */
@@ -46,16 +45,6 @@ type PeriodContextValue = Period & {
 };
 
 const PeriodContext = createContext<PeriodContextValue | null>(null);
-
-function iso(year: number, month: number, day: number): string {
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${year}-${pad(month + 1)}-${pad(day)}`;
-}
-
-/** Day 0 of the next month is the last day of this one. */
-function daysInMonth(year: number, month: number): number {
-    return new Date(year, month + 1, 0).getDate();
-}
 
 export function PeriodProvider({ children }: { children: React.ReactNode }) {
     const [today] = useState(() => {
@@ -118,12 +107,16 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
     const value = useMemo<PeriodContextValue>(() => {
         const range: DateRange = yearView
             ? {
-                  fromDate: iso(year, 0, 1),
-                  toDate: iso(year, maxMonth, daysInMonth(year, maxMonth)),
+                  fromDate: toIsoDate(year, 0, 1),
+                  toDate: toIsoDate(
+                      year,
+                      maxMonth,
+                      daysInMonth(year, maxMonth),
+                  ),
               }
             : {
-                  fromDate: iso(year, month, 1),
-                  toDate: iso(year, month, daysInMonth(year, month)),
+                  fromDate: toIsoDate(year, month, 1),
+                  toDate: toIsoDate(year, month, daysInMonth(year, month)),
               };
 
         return {
