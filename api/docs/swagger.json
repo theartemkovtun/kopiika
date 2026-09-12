@@ -963,6 +963,93 @@
                 }
             }
         },
+        "/v1/transactions/statistics": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Report on everything the authenticated user recorded between two days, inclusive, in their own currency. Every transaction is converted at the rate for its own date rather than today's. Without full, only the income, outcome and difference totals, the per-day series and the category spending breakdown are populated; the remaining fields hold their zero values so the response shape does not change",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "transactions"
+                ],
+                "summary": "Get transaction statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "First day of the range (YYYY-MM-DD)",
+                        "name": "fromDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Last day of the range (YYYY-MM-DD)",
+                        "name": "toDate",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "boolean",
+                        "default": false,
+                        "description": "Also report the counts, averages, extremes and account breakdowns",
+                        "name": "full",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.TransactionsStatisticsSchema"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/v1/transactions/{transactionId}": {
             "get": {
                 "security": [
@@ -1274,6 +1361,63 @@
                 }
             }
         },
+        "schemas.AccountStatisticsSchema": {
+            "type": "object",
+            "properties": {
+                "colorHex": {
+                    "type": "string",
+                    "example": "#1E88E5"
+                },
+                "currency": {
+                    "type": "string",
+                    "example": "uah"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Main salary card"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "localizedAmount": {
+                    "$ref": "#/definitions/schemas.AmountSchema"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Monobank card"
+                }
+            }
+        },
+        "schemas.AccountTransactionCountSchema": {
+            "type": "object",
+            "properties": {
+                "colorHex": {
+                    "type": "string",
+                    "example": "#1E88E5"
+                },
+                "currency": {
+                    "type": "string",
+                    "example": "uah"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Main salary card"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "123e4567-e89b-12d3-a456-426614174000"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Monobank card"
+                },
+                "totalTransactions": {
+                    "type": "integer",
+                    "example": 12
+                }
+            }
+        },
         "schemas.AccountsBalanceSchema": {
             "type": "object",
             "properties": {
@@ -1319,6 +1463,55 @@
                 "name": {
                     "type": "string",
                     "example": "Groceries"
+                }
+            }
+        },
+        "schemas.CategoryStatisticsSchema": {
+            "type": "object",
+            "properties": {
+                "hexColor": {
+                    "type": "string",
+                    "example": "#43A047"
+                },
+                "icon": {
+                    "type": "string",
+                    "example": "shopping-cart"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 12
+                },
+                "localizedAmount": {
+                    "$ref": "#/definitions/schemas.AmountSchema"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Groceries"
+                }
+            }
+        },
+        "schemas.CategoryTransactionCountSchema": {
+            "type": "object",
+            "properties": {
+                "hexColor": {
+                    "type": "string",
+                    "example": "#43A047"
+                },
+                "icon": {
+                    "type": "string",
+                    "example": "shopping-cart"
+                },
+                "id": {
+                    "type": "integer",
+                    "example": 12
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Groceries"
+                },
+                "totalTransactions": {
+                    "type": "integer",
+                    "example": 12
                 }
             }
         },
@@ -1445,6 +1638,21 @@
                     "maximum": 2200,
                     "minimum": 1900,
                     "example": 2026
+                }
+            }
+        },
+        "schemas.DateStatisticsSchema": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "example": "2026-09-12"
+                },
+                "income": {
+                    "$ref": "#/definitions/schemas.AmountSchema"
+                },
+                "outcome": {
+                    "$ref": "#/definitions/schemas.AmountSchema"
                 }
             }
         },
@@ -1599,6 +1807,92 @@
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "schemas.TransactionsStatisticsSchema": {
+            "type": "object",
+            "properties": {
+                "accountOutcomeStatistics": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.AccountStatisticsSchema"
+                    }
+                },
+                "accountOutcomeTransactions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.AccountTransactionCountSchema"
+                    }
+                },
+                "averageIncome": {
+                    "$ref": "#/definitions/schemas.AmountSchema"
+                },
+                "averageOutcome": {
+                    "$ref": "#/definitions/schemas.AmountSchema"
+                },
+                "categoryOutcomeStatistics": {
+                    "description": "CategoryOutcomeStatistics is spending per category, largest first.\nTransactions with no category are left out rather than pooled.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.CategoryStatisticsSchema"
+                    }
+                },
+                "categoryOutcomeTransactions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.CategoryTransactionCountSchema"
+                    }
+                },
+                "difference": {
+                    "$ref": "#/definitions/schemas.AmountSchema"
+                },
+                "income": {
+                    "$ref": "#/definitions/schemas.AmountSchema"
+                },
+                "incomeTransactions": {
+                    "type": "integer",
+                    "example": 8
+                },
+                "maxIncome": {
+                    "$ref": "#/definitions/schemas.TransactionSchema"
+                },
+                "maxOutcome": {
+                    "$ref": "#/definitions/schemas.TransactionSchema"
+                },
+                "minIncome": {
+                    "description": "MinIncome and MaxIncome are the smallest and largest single income of the\nrange, compared on the localized amount. They are null when the range\nholds no income at all.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/schemas.TransactionSchema"
+                        }
+                    ]
+                },
+                "minOutcome": {
+                    "$ref": "#/definitions/schemas.TransactionSchema"
+                },
+                "outcome": {
+                    "$ref": "#/definitions/schemas.AmountSchema"
+                },
+                "outcomeTransactions": {
+                    "type": "integer",
+                    "example": 34
+                },
+                "rangeStatistics": {
+                    "description": "RangeStatistics covers every day in the range, oldest first.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/schemas.DateStatisticsSchema"
+                    }
+                },
+                "totalTransactions": {
+                    "type": "integer",
+                    "example": 42
+                },
+                "transactionsPerDay": {
+                    "description": "TransactionsPerDay is how many days of the range carried any activity,\ndivided by the number of days between its two ends. It is a rate, not a\ncount, and it is reported as a string like every other number here.",
+                    "type": "string",
+                    "example": "0.73"
                 }
             }
         },

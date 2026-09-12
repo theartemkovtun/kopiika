@@ -44,6 +44,7 @@ func RegisterV1Routes(router *gin.Engine) {
 			// in place first would claim /latest as an id.
 			transactionRoutes.GET("/latest", middleware.RequireAuth(), controllers.GetLatestTransactions)
 			transactionRoutes.GET("/configuration", middleware.RequireAuth(), controllers.GetTransactionsConfiguration)
+			transactionRoutes.GET("/statistics", middleware.RequireAuth(), controllers.GetTransactionsStatistics)
 			transactionRoutes.GET("/date/:date", middleware.RequireAuth(), controllers.GetTransactionsByDate)
 			transactionRoutes.GET("/:transactionId", middleware.RequireAuth(), controllers.GetTransaction)
 			transactionRoutes.DELETE("/:transactionId", middleware.RequireAuth(), controllers.DeleteTransaction)

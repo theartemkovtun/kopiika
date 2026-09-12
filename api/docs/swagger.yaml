@@ -41,6 +41,47 @@ definitions:
         example: Monobank card
         type: string
     type: object
+  schemas.AccountStatisticsSchema:
+    properties:
+      colorHex:
+        example: '#1E88E5'
+        type: string
+      currency:
+        example: uah
+        type: string
+      description:
+        example: Main salary card
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      localizedAmount:
+        $ref: '#/definitions/schemas.AmountSchema'
+      name:
+        example: Monobank card
+        type: string
+    type: object
+  schemas.AccountTransactionCountSchema:
+    properties:
+      colorHex:
+        example: '#1E88E5'
+        type: string
+      currency:
+        example: uah
+        type: string
+      description:
+        example: Main salary card
+        type: string
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      name:
+        example: Monobank card
+        type: string
+      totalTransactions:
+        example: 12
+        type: integer
+    type: object
   schemas.AccountsBalanceSchema:
     properties:
       accounts:
@@ -73,6 +114,41 @@ definitions:
       name:
         example: Groceries
         type: string
+    type: object
+  schemas.CategoryStatisticsSchema:
+    properties:
+      hexColor:
+        example: '#43A047'
+        type: string
+      icon:
+        example: shopping-cart
+        type: string
+      id:
+        example: 12
+        type: integer
+      localizedAmount:
+        $ref: '#/definitions/schemas.AmountSchema'
+      name:
+        example: Groceries
+        type: string
+    type: object
+  schemas.CategoryTransactionCountSchema:
+    properties:
+      hexColor:
+        example: '#43A047'
+        type: string
+      icon:
+        example: shopping-cart
+        type: string
+      id:
+        example: 12
+        type: integer
+      name:
+        example: Groceries
+        type: string
+      totalTransactions:
+        example: 12
+        type: integer
     type: object
   schemas.CreateAccountSchema:
     properties:
@@ -175,6 +251,16 @@ definitions:
     - type
     - value
     - year
+    type: object
+  schemas.DateStatisticsSchema:
+    properties:
+      date:
+        example: "2026-09-12"
+        type: string
+      income:
+        $ref: '#/definitions/schemas.AmountSchema'
+      outcome:
+        $ref: '#/definitions/schemas.AmountSchema'
     type: object
   schemas.DateTransactionsSchema:
     properties:
@@ -285,6 +371,72 @@ definitions:
         items:
           type: string
         type: array
+    type: object
+  schemas.TransactionsStatisticsSchema:
+    properties:
+      accountOutcomeStatistics:
+        items:
+          $ref: '#/definitions/schemas.AccountStatisticsSchema'
+        type: array
+      accountOutcomeTransactions:
+        items:
+          $ref: '#/definitions/schemas.AccountTransactionCountSchema'
+        type: array
+      averageIncome:
+        $ref: '#/definitions/schemas.AmountSchema'
+      averageOutcome:
+        $ref: '#/definitions/schemas.AmountSchema'
+      categoryOutcomeStatistics:
+        description: |-
+          CategoryOutcomeStatistics is spending per category, largest first.
+          Transactions with no category are left out rather than pooled.
+        items:
+          $ref: '#/definitions/schemas.CategoryStatisticsSchema'
+        type: array
+      categoryOutcomeTransactions:
+        items:
+          $ref: '#/definitions/schemas.CategoryTransactionCountSchema'
+        type: array
+      difference:
+        $ref: '#/definitions/schemas.AmountSchema'
+      income:
+        $ref: '#/definitions/schemas.AmountSchema'
+      incomeTransactions:
+        example: 8
+        type: integer
+      maxIncome:
+        $ref: '#/definitions/schemas.TransactionSchema'
+      maxOutcome:
+        $ref: '#/definitions/schemas.TransactionSchema'
+      minIncome:
+        allOf:
+        - $ref: '#/definitions/schemas.TransactionSchema'
+        description: |-
+          MinIncome and MaxIncome are the smallest and largest single income of the
+          range, compared on the localized amount. They are null when the range
+          holds no income at all.
+      minOutcome:
+        $ref: '#/definitions/schemas.TransactionSchema'
+      outcome:
+        $ref: '#/definitions/schemas.AmountSchema'
+      outcomeTransactions:
+        example: 34
+        type: integer
+      rangeStatistics:
+        description: RangeStatistics covers every day in the range, oldest first.
+        items:
+          $ref: '#/definitions/schemas.DateStatisticsSchema'
+        type: array
+      totalTransactions:
+        example: 42
+        type: integer
+      transactionsPerDay:
+        description: |-
+          TransactionsPerDay is how many days of the range carried any activity,
+          divided by the number of days between its two ends. It is a rate, not a
+          count, and it is reported as a string like every other number here.
+        example: "0.73"
+        type: string
     type: object
   schemas.UpdateTransactionSchema:
     properties:
@@ -1073,6 +1225,68 @@ paths:
       security:
       - BearerAuth: []
       summary: Get latest transactions
+      tags:
+      - transactions
+  /v1/transactions/statistics:
+    get:
+      consumes:
+      - application/json
+      description: Report on everything the authenticated user recorded between two
+        days, inclusive, in their own currency. Every transaction is converted at
+        the rate for its own date rather than today's. Without full, only the income,
+        outcome and difference totals, the per-day series and the category spending
+        breakdown are populated; the remaining fields hold their zero values so the
+        response shape does not change
+      parameters:
+      - description: First day of the range (YYYY-MM-DD)
+        in: query
+        name: fromDate
+        required: true
+        type: string
+      - description: Last day of the range (YYYY-MM-DD)
+        in: query
+        name: toDate
+        required: true
+        type: string
+      - default: false
+        description: Also report the counts, averages, extremes and account breakdowns
+        in: query
+        name: full
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.TransactionsStatisticsSchema'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get transaction statistics
       tags:
       - transactions
   /v1/users:
