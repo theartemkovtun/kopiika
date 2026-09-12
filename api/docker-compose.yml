@@ -4,12 +4,20 @@ services:
     ports:
       - "8080:8080"
     environment:
+      - PORT=8080
       - DATABASE_URL=postgres://postgres:password@db:5432/kopiika?sslmode=disable
       - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
       - COGNITO_REGION=${COGNITO_REGION}
       - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health/live"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     networks:
       - kopiika-network
 
@@ -23,6 +31,11 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d kopiika"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     networks:
       - kopiika-network
 
