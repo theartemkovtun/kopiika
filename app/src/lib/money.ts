@@ -42,20 +42,36 @@ export function toNumber(value: string | number | null | undefined): number {
 }
 
 /**
- * What someone typed in an amount field, as the decimal string the API takes —
- * or null when it is not an amount above zero.
+ * What someone typed in a figure field, as the decimal string the API takes —
+ * or null when it is not a figure at all.
  *
  * The value is normalised as *text*: a comma becomes a point, grouping spaces
- * are dropped, and the digits themselves are handed on untouched. The parse to
- * a number is only ever used to answer "is this above zero", so an amount still
+ * are dropped, and the digits themselves are handed on untouched, so an amount
  * never reaches the wire by way of a float.
+ *
+ * Zero passes, and so does a negative sign's absence: nothing here is signed,
+ * because every field that uses it carries its sign in a type or a role.
  */
-export function parseAmountInput(input: string): string | null {
+export function parseDecimalInput(input: string): string | null {
     // \s covers the non-breaking and narrow spaces `toLocaleString` groups
     // with, so a figure copied back out of the UI parses.
     const normalized = input.replace(/\s/g, "").replace(",", ".");
 
     if (!/^(\d+(\.\d*)?|\.\d+)$/.test(normalized)) return null;
+
+    return normalized;
+}
+
+/**
+ * The same, for a field that also has to be above zero — an entry's amount,
+ * where a zero is not an entry. An opening balance is the other case: nothing
+ * in an account is a real answer, so it uses `parseDecimalInput` directly.
+ *
+ * The parse to a number is only ever used to answer "is this above zero".
+ */
+export function parseAmountInput(input: string): string | null {
+    const normalized = parseDecimalInput(input);
+    if (normalized === null) return null;
     if (!(Number(normalized) > 0)) return null;
 
     return normalized;
