@@ -164,3 +164,39 @@ export function useDeleteTransaction() {
         onSuccess: () => invalidateLedger(queryClient),
     });
 }
+
+/**
+ * Days per page for an account's own entries.
+ *
+ * The API pages by *day*, not by row, so this is the window the detail screen
+ * reads to fill a ten-entry list: fifteen days of activity yields at least ten
+ * entries on any account that is used at all, and on a very quiet one it
+ * yields everything there is.
+ */
+const ACCOUNT_RECENT_DAYS = 15;
+
+/**
+ * One account's recent entries, newest first, flattened out of the day pages.
+ *
+ * `activeDays` is the response's own `total`, which counts days rather than
+ * rows — that is what the endpoint pages by. It is the honest all-time figure
+ * available for a single read: an exact entry count would mean walking the
+ * account's whole history, so the detail screen reports days with activity and
+ * says so.
+ */
+export function useAccountTransactions(accountId: string) {
+    const query: ListTransactionsQuery = {
+        page: 1,
+        take: ACCOUNT_RECENT_DAYS,
+        accountIds: [accountId],
+    };
+
+    return useQuery({
+        queryKey: queryKeys.transactions.list(query),
+        queryFn: () => transactions.list(query),
+        select: (page) => ({
+            entries: page.items.flatMap((day) => day.transactions),
+            activeDays: page.total,
+        }),
+    });
+}
