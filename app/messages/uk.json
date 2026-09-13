@@ -56,8 +56,8 @@
         "dailyFlow": "Рух за днями",
         "monthlyFlow": "Рух за місяцями",
         "totalBalance": "Загальний баланс",
-        "vsPoint": "проти цієї дати у {month}",
-        "vsMonth": "проти {month}"
+        "nothingSpent": "За цей період витрат немає.",
+        "noEntries": "Записів поки немає."
     },
     "ledger": {
         "type": "Тип",

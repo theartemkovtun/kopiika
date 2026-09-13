@@ -187,3 +187,17 @@
         display: none;
     }
 }
+
+/* A screen can ask for the page's own scrollbar to go — the Overview does,
+   because the rail down the right edge is the one rule in the design nobody
+   drew. The page still scrolls; only the chrome is gone.
+
+   It is keyed off a marker in the page rather than a class written onto <html>
+   from an effect, so the scrollbar is absent in the first painted frame rather
+   than removed a frame after hydration. Both elements are listed because the
+   viewport's scrollbar is taken from <html> in some engines and from <body> in
+   others. */
+html:has([data-page-scrollbar="hidden"]),
+html:has([data-page-scrollbar="hidden"]) body {
+    @apply no-scrollbar;
+}

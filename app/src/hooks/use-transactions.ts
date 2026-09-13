@@ -56,6 +56,20 @@ export function useMonthEntryDays(year: number, month: number) {
     });
 }
 
+/**
+ * The newest entries overall, whatever the period strip says.
+ *
+ * The Overview's list is deliberately not bounded by the selected month: it
+ * answers "what have I written lately", which a month-bounded read cannot on
+ * the 1st. That is also why it is this endpoint and not a one-page `list`.
+ */
+export function useLatestTransactions(limit = 10) {
+    return useQuery({
+        queryKey: queryKeys.transactions.latest(limit),
+        queryFn: () => transactions.latest(limit),
+    });
+}
+
 /** One day's entries. The API answers null for a day with nothing on it. */
 export function useDayTransactions(date: string) {
     return useQuery({

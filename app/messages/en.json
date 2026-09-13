@@ -56,8 +56,8 @@
         "dailyFlow": "Daily flow",
         "monthlyFlow": "Monthly flow",
         "totalBalance": "Total Balance",
-        "vsPoint": "vs this point in {month}",
-        "vsMonth": "vs {month}"
+        "nothingSpent": "Nothing spent in this period.",
+        "noEntries": "No entries yet."
     },
     "ledger": {
         "type": "Type",

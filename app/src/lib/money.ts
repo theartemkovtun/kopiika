@@ -69,8 +69,15 @@ export type FormatOptions = {
     signed?: boolean;
 };
 
-/** U+2212, not a hyphen: it aligns with the digits in a tabular column. */
-const MINUS = "−";
+/**
+ * U+2212, not a hyphen: it aligns with the digits in a tabular column.
+ *
+ * Exported because a figure whose sign is fixed by its *role* rather than by
+ * its value — spending, which is a magnitude on the wire and always shown
+ * negative — has to spell the sign itself. `signed` would read `+₴0` on a
+ * month with nothing spent.
+ */
+export const MINUS = "−";
 const NBSP = " ";
 
 /**

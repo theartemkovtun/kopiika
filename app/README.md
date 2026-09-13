@@ -208,15 +208,79 @@ One addition the design does not have: deleting asks first. A delete is the one
 action here with nothing behind it, and `detail.confirm` was already in the
 dictionary waiting for it.
 
+### The overview
+
+Three bands, each narrower than the one above it: the totals, what they were
+made of, then the entries and balances behind them.
+
+Everything period-bound comes out of **one** read.
+`GET /v1/transactions/statistics` answers the three totals, a day-by-day series
+and the per-category spending together, and the three panels that draw them all
+ask for the same range — so react-query answers the second and third from the
+cache. `full` is left off: it buys the counts, averages, extremes and account
+breakdowns that Reports wants, and the response keeps its shape without them.
+
+The year view does not ask twelve times. `rangeStatistics` carries every day of
+the range, empty ones included, so the monthly bars are that series folded into
+twelve buckets. All twelve are always drawn, even mid-year, so that walking back
+through the years never changes the width of a bar.
+
+The comparison note under each total — "−₴4,000 vs this point in August" — is
+the one thing the API cannot answer in a single call, so a second range is read.
+`usePeriod().comparison` is what shapes it: the month before the selected one,
+**cut to the same day-of-month** while the selected month is still running,
+because measuring a month that is three days old against a whole one would read
+as a collapse. Year view has no note at all, and the height it would take is
+held anyway so the band does not change shape.
+
+Three places where the design and the API do not line up, and how it was
+settled:
+
+1. **A category is drawn in its own colour; an account is not.** The design
+   assigns `--ch1`..`--ch6` by position for both, but a category has a real
+   colour stored against it — `#00A36C` for food, and whatever was picked for
+   one someone created — so the pie and its legend use that, and a category
+   reads the same colour here as anywhere else it is marked. `categoryColor` in
+   `@/lib/charts` validates the value before using it, because the column is a
+   free `varchar(64)` with no format check behind it, and falls back to the
+   positional series. Accounts stay positional: the API keeps a `colorHex` for
+   them too, but nothing in the design offers a way to choose it — the
+   new-account form has no colour field. Their colours are assigned _before_
+   the rows are sorted, so the segment in the share bar and the dot beside the
+   name agree.
+
+   The one cost of a stored colour is that it is a single colour: it cannot
+   lighten for the dark theme the way `--ch*` does, so the seeded `#252525`
+   ("other") reads faintly on the dark ground and `#E9DCC9` ("charity") on the
+   light.
+
+2. **An account has no type.** The design's rows read "Monobank · debit"; the
+   API has only `description`, so that is what the subtitle shows, and nothing
+   when it is empty.
+3. **A share is a share of categorised spending.** The API leaves uncategorised
+   spending out of the category breakdown rather than pooling it, so the slices
+   need not add up to Spent above them.
+
+Two smaller notes. Spending is a magnitude on the wire and always shown
+negative, so it spells its own sign — `signed` would read `+₴0` on a month with
+nothing spent, which is why `MINUS` is exported from `@/lib/money`. And the
+recent-entries list is deliberately _not_ bounded by the period strip: it
+answers "what have I written lately", which a month-bounded read cannot answer
+on the 1st.
+
+One departure from the repo's own type rule, taken from the design file: the
+INCOME / SPENT / KEPT labels are the only all-caps micro-labels in the design
+set in the sans rather than the mono. Every other one — the ledger rail, the
+entry form, TOTAL BALANCE in the same panel — names JetBrains Mono explicitly.
+
 ## State of play
 
 Built: the shell, sidebar, routing, contexts, API client, theme, the Settings
-screen, the new-entry screen, the ledger, and signing in.
+screen, the new-entry screen, the ledger, the Overview, and signing in.
 
-Stubbed, each screen showing what belongs in it: the Overview panels, Accounts
-and Reports. So are the email/password
-screens — sign-up, confirmation and password reset — and nothing links to them,
-because Google is the only way in.
+Stubbed, each screen showing what belongs in it: Accounts and Reports. So are
+the email/password screens — sign-up, confirmation and password reset — and
+nothing links to them, because Google is the only way in.
 
 ## Known gap
 

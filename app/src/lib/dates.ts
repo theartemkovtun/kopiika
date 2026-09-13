@@ -91,3 +91,28 @@ export function calendarCells(year: number, month: number): (number | null)[] {
  * reads them Monday first.
  */
 export const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
+
+/**
+ * The month before the given one, as a day range.
+ *
+ * `throughDay` truncates it. Measuring a month that is still running against
+ * the whole of the one before it would read as a collapse on the 3rd and a
+ * recovery on the 30th, so the comparison is against the same span — and a
+ * previous month too short for the day asked for is clamped to its own last.
+ */
+export function previousMonthRange(
+    year: number,
+    month: number,
+    throughDay?: number,
+) {
+    const previous = fromMonthOrdinal(monthOrdinal(year, month) - 1);
+    const last = daysInMonth(previous.year, previous.month);
+    const through =
+        throughDay === undefined ? last : Math.min(throughDay, last);
+
+    return {
+        ...previous,
+        fromDate: toIsoDate(previous.year, previous.month, 1),
+        toDate: toIsoDate(previous.year, previous.month, through),
+    };
+}
