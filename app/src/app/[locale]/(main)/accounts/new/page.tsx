@@ -2,11 +2,20 @@
 
 import { useTranslations } from "next-intl";
 
+import { NewAccountForm } from "@/components/accounts/new-account-form";
+import { AccountGate } from "@/components/layout/account-gate";
 import { PageHeader } from "@/components/layout/page-header";
-import { Placeholder } from "@/components/layout/placeholder";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 
+/**
+ * The new-account screen. Unlike Accounts it does carry a title, because there
+ * is no figure at the top of it to be one.
+ *
+ * Only the form is gated: it opens its currency row on the display currency,
+ * which is the one thing here that comes off the user record. The title, the
+ * way back and the note underneath are on the screen from the first paint.
+ */
 export default function NewAccountPage() {
     const t = useTranslations("newAccount");
 
@@ -24,10 +33,9 @@ export default function NewAccountPage() {
                     </Link>
                 </Button>
 
-                <Placeholder label={t("title")} className="mt-[18px]">
-                    Name, type, currency and opening balance as ruled rows, then
-                    Create account.
-                </Placeholder>
+                <AccountGate>
+                    <NewAccountForm />
+                </AccountGate>
 
                 <p className="mt-[22px] text-[13px] text-pretty text-mute">
                     {t("note")}

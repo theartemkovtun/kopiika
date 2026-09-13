@@ -109,6 +109,7 @@
         "submit": "Create account",
         "cancel": "Cancel",
         "errName": "Give the account a name.",
+        "errOpening": "Opening balance must be zero or more.",
         "note": "The account appears in your balance list and in the account picker on new entries."
     },
     "accountTypes": {
