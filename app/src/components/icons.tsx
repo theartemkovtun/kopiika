@@ -64,6 +64,16 @@ export function GearIcon(props: IconProps) {
     );
 }
 
+export function LogoutIcon(props: IconProps) {
+    return (
+        <LineIcon {...props}>
+            <path d="M14 8v-2a2 2 0 0 0 -2 -2h-7a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h7a2 2 0 0 0 2 -2v-2" />
+            <path d="M7 12h14l-3 -3" />
+            <path d="M18 15l3 -3" />
+        </LineIcon>
+    );
+}
+
 export function EditIcon(props: IconProps) {
     return (
         <LineIcon size={15} strokeWidth={1.2} viewBox="0 0 16 16" {...props}>

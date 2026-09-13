@@ -1,25 +1,35 @@
 "use client";
 
+import { signOut } from "aws-amplify/auth";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
 
-import { GearIcon } from "@/components/icons";
+import { GearIcon, LogoutIcon } from "@/components/icons";
 import { SidebarNav } from "./sidebar-nav";
 import { ThemeToggle } from "./theme-toggle";
 import { Wordmark } from "./wordmark";
 import { Button } from "@/components/ui/button";
-import { Link, usePathname } from "@/i18n/navigation";
+import { Link, useRouter, usePathname } from "@/i18n/navigation";
 
 /**
  * The desktop rail: a fixed 208px column that does not scroll with the page.
  *
  * Settings is deliberately not in the numbered nav — it is chrome, so it sits
- * with the theme toggle in the footer, below `mt-auto`.
+ * with the theme toggle and logout in the footer, below `mt-auto`. The three
+ * are spread with `justify-between` rather than a fixed gap so logout lands
+ * at the far right regardless of the rail's width.
  */
 export function AppSidebar({ className }: { className?: string }) {
     const t = useTranslations("nav");
+    const tSettings = useTranslations("settings");
+    const router = useRouter();
     const pathname = usePathname();
     const onSettings = pathname === "/settings";
+
+    async function logout() {
+        await signOut();
+        router.replace("/login");
+    }
 
     return (
         <aside
@@ -32,7 +42,7 @@ export function AppSidebar({ className }: { className?: string }) {
 
             <SidebarNav className="mt-11" />
 
-            <div className="mt-auto flex items-center gap-[14px] border-t border-rule pt-[14px]">
+            <div className="mt-auto flex items-center justify-between border-t border-rule pt-[14px]">
                 <ThemeToggle />
                 <Button
                     asChild
@@ -47,6 +57,15 @@ export function AppSidebar({ className }: { className?: string }) {
                     >
                         <GearIcon />
                     </Link>
+                </Button>
+                <Button
+                    type="button"
+                    variant="icon"
+                    title={tSettings("logout")}
+                    aria-label={tSettings("logout")}
+                    onClick={logout}
+                >
+                    <LogoutIcon />
                 </Button>
             </div>
         </aside>
