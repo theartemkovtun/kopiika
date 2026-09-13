@@ -69,15 +69,22 @@ function buildQuery(params: QueryParams | undefined): string {
 }
 
 async function authHeader(): Promise<Record<string, string>> {
-    try {
-        const session = await fetchAuthSession();
-        const token = session.tokens?.idToken?.toString();
-        return token ? { Authorization: `Bearer ${token}` } : {};
-    } catch {
-        // No session yet. Let the request go out unauthenticated and surface
-        // the API's own 401, so there is one path for "not signed in".
-        return {};
-    }
+    // Not signed in resolves `tokens` to undefined rather than rejecting, so
+    // that case never reaches a catch here — it falls straight through to the
+    // empty header below, and the API's own 401 is the one path for it.
+    //
+    // A rejection means Amplify had a stored session but its token had
+    // expired and the refresh call itself failed (a network or Cognito
+    // hiccup) — the request is signed in, just momentarily unable to prove
+    // it. Swallowing that into an unauthenticated request used to surface as
+    // the same 401 as "not signed in", which `UserProvider` reads as first
+    // sign-in and answers by trying to create the account — so a passing
+    // network blip could leave the real user permanently stuck behind
+    // `AccountGate`. Left to throw, it is not an `ApiError`, so the query
+    // client's retry policy gives the refresh another attempt or two instead.
+    const session = await fetchAuthSession();
+    const token = session.tokens?.idToken?.toString();
+    return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 type RequestOptions = {
