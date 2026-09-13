@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePreferences } from "@/contexts/preferences-context";
 import { useAccountsBalance } from "@/hooks/use-accounts";
 import { Link } from "@/i18n/navigation";
-import { seriesColor } from "@/lib/charts";
+import { storedColor } from "@/lib/charts";
 import { toNumber } from "@/lib/money";
 
 /** How many accounts the Overview names before deferring to the Accounts screen. */
@@ -16,10 +16,12 @@ const NAMED = 5;
  * What the money is sitting in: the combined total, what it is made of, and the
  * five largest accounts.
  *
- * The colour an account is drawn in comes from its position in the API's
- * response, not from its own `colorHex`, and it is assigned *before* the rows
- * are sorted — so the segment in the bar and the dot beside the name are the
- * same colour, and adding an account never recolours the others.
+ * The colour an account is drawn in is its own `colorHex`, so the segment in
+ * the bar and the dot beside the name match, the Accounts screen draws it the
+ * same, and adding an account never recolours the others. An account whose
+ * stored value is not a hex colour falls back to the positional series, which
+ * is why the index is still passed in — and why it is taken *before* the rows
+ * are sorted, so such an account keeps one colour between the bar and the row.
  *
  * The bar is what the total is made up of, so only accounts in credit take a
  * segment; one in the red subtracts from the total rather than adding a band
@@ -36,7 +38,7 @@ export function AccountsSummary() {
 
     const accounts = (data?.accounts ?? []).map((account, index) => ({
         ...account,
-        color: seriesColor(index),
+        color: storedColor(account.colorHex, index),
         worth: toNumber(account.localizedAmount.value),
     }));
 

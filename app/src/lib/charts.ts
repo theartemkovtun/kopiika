@@ -2,12 +2,11 @@
  * The chart vocabulary, so that two charts on one screen agree.
  *
  * `--ch1`..`--ch6` are the design's own series, held at one lightness and one
- * chroma and assigned *by position*, largest share first. They are what an
- * account is drawn in, and what anything without a colour of its own falls
- * back to.
+ * chroma and assigned *by position*, largest share first. They are the
+ * fallback for anything that has no colour of its own.
  *
- * A category is drawn in the colour stored against it instead — see
- * `categoryColor`.
+ * Accounts and categories both carry a stored colour and are drawn in it — see
+ * `storedColor`.
  */
 
 const SERIES = [
@@ -27,22 +26,25 @@ export function seriesColor(index: number): string {
 const HEX = /^#?(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
 
 /**
- * A category's own colour.
+ * The colour a record carries itself — an account's `colorHex`, a category's
+ * `hexColor`.
  *
- * The API keeps one per category — `#00A36C` for food, `#000080` for
- * transportation — and a category someone creates carries whatever they picked,
- * so this is the colour the rest of their data is already labelled with.
+ * This is the colour the rest of someone's data is already labelled with: the
+ * hue they picked for an account, or the API's own `#00A36C` for food and
+ * `#000080` for transportation. Drawing it means a record keeps its identity
+ * across screens and across clients, rather than being recoloured by where it
+ * happens to land in a sorted response.
  *
- * The column is a free `varchar(64)` with no format check behind it, so the
- * value is validated rather than trusted: anything that is not a hex colour
- * (an empty string, a name, junk) falls back to the positional series, which
- * keeps a bad row from drawing an invisible slice.
+ * Neither column has a format check behind it, so the value is validated
+ * rather than trusted: anything that is not a hex colour (an empty string, a
+ * name, junk) falls back to the positional series, which keeps a bad row from
+ * drawing an invisible slice.
  *
  * One consequence worth knowing: a stored colour is one colour. It cannot
- * lighten for the dark theme the way `--ch*` does, so a category saved very
- * dark reads faintly on the dark ground, and a very pale one on the light.
+ * lighten for the dark theme the way `--ch*` does, so a record saved very dark
+ * reads faintly on the dark ground, and a very pale one on the light.
  */
-export function categoryColor(
+export function storedColor(
     hexColor: string | null | undefined,
     index: number,
 ): string {

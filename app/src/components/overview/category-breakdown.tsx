@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePeriod } from "@/contexts/period-context";
 import { usePreferences } from "@/contexts/preferences-context";
 import { useStatistics } from "@/hooks/use-statistics";
-import { TOOLTIP, categoryColor } from "@/lib/charts";
+import { TOOLTIP, storedColor } from "@/lib/charts";
 import { categoryLabel } from "@/lib/categories";
 import { toNumber } from "@/lib/money";
 
@@ -44,7 +44,7 @@ export function CategoryBreakdown() {
         .map((entry, index) => ({
             name: categoryLabel(entry, tCategories),
             value: toNumber(entry.localizedAmount.value),
-            color: categoryColor(entry.hexColor, index),
+            color: storedColor(entry.hexColor, index),
         }))
         .filter((slice) => slice.value > 0);
 
