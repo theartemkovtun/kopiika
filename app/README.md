@@ -69,6 +69,7 @@ src/
     (main)/       signed-in shell — overview, transactions, accounts,
                   reports, new entry, settings
   components/
+    accounts/     the accounts screen: balances, the new-account form
     entry/        the new-entry screen: calendar, day list, form
     layout/       sidebar, page header, period strip, mobile drawer
     ledger/       the transactions screen: rows, filter rail, detail dialog
@@ -76,7 +77,7 @@ src/
   contexts/       user, preferences, period
   hooks/          react-query hooks over src/api, one file per resource
   i18n/           next-intl routing, navigation helpers, request config
-  lib/            categories, dates, fonts, locales, money, nav
+  lib/            accounts, categories, dates, fonts, locales, money, nav
   middlewares/    locale → auth, composed in src/middleware.ts
   providers/      query, theme, amplify
 messages/         en.json, uk.json
@@ -273,14 +274,77 @@ INCOME / SPENT / KEPT labels are the only all-caps micro-labels in the design
 set in the sans rather than the mono. Every other one — the ledger rail, the
 entry form, TOTAL BALANCE in the same panel — names JetBrains Mono explicitly.
 
+### The accounts screen
+
+`/accounts` is one read wide. `GET /v1/accounts/balance` answers every account
+and their combined worth together, so the total, the share bar and the rows all
+come out of the same response — and the total is the only figure converted,
+because it is the only one that has to add up. Each row carries its balance in
+the account's own currency, with the display-currency figure repeated in the
+middle column only when the two differ; the API hands back both, so nothing is
+converted in the client.
+
+An account is drawn in the `colorHex` stored against it, and the Overview reads
+the same field — so an account keeps one colour across both screens, and
+however the response happens to be ordered. A stored value that is not a hex
+colour falls back to the positional `--ch*` series; see `storedColor`. The bar
+is what the total is made of, which is why only accounts in credit take a band:
+one in the red subtracts from the total rather than adding to it.
+
+Opening an account is where the design and the API part company twice, and
+`src/lib/accounts.ts` is where both are settled:
+
+1. **An account has no type.** The design's form offers four — debit, wallet,
+   deposit, credit — and its rows read "Main card · Debit". The API has only a
+   free `description`, so the chosen type is written there as the lower-case
+   **slug**, and the subtitle translates the four known ones and shows anything
+   else as written. It is the same arrangement as the seeded category names,
+   for the same reason: storing the label would freeze the account into the
+   language it happened to be created in.
+2. **An account has no colour picker.** `colorHex` is required on create and
+   the design offers nowhere to choose one, so the field is filled from the
+   design's own series — `--ch1`..`--ch6` as the nearest sRGB — cycled by how
+   many accounts are already held, so the first six differ. It is a suggestion
+   at the moment of creation only — the colour is stored on the account, and is
+   then what every screen draws it in.
+
+Two smaller notes. The opening balance may be left empty, and empty is sent as
+_no value_ rather than as a zero — which is why it is read with
+`parseDecimalInput` rather than `parseAmountInput`: zero is a real answer for an
+account and not for an entry. And creating an account drops the accounts tree
+and `transactions/configuration` — the latter is the entry form's account
+picker, held for five minutes, so without dropping it a new account could not
+be posted to until it expired. The rest of the transactions tree is left alone:
+an account opens with a balance, not with an entry.
+
+`/accounts/[accountId]` is that same read once more: `useAccount` picks the one
+account out of the balance response rather than calling `accounts/{id}`, since
+its share of the total is a figure about the whole set anyway — and arriving
+from the list then paints without re-reading. The account's own currency leads
+there, where the list leads with the converted figure: on a screen about one
+account, that account's currency is the subject. Its recent entries come from
+the ledger endpoint narrowed to the account, which pages by **day** rather than
+by row — fifteen days is the window read to fill a ten-row list, and the
+all-time figure beside it counts active days for the same reason. "All entries"
+hands the account on to the ledger as `?account=`, which _seeds_ the filter rail
+rather than driving it, so narrowing further or clearing it works normally.
+
+Deleting is on that screen, and is the only write on it: `DELETE
+/v1/accounts/{id}`, a soft delete, with entries recorded on the account staying
+in the ledger — the confirmation says so, which is why the delete drops the
+transactions tree as well as the accounts one. Renaming is not there at all:
+the API has no update endpoint, so the design's Edit action is left unbuilt
+rather than built against something that would fail.
+
 ## State of play
 
 Built: the shell, sidebar, routing, contexts, API client, theme, the Settings
-screen, the new-entry screen, the ledger, the Overview, and signing in.
+screen, the new-entry screen, the ledger, the Overview, Accounts, and signing
+in.
 
-Stubbed, each screen showing what belongs in it: Accounts and Reports. So are
-the email/password screens — sign-up, confirmation and password reset — and
-nothing links to them, because Google is the only way in.
+Stubbed, showing what belongs in it: Reports. So are the email/password
+screens — sign-up, confirmation and password reset — and nothing links to them,
+because Google is the only way in.
 
 ## Known gap
 

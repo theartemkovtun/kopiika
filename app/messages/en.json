@@ -96,7 +96,16 @@
     "accounts": {
         "totalBalance": "Total Balance",
         "addAccount": "New account",
-        "empty": "No accounts yet."
+        "empty": "No accounts yet.",
+        "shareOfTotal": "Share of total",
+        "activeDays": "Active days",
+        "recentEntries": "Recent entries",
+        "latest10": "Latest 10",
+        "noEntriesOnAccount": "No entries on this account yet.",
+        "backAccounts": "← Accounts",
+        "deleteAsk": "Delete this account? Entries recorded on it stay in the ledger.",
+        "deleteFailed": "The account could not be deleted.",
+        "notFound": "That account no longer exists."
     },
     "newAccount": {
         "title": "New account",

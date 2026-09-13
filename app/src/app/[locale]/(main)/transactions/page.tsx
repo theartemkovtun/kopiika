@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import type { Transaction } from "@/api/types";
 import { AccountGate } from "@/components/layout/account-gate";
@@ -20,9 +21,35 @@ import type { LedgerFilters } from "@/hooks/use-transactions";
  * The filters live here rather than in the rail because the list is what they
  * describe; the open entry lives here for the same reason, so that saving an
  * edit can put the fresh record straight back into the dialog.
+ *
+ * `useSearchParams` forces whatever reads it to render on the client, so the
+ * Suspense boundary is what keeps that confined to the ledger rather than
+ * opting the whole route out of static rendering. It comes from
+ * `next/navigation` on purpose: the rule against that import covers `Link`,
+ * `useRouter` and `usePathname`, which exist in `@/i18n/navigation` because
+ * they carry the locale segment. A query string does not, and next-intl's
+ * `createNavigation` does not wrap this one.
  */
 export default function TransactionsPage() {
-    const [filters, setFilters] = useState<LedgerFilters>({});
+    return (
+        <Suspense>
+            <TransactionsScreen />
+        </Suspense>
+    );
+}
+
+function TransactionsScreen() {
+    // `?account=` is how an account's "All entries" arrives, and it *seeds* the
+    // rail rather than driving it: the filters are the rail's from the first
+    // render on, so narrowing further or clearing the account works normally
+    // and does not fight a URL that no longer describes the list. Reading it
+    // through the state initialiser is what makes it a seed — later renders do
+    // not re-apply it.
+    const account = useSearchParams().get("account");
+
+    const [filters, setFilters] = useState<LedgerFilters>(() =>
+        account ? { accountIds: [account] } : {},
+    );
     const [selected, setSelected] = useState<Transaction | null>(null);
 
     return (
