@@ -72,7 +72,7 @@ src/
     entry/        the new-entry screen: calendar, day list, form
     layout/       sidebar, page header, period strip, mobile drawer
     ledger/       the transactions screen: rows, filter rail, detail dialog
-    ui/           shadcn primitives, restyled
+    ui/           shadcn primitives, restyled, plus the ruled form row
   contexts/       user, preferences, period
   hooks/          react-query hooks over src/api, one file per resource
   i18n/           next-intl routing, navigation helpers, request config

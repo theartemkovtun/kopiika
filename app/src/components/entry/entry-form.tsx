@@ -7,6 +7,7 @@ import { cn } from "cn";
 import { ApiError } from "@/api/client";
 import type { Transaction, TransactionType } from "@/api/types";
 import { Button } from "@/components/ui/button";
+import { FormRow } from "@/components/ui/form-row";
 import { Input } from "@/components/ui/input";
 import {
     Select,
@@ -320,53 +321,5 @@ export function EntryForm({
                 </span>
             </div>
         </form>
-    );
-}
-
-/**
- * One ruled row: a fixed-width mono label on the left, the control filling the
- * rest, a hairline underneath. `asLabel` makes the whole row a `<label>`, which
- * is right for a plain input and wrong for a Radix trigger — a trigger is a
- * button, and wrapping it would swallow the click.
- */
-function FormRow({
-    label,
-    required = false,
-    asLabel = false,
-    className,
-    labelClassName,
-    children,
-}: {
-    label: string;
-    required?: boolean;
-    asLabel?: boolean;
-    className?: string;
-    labelClassName?: string;
-    children: React.ReactNode;
-}) {
-    const Row = asLabel ? "label" : "div";
-
-    return (
-        <Row
-            className={cn(
-                "flex items-baseline border-b border-b-rule2 py-[14px]",
-                className,
-            )}
-        >
-            <span
-                className={cn(
-                    "box-content shrink-0 basis-[92px] pr-6 font-mono text-[11px] tracking-[0.1em] text-mute uppercase",
-                    labelClassName,
-                )}
-            >
-                {label}
-                {required ? (
-                    <span aria-hidden className="text-red">
-                        *
-                    </span>
-                ) : null}
-            </span>
-            <div className="flex min-w-0 flex-1">{children}</div>
-        </Row>
     );
 }
