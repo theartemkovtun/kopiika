@@ -1,0 +1,24 @@
+services:
+  kopiika-app:
+    container_name: kopiika-app
+    build:
+      context: .
+    image: kopiika-app:0.1.0
+    ports:
+      - "3000:3000"
+    # Same file `bun dev` reads, so a container run and a local run are
+    # configured the same way. Values are applied at start, not at build.
+    env_file: .env.local
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

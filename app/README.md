@@ -25,6 +25,36 @@ bun run typecheck   # tsc --noEmit
 bun run lint
 ```
 
+## In a container
+
+```bash
+docker compose up --build       # http://localhost:3000, reads .env.local
+```
+
+Or without compose:
+
+```bash
+docker build -t kopiika-app .
+docker run -p 3000:3000 --env-file .env.local kopiika-app
+```
+
+Three stages: bun installs from `bun.lock`, node runs `next build`, and the
+runtime stage keeps only what `output: "standalone"` produced — the server, its
+pruned `node_modules`, `.next/static`, `public/` — on `node:24-alpine` as the
+unprivileged `node` user. About 225 MB.
+
+Every value the app reads is `NEXT_PUBLIC_`, and Next inlines those into the
+bundle at build time. So the build is handed `__NEXT_PUBLIC_API_URL__`-style
+sentinels and `docker-entrypoint.sh` rewrites them from the environment at
+startup: one image runs in any environment, and pointing it at another API is a
+restart rather than a rebuild. On a platform like Render that means the Docker
+runtime with the variables set in the dashboard, nothing passed at build. A
+variable left unset is named on stderr when the container starts, instead of
+reaching the browser as a literal `__NAME__`.
+
+A new `NEXT_PUBLIC_` variable needs its sentinel added to the `ENV` block in the
+Dockerfile; the entrypoint finds it by name from there.
+
 ## The design
 
 Everything visual comes from the Claude Design canvas:
