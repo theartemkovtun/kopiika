@@ -6,6 +6,7 @@ import { useState } from "react";
 import { DayEntries } from "@/components/entry/day-entries";
 import { EntryCalendar } from "@/components/entry/entry-calendar";
 import { EntryForm } from "@/components/entry/entry-form";
+import { AccountGate } from "@/components/layout/account-gate";
 import { PageHeader } from "@/components/layout/page-header";
 import { todayIso } from "@/lib/dates";
 
@@ -28,25 +29,27 @@ export default function AddEntryPage() {
         <>
             <PageHeader title={t("add")} />
 
-            <div className="mt-9 grid items-start gap-x-7 gap-y-12 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,3fr)]">
-                <aside className="order-1 flex flex-col gap-[30px]">
-                    <EntryCalendar
-                        selected={date}
-                        onSelect={(next) => {
-                            setDate(next);
-                            setLastCreatedId(null);
-                        }}
-                    />
-                    <DayEntries date={date} highlightId={lastCreatedId} />
-                </aside>
+            <AccountGate>
+                <div className="mt-9 grid items-start gap-x-7 gap-y-12 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,3fr)]">
+                    <aside className="order-1 flex flex-col gap-[30px]">
+                        <EntryCalendar
+                            selected={date}
+                            onSelect={(next) => {
+                                setDate(next);
+                                setLastCreatedId(null);
+                            }}
+                        />
+                        <DayEntries date={date} highlightId={lastCreatedId} />
+                    </aside>
 
-                <EntryForm
-                    date={date}
-                    onDateChange={setDate}
-                    onCreated={(created) => setLastCreatedId(created.id)}
-                    className="order-2 border-rule lg:border-l lg:pl-7"
-                />
-            </div>
+                    <EntryForm
+                        date={date}
+                        onDateChange={setDate}
+                        onCreated={(created) => setLastCreatedId(created.id)}
+                        className="order-2 border-rule lg:border-l lg:pl-7"
+                    />
+                </div>
+            </AccountGate>
         </>
     );
 }

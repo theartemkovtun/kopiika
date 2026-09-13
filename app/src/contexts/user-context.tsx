@@ -8,10 +8,16 @@ import { queryKeys, users } from "@/api/endpoints";
 import type { UpdateUserPayload, User } from "@/api/types";
 
 type UserContextValue = {
-    user: User;
+    /** Undefined until the read lands. Past `AccountGate` it never is. */
+    user: User | undefined;
     /** Writes language / display currency, then refreshes the cached user. */
     updateUser: (payload: UpdateUserPayload) => Promise<User>;
     isUpdating: boolean;
+};
+
+/** The same value, once the gate has established there is a record. */
+type ResolvedUserContextValue = Omit<UserContextValue, "user"> & {
+    user: User;
 };
 
 const UserContext = createContext<UserContextValue | null>(null);
@@ -34,13 +40,7 @@ function detectCountryCode(): string | undefined {
     }
 }
 
-export function UserProvider({
-    children,
-    fallback = null,
-}: {
-    children: React.ReactNode;
-    fallback?: React.ReactNode;
-}) {
+export function UserProvider({ children }: { children: React.ReactNode }) {
     const queryClient = useQueryClient();
     const hasAttemptedSetup = useRef(false);
 
@@ -53,8 +53,16 @@ export function UserProvider({
 
     const { mutateAsync: setupUser } = useMutation({
         mutationFn: () => users.setup({ countryCode: detectCountryCode() }),
-        onSuccess: (created) =>
-            queryClient.setQueryData(queryKeys.user, created),
+        onSuccess: (created) => {
+            queryClient.setQueryData(queryKeys.user, created);
+
+            // On a first sign-in the screen's own reads go out beside this one
+            // and are answered 401 for the same reason: there was no row yet.
+            // There is now, so the ones that failed are asked again.
+            void queryClient.invalidateQueries({
+                predicate: (query) => query.state.status === "error",
+            });
+        },
     });
 
     const { mutateAsync: updateUser, isPending: isUpdating } = useMutation({
@@ -77,11 +85,11 @@ export function UserProvider({
         });
     }, [error, setupUser]);
 
-    // Nothing below this provider can render without a user, and the routes it
-    // wraps are already behind the auth middleware, so the only states here are
-    // "still loading" and "about to be redirected". Both show the fallback.
-    if (!user) return <>{fallback}</>;
-
+    // The provider itself holds nothing back. Most of a screen is *about* the
+    // account — a figure, a currency, a balance — but the parts that are not,
+    // the page title and the month strip above all, are local knowledge and
+    // belong on the first paint. `AccountGate` is what waits, drawn around the
+    // part that has to.
     return (
         <UserContext.Provider value={{ user, updateUser, isUpdating }}>
             {children}
@@ -89,10 +97,30 @@ export function UserProvider({
     );
 }
 
-export function useUser() {
+/**
+ * The record as it stands, which on a cold load is nothing yet. This is the
+ * gate's own hook; everything past the gate reads `useUser`.
+ */
+export function useMaybeUser(): User | undefined {
+    const context = use(UserContext);
+    if (!context) {
+        throw new Error("useMaybeUser must be used within a UserProvider");
+    }
+    return context.user;
+}
+
+export function useUser(): ResolvedUserContextValue {
     const context = use(UserContext);
     if (!context) {
         throw new Error("useUser must be used within a UserProvider");
     }
-    return context;
+
+    const { user, ...rest } = context;
+    if (!user) {
+        throw new Error(
+            "useUser must be used inside an AccountGate: the user record is still in flight",
+        );
+    }
+
+    return { user, ...rest };
 }

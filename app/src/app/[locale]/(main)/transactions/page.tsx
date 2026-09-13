@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import type { Transaction } from "@/api/types";
+import { AccountGate } from "@/components/layout/account-gate";
 import { Ledger } from "@/components/ledger/ledger";
 import { LedgerFilterRail } from "@/components/ledger/ledger-filters";
 import { TransactionDialog } from "@/components/ledger/transaction-dialog";
@@ -25,20 +26,22 @@ export default function TransactionsPage() {
     const [selected, setSelected] = useState<Transaction | null>(null);
 
     return (
-        <div className="mt-1 grid items-start gap-[22px] lg:grid-cols-[minmax(0,1fr)_271px]">
-            <Ledger
-                filters={filters}
-                onSelect={setSelected}
-                selectedId={selected?.id}
-            />
+        <AccountGate>
+            <div className="mt-1 grid items-start gap-[22px] lg:grid-cols-[minmax(0,1fr)_271px]">
+                <Ledger
+                    filters={filters}
+                    onSelect={setSelected}
+                    selectedId={selected?.id}
+                />
 
-            <LedgerFilterRail filters={filters} onChange={setFilters} />
+                <LedgerFilterRail filters={filters} onChange={setFilters} />
 
-            <TransactionDialog
-                transaction={selected}
-                onClose={() => setSelected(null)}
-                onSaved={setSelected}
-            />
-        </div>
+                <TransactionDialog
+                    transaction={selected}
+                    onClose={() => setSelected(null)}
+                    onSaved={setSelected}
+                />
+            </div>
+        </AccountGate>
     );
 }
