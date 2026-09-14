@@ -161,12 +161,12 @@ function Figure({
             </div>
             <div
                 className={cn(
-                    "mt-[10px] text-[clamp(17px,2.05vw,30px)] leading-none whitespace-nowrap",
+                    "mt-[10px] text-[clamp(19px,2.3vw,34px)] leading-none whitespace-nowrap",
                     tone,
                 )}
             >
                 {value === null ? (
-                    <Skeleton className="h-[1em] w-[150px] bg-rule2" />
+                    <Skeleton className="h-[1em] w-[200px] bg-rule2" />
                 ) : (
                     value
                 )}

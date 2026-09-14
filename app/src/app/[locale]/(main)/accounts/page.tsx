@@ -23,7 +23,10 @@ import { Link } from "@/i18n/navigation";
  * only part that scrolls, so the New-account row stays on screen however many
  * accounts there are. Below `md` the cap is lifted and the page scrolls as one
  * — a scroll region nested inside a scrolling page is miserable on a phone.
- * 112px is the main element's own `md` padding, 40 over and 72 under.
+ * `main` carries no padding of its own, so this div's `max-h` is the full
+ * `100dvh` — its own `pt`/`pb` count inside that already, box-sizing being
+ * border-box — and both are cut down from the other pages' so the list gets
+ * more of the screen and the New-account row sits lower.
  *
  * The New-account row sits outside the gate and outside the failure branch. It
  * is a link, not a figure — there is no reason for it to wait on the account
@@ -35,7 +38,7 @@ export default function AccountsPage() {
     const { error, refetch } = useAccountsBalance();
 
     return (
-        <div className="flex min-h-0 flex-col md:max-h-[calc(100dvh-112px)]">
+        <div className="flex min-h-0 flex-col pt-8 pb-2 md:max-h-dvh md:pt-10 md:pb-3">
             <AccountGate fallback={<AccountBalancesFallback />}>
                 {error ? (
                     <QueryError

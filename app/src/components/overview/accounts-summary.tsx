@@ -27,11 +27,10 @@ const NAMED = 5;
  * segment; one in the red subtracts from the total rather than adding a band
  * to it.
  *
- * A row leads with the account's **own** currency, which is the opposite way
- * round from the Accounts screen: there the list has to add up to the total
- * over it, so the converted figure leads and the native one trails. Here the
- * converted figure is the small one, shown only when it says something the
- * figure beside it does not.
+ * A row leads with the **converted** figure, same as the Accounts screen: the
+ * list has to add up to the total over it, so that is the figure that leads,
+ * and the account's own balance trails, small, only when it says something
+ * the figure beside it does not.
  */
 export function AccountsSummary() {
     const t = useTranslations("overview");
@@ -90,11 +89,11 @@ export function AccountsSummary() {
                         row itself, rather than on the skeleton bar, keeps the
                         loading state the same height as the real total
                         without drawing a bar as tall as the leading. */}
-                    <div className="mt-[6px] flex h-[1.5em] items-center text-[28px] tracking-[-0.02em]">
+                    <div className="mt-[6px] flex h-[1.5em] items-center text-[36px] tracking-[-0.02em]">
                         {data ? (
                             format(data.total)
                         ) : (
-                            <Skeleton className="h-[1em] w-[150px] bg-rule2" />
+                            <Skeleton className="h-[1em] w-[250px] bg-rule2" />
                         )}
                     </div>
 
@@ -125,7 +124,7 @@ export function AccountsSummary() {
                     named.map((account) => (
                         <div
                             key={account.id}
-                            className="flex items-baseline justify-between gap-3 border-t border-rule2 py-[9px] text-sm"
+                            className="flex items-baseline justify-between gap-3 border-t border-rule2 py-[11px] text-base"
                         >
                             <span className="flex min-w-0 flex-1 items-baseline gap-[9px]">
                                 <span
@@ -137,19 +136,20 @@ export function AccountsSummary() {
                                     {account.name}
                                 </span>
                             </span>
-                            <span className="flex items-baseline gap-[10px] whitespace-nowrap">
-                                {/* What it is worth in the display currency —
-                                    the figure that added up to the total
-                                    above — and only when that is not already
-                                    what the row says. */}
+                            <span className="flex items-baseline gap-2 whitespace-nowrap">
+                                {/* The converted figure leads, same as the
+                                    Accounts screen — it is the one that adds
+                                    up to the total above. The account's own
+                                    balance trails, small, and only when the
+                                    currencies differ. */}
                                 {account.amount.currency !==
                                 account.localizedAmount.currency ? (
                                     <span className="text-xs text-mute">
-                                        {format(account.localizedAmount)}
+                                        {format(account.amount)} ≈
                                     </span>
                                 ) : null}
-                                <span className="text-sm">
-                                    {format(account.amount)}
+                                <span className="text-[15px]">
+                                    {format(account.localizedAmount)}
                                 </span>
                             </span>
                         </div>
@@ -196,8 +196,8 @@ export function AccountsSummaryFallback() {
                     <div className="text-[11px] tracking-[0.14em] text-mute uppercase">
                         {t("totalBalance")}
                     </div>
-                    <div className="mt-[6px] flex h-[1.5em] items-center text-[28px] tracking-[-0.02em]">
-                        <Skeleton className="h-[1em] w-[150px] bg-rule2" />
+                    <div className="mt-[6px] flex h-[1.5em] items-center text-[36px] tracking-[-0.02em]">
+                        <Skeleton className="h-[1em] w-[250px] bg-rule2" />
                     </div>
                 </div>
 
@@ -224,14 +224,14 @@ function AccountRowsSkeleton() {
             {ACCOUNT_SKELETON_WIDTHS.map(([nameWidth, amountWidth], index) => (
                 <div
                     key={index}
-                    className="flex items-center justify-between gap-3 border-t border-rule2 py-[9px]"
+                    className="flex items-center justify-between gap-3 border-t border-rule2 py-[11px]"
                 >
-                    {/* h-[20px]: the row's real height comes from the name's
-                        text-sm line-height (20px), not from either skeleton
+                    {/* h-[24px]: the row's real height comes from the name's
+                        text-base line-height (24px), not from either skeleton
                         bar — a shorter span here would leave the real row
                         taller than its loading state and the list would grow
                         when the data lands. */}
-                    <span className="flex h-[20px] min-w-0 flex-1 items-center gap-[9px]">
+                    <span className="flex h-[24px] min-w-0 flex-1 items-center gap-[9px]">
                         <Skeleton className="size-[8px] flex-none rounded-full bg-rule2" />
                         <Skeleton
                             className="h-[14px] bg-rule2"

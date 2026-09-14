@@ -34,13 +34,13 @@ export default function SettingsPage() {
     const t = useTranslations("settings");
 
     return (
-        <>
+        <div className="pt-8 pb-16 md:pt-10 md:pb-[72px]">
             <PageHeader title={t("title")} />
 
             <AccountGate>
                 <Settings />
             </AccountGate>
-        </>
+        </div>
     );
 }
 

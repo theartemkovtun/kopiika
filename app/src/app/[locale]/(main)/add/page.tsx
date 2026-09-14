@@ -26,7 +26,7 @@ export default function AddEntryPage() {
     const [lastCreatedId, setLastCreatedId] = useState<string | null>(null);
 
     return (
-        <>
+        <div className="pt-8 pb-16 md:pt-10 md:pb-[72px]">
             <PageHeader title={t("add")} />
 
             <AccountGate>
@@ -50,6 +50,6 @@ export default function AddEntryPage() {
                     />
                 </div>
             </AccountGate>
-        </>
+        </div>
     );
 }

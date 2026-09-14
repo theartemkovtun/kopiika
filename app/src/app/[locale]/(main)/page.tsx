@@ -113,7 +113,7 @@ export default function OverviewPage({
     }, [isCurrentMonth, month, year, yearView]);
 
     return (
-        <>
+        <div className="pt-8 pb-16 md:pt-10 md:pb-[72px]">
             <HidePageScrollbar />
 
             <PageHeader
@@ -162,7 +162,7 @@ export default function OverviewPage({
                     <AccountsSummary />
                 </div>
             </AccountGate>
-        </>
+        </div>
     );
 }
 

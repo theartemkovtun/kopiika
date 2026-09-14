@@ -91,7 +91,7 @@ export function AccountBalances() {
                     <div className="text-[11px] tracking-[0.16em] text-mute uppercase">
                         {t("totalBalance")}
                     </div>
-                    <div className="mt-3 text-[clamp(26px,3.4vw,40px)] leading-none tracking-[-0.03em]">
+                    <div className="mt-4 text-[clamp(32px,4.2vw,52px)] leading-none tracking-[-0.03em]">
                         {format(data.total)}
                     </div>
                 </div>
@@ -162,7 +162,7 @@ export function AccountBalances() {
                     accounts.map((account, index) => (
                         <div
                             key={account.id}
-                            className={`grid min-h-[56px] grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-5 py-[14px] ${
+                            className={`grid min-h-[56px] grid-cols-[minmax(0,1fr)_auto] items-center gap-5 py-[14px] ${
                                 index === 0 ? "" : "border-t border-rule2"
                             }`}
                         >
@@ -183,22 +183,21 @@ export function AccountBalances() {
                                 </span>
                             </div>
 
-                            {/* The account's own balance, and only when its
-                                currency is a different one — otherwise the
-                                figure beside it already says it. */}
-                            {account.amount.currency !==
-                            account.localizedAmount.currency ? (
-                                <div className="text-[11px] leading-none whitespace-nowrap text-mute">
-                                    {format(account.amount)}
+                            {/* Both figures sit in one flex group rather than
+                                separate grid columns, so the account's own
+                                balance — shown only when its currency differs
+                                — sits close to the figure it is converted
+                                into instead of spacing out to a fixed column. */}
+                            <div className="flex items-baseline gap-2">
+                                {account.amount.currency !==
+                                account.localizedAmount.currency ? (
+                                    <div className="text-[17px] leading-none tracking-[-0.03em] whitespace-nowrap text-mute">
+                                        {format(account.amount)} ≈
+                                    </div>
+                                ) : null}
+                                <div className="text-[17px] leading-none tracking-[-0.03em] whitespace-nowrap">
+                                    {format(account.localizedAmount)}
                                 </div>
-                            ) : null}
-
-                            {/* Pinned to the last column rather than flowing
-                                into the empty one, so every figure in the list
-                                stacks on the same right edge whether or not
-                                the row above it converted. */}
-                            <div className="col-start-3 justify-self-end text-[17px] leading-none tracking-[-0.03em] whitespace-nowrap">
-                                {format(account.localizedAmount)}
                             </div>
                         </div>
                     ))
@@ -228,7 +227,7 @@ export function AccountBalancesFallback() {
                     </div>
                     {/* A line box at the total's own size and leading, so the
                         rule under it does not move when the figure lands. */}
-                    <div className="mt-3 flex h-[1em] items-center text-[clamp(26px,3.4vw,40px)] leading-none">
+                    <div className="mt-4 flex h-[1em] items-center text-[clamp(32px,4.2vw,52px)] leading-none">
                         <Skeleton className="h-[0.7em] w-[6ch] bg-rule2" />
                     </div>
                 </div>

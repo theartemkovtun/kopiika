@@ -102,6 +102,8 @@
     "accounts": {
         "totalBalance": "Total Balance",
         "addAccount": "New account",
+        "name": "Name",
+        "nameHint": "e.g. Monobank card",
         "color": "Colour",
         "colorPick": "Custom colour",
         "colorValue": "Value",
@@ -114,6 +116,8 @@
         "backAccounts": "← Accounts",
         "deleteAsk": "Delete this account? Entries recorded on it stay in the ledger.",
         "deleteFailed": "The account could not be deleted.",
+        "errName": "Give the account a name.",
+        "updateFailed": "The account could not be saved.",
         "notFound": "That account no longer exists."
     },
     "newAccount": {

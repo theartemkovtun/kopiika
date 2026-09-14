@@ -13,10 +13,17 @@ import { toIsoDate, todayParts } from "@/lib/dates";
 /**
  * The ledger's filter rail.
  *
- * It sticks as the ledger scrolls, which is the whole reason it is a rail and
- * not a bar: the list under it is unbounded, so the controls that narrow it
- * have to stay reachable. Every section is a hairline and a micro-label,
- * and nothing here has a box of its own.
+ * It scrolls on its own axis rather than with the ledger, which is the whole
+ * reason it is a rail and not a bar: the list beside it is unbounded, so the
+ * controls that narrow it stay in a fixed-height column and scroll on their
+ * own instead of travelling off with the list — the scrollbar itself is
+ * hidden (`no-scrollbar`) so the rule is the only visible edge. Its top inset
+ * (`lg:pt-10`) lives inside that scrolling column rather than above it, so it
+ * scrolls away with the rest of the column instead of sitting in dead space
+ * outside the fixed-height row. The `border-l` sits on that column, so it
+ * spans the full height regardless of which side is scrolled or how far.
+ * Every section is a hairline and a micro-label, and nothing here has a box
+ * of its own.
  *
  * The type row and the date presets are single-choice and mark the active one
  * with a rule; categories and accounts are multiple-choice and mark them with a
@@ -83,7 +90,7 @@ export function LedgerFilterRail({
                 // The rail leads on one column: the ledger under it is
                 // unbounded, so filters placed after it are never reached.
                 "order-first flex flex-col gap-5 border-rule py-[14px]",
-                "lg:sticky lg:top-11 lg:order-none lg:self-start lg:border-l lg:pl-[22px]",
+                "no-scrollbar lg:order-none lg:h-full lg:min-h-0 lg:overflow-y-auto lg:border-l lg:pt-10 lg:pb-16 lg:pl-[22px]",
                 className,
             )}
         >

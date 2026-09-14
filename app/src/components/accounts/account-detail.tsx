@@ -4,12 +4,20 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
 
+import { ApiError } from "@/api/client";
 import type { Transaction } from "@/api/types";
+import { ColorField } from "@/components/accounts/color-field";
 import { TransactionDialog } from "@/components/ledger/transaction-dialog";
 import { Button } from "@/components/ui/button";
+import { FormRow } from "@/components/ui/form-row";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePreferences } from "@/contexts/preferences-context";
-import { useAccount, useDeleteAccount } from "@/hooks/use-accounts";
+import {
+    useAccount,
+    useDeleteAccount,
+    useUpdateAccount,
+} from "@/hooks/use-accounts";
 import { useDateFormat } from "@/hooks/use-date-format";
 import { useAccountTransactions } from "@/hooks/use-transactions";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -20,6 +28,9 @@ import { currencyLabel, signedValue, toNumber } from "@/lib/money";
 
 /** What the design's heading over the entry list promises. */
 const RECENT = 10;
+
+/** The design's own label column on the edit form: 160px, no gutter. */
+const LABEL = "basis-[160px] pr-0";
 
 /**
  * One account: what it holds, what share of everything that is, and the last
@@ -33,10 +44,10 @@ const RECENT = 10;
  * list's bar is drawn from, so the two screens never disagree about a
  * percentage.
  *
- * Deleting is the only write on this screen. The API has no update endpoint —
- * `kopiika-api-go` exposes POST, GET, GET /balance, GET /:id and DELETE and
- * nothing else — so the design's Edit action is left unbuilt rather than built
- * against something that would fail.
+ * Editing and deleting are the two writes here. Editing is narrower than the
+ * design draws it: `kopiika-api-go`'s `PUT /:id` only ever changes `name` and
+ * `colorHex` — currency and balance are invariants a posted transaction relies
+ * on, so the edit form has no fields for either, unlike the design's mock.
  */
 export function AccountDetail({ accountId }: { accountId: string }) {
     const t = useTranslations("accounts");
@@ -51,6 +62,7 @@ export function AccountDetail({ accountId }: { accountId: string }) {
     const remove = useDeleteAccount();
 
     const [confirming, setConfirming] = useState(false);
+    const [editing, setEditing] = useState(false);
     const [selected, setSelected] = useState<Transaction | null>(null);
 
     if (missing) {
@@ -85,14 +97,29 @@ export function AccountDetail({ accountId }: { accountId: string }) {
             <div className="flex flex-wrap items-center gap-5">
                 <BackLink label={t("backAccounts")} />
 
-                <Button
-                    variant="quiet"
-                    size="text"
-                    onClick={() => setConfirming(true)}
-                    className="ml-auto hover:border-red hover:text-red"
-                >
-                    {tCommon("delete")}
-                </Button>
+                <span className="ml-auto flex items-center gap-5">
+                    <Button
+                        variant="quiet"
+                        size="text"
+                        onClick={() => {
+                            setEditing(true);
+                            setConfirming(false);
+                        }}
+                    >
+                        {tCommon("edit")}
+                    </Button>
+                    <Button
+                        variant="quiet"
+                        size="text"
+                        onClick={() => {
+                            setConfirming(true);
+                            setEditing(false);
+                        }}
+                        className="hover:border-red hover:text-red"
+                    >
+                        {tCommon("delete")}
+                    </Button>
+                </span>
             </div>
 
             {confirming ? (
@@ -128,94 +155,111 @@ export function AccountDetail({ accountId }: { accountId: string }) {
                 </div>
             ) : null}
 
-            {/* The rule over the heading is what the confirmation stands in
-                for while it is open — two rules stacked would read as a
-                boxed-in heading rather than as one screen. */}
+            {/* The rule over the heading is what the confirmation or the edit
+                form stands in for while either is open — two rules stacked
+                would read as a boxed-in heading rather than as one screen. */}
             <div
                 className={cn(
-                    confirming
+                    confirming || editing
                         ? "mt-[22px]"
                         : "mt-5 border-t border-rule pt-[22px]",
                 )}
             >
-                <div className="flex min-w-0 items-center gap-3">
-                    <span
-                        aria-hidden
-                        className="size-[11px] flex-none rounded-full"
-                        style={{ background: color }}
+                {editing ? (
+                    <AccountEditForm
+                        accountId={account.id}
+                        name={account.name}
+                        color={color}
+                        onDone={() => setEditing(false)}
                     />
-                    <h1 className="min-w-0 text-[clamp(26px,3vw,34px)] leading-[1.05] font-medium tracking-[-0.02em] italic">
-                        {account.name}
-                    </h1>
-                </div>
-
-                <div className="mt-5 flex flex-wrap items-baseline gap-4">
-                    <div className="text-[clamp(28px,3.6vw,42px)] leading-none tracking-[-0.03em]">
-                        {format(account.amount)}
-                    </div>
-                    {isForeign ? (
-                        <div className="text-[clamp(17px,2vw,22px)] leading-none tracking-[-0.02em] text-mute">
-                            {format(account.localizedAmount)}
+                ) : (
+                    <>
+                        <div className="flex min-w-0 items-center gap-3">
+                            <span
+                                aria-hidden
+                                className="size-[11px] flex-none rounded-full"
+                                style={{ background: color }}
+                            />
+                            <h1 className="min-w-0 text-[clamp(26px,3vw,34px)] leading-[1.05] font-medium tracking-[-0.02em] italic">
+                                {account.name}
+                            </h1>
                         </div>
-                    ) : null}
-                </div>
 
-                <div className="mt-[22px] flex flex-wrap items-baseline gap-x-11 gap-y-3 bg-blue-soft px-[18px] py-[13px]">
-                    <Meta
-                        label={tCommon("currency")}
-                        value={currencyLabel(account.amount.currency)}
-                    />
-                    <Meta
-                        label={t("shareOfTotal")}
-                        value={`${Math.round(share * 100)}%`}
-                    />
-                    {/* Days, not entries: the list endpoint pages by day, so
-                        its `total` counts days and an exact entry count would
-                        mean walking the account's whole history. See
-                        `useAccountTransactions`. */}
-                    <Meta
-                        label={t("activeDays")}
-                        value={
-                            entries.data ? String(entries.data.activeDays) : "—"
-                        }
-                    />
-                </div>
+                        <div className="mt-5 flex flex-wrap items-baseline gap-4">
+                            <div className="text-[clamp(28px,3.6vw,42px)] leading-none tracking-[-0.03em]">
+                                {format(account.amount)}
+                            </div>
+                            {isForeign ? (
+                                <div className="text-[clamp(17px,2vw,22px)] leading-none tracking-[-0.02em] text-mute">
+                                    {format(account.localizedAmount)}
+                                </div>
+                            ) : null}
+                        </div>
+
+                        <div className="mt-[22px] flex flex-wrap items-baseline gap-x-11 gap-y-3 bg-blue-soft px-[18px] py-[13px]">
+                            <Meta
+                                label={tCommon("currency")}
+                                value={currencyLabel(account.amount.currency)}
+                            />
+                            <Meta
+                                label={t("shareOfTotal")}
+                                value={`${Math.round(share * 100)}%`}
+                            />
+                            {/* Days, not entries: the list endpoint pages by
+                                day, so its `total` counts days and an exact
+                                entry count would mean walking the account's
+                                whole history. See `useAccountTransactions`. */}
+                            <Meta
+                                label={t("activeDays")}
+                                value={
+                                    entries.data
+                                        ? String(entries.data.activeDays)
+                                        : "—"
+                                }
+                            />
+                        </div>
+                    </>
+                )}
             </div>
 
-            <section className="mt-10">
-                <div className="mb-3 flex flex-wrap items-baseline gap-[14px]">
-                    <h2 className="text-[23px] font-normal tracking-[-0.01em] italic">
-                        {t("recentEntries")}
-                    </h2>
-                    <span className="text-[11px] tracking-[0.12em] text-mute uppercase">
-                        {t("latest10")}
-                    </span>
-                    <Link
-                        href={`/transactions?account=${account.id}`}
-                        className="ml-auto border-b border-blue text-[13px] text-blue transition-colors hover:border-ink hover:text-ink"
-                    >
-                        {tOverview("allEntries")}
-                    </Link>
-                </div>
+            {editing ? null : (
+                <section className="mt-10">
+                    <div className="mb-3 flex flex-wrap items-baseline gap-[14px]">
+                        <h2 className="text-[23px] font-normal tracking-[-0.01em] italic">
+                            {t("recentEntries")}
+                        </h2>
+                        <span className="text-[11px] tracking-[0.12em] text-mute uppercase">
+                            {t("latest10")}
+                        </span>
+                        <Link
+                            href={`/transactions?account=${account.id}`}
+                            className="ml-auto border-b border-blue text-[13px] text-blue transition-colors hover:border-ink hover:text-ink"
+                        >
+                            {tOverview("allEntries")}
+                        </Link>
+                    </div>
 
-                {!entries.data ? (
-                    <EntriesSkeleton />
-                ) : entries.data.entries.length === 0 ? (
-                    <div className="border-t border-rule py-[34px] text-sm text-mute">
-                        {t("noEntriesOnAccount")}
-                    </div>
-                ) : (
-                    <div className="flex flex-col">
-                        {entries.data.entries.slice(0, RECENT).map((entry) => (
-                            <EntryRow
-                                key={entry.id}
-                                entry={entry}
-                                onOpen={() => setSelected(entry)}
-                            />
-                        ))}
-                    </div>
-                )}
-            </section>
+                    {!entries.data ? (
+                        <EntriesSkeleton />
+                    ) : entries.data.entries.length === 0 ? (
+                        <div className="border-t border-rule py-[34px] text-sm text-mute">
+                            {t("noEntriesOnAccount")}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col">
+                            {entries.data.entries
+                                .slice(0, RECENT)
+                                .map((entry) => (
+                                    <EntryRow
+                                        key={entry.id}
+                                        entry={entry}
+                                        onOpen={() => setSelected(entry)}
+                                    />
+                                ))}
+                        </div>
+                    )}
+                </section>
+            )}
 
             <TransactionDialog
                 transaction={selected}
@@ -223,6 +267,111 @@ export function AccountDetail({ accountId }: { accountId: string }) {
                 onSaved={setSelected}
             />
         </div>
+    );
+}
+
+/**
+ * Name and colour, the only two fields `PUT /accounts/:id` accepts. Laid out
+ * like `NewAccountForm`'s rows, minus the currency and opening-balance rows
+ * that form has and this one cannot: both are invariants once an account
+ * exists.
+ */
+function AccountEditForm({
+    accountId,
+    name: initialName,
+    color: initialColor,
+    onDone,
+}: {
+    accountId: string;
+    name: string;
+    color: string;
+    onDone: () => void;
+}) {
+    const t = useTranslations("accounts");
+    const tCommon = useTranslations("common");
+
+    const update = useUpdateAccount();
+
+    const [name, setName] = useState(initialName);
+    const [color, setColor] = useState(initialColor);
+    const [error, setError] = useState<string | null>(null);
+
+    function edit<T>(set: (value: T) => void) {
+        return (value: T) => {
+            set(value);
+            setError(null);
+        };
+    }
+
+    function submit(event: React.FormEvent) {
+        event.preventDefault();
+        // Enter in the field submits even while the button is disabled.
+        if (update.isPending) return;
+
+        const trimmed = name.trim();
+        if (!trimmed) {
+            setError(t("errName"));
+            return;
+        }
+
+        update.mutate(
+            { accountId, payload: { name: trimmed, colorHex: color } },
+            {
+                onSuccess: onDone,
+                onError: (cause) =>
+                    setError(
+                        cause instanceof ApiError
+                            ? cause.message
+                            : tCommon("error"),
+                    ),
+            },
+        );
+    }
+
+    return (
+        <form
+            onSubmit={submit}
+            noValidate
+            className="flex max-w-[520px] flex-col"
+        >
+            <FormRow
+                asLabel
+                label={t("name")}
+                required
+                labelClassName={LABEL}
+                className="border-t border-t-rule"
+            >
+                <Input
+                    autoComplete="off"
+                    required
+                    maxLength={64}
+                    placeholder={t("nameHint")}
+                    value={name}
+                    onChange={(event) => edit(setName)(event.target.value)}
+                    className="text-[19px]"
+                />
+            </FormRow>
+
+            <FormRow
+                label={t("color")}
+                labelClassName={LABEL}
+                className="items-center border-b-rule"
+            >
+                <ColorField value={color} onChange={edit(setColor)} />
+            </FormRow>
+
+            <div className="mt-[26px] flex flex-wrap items-center gap-5">
+                <Button type="submit" disabled={update.isPending}>
+                    {tCommon("save")}
+                </Button>
+                <Button type="button" variant="quiet" onClick={onDone}>
+                    {tCommon("cancel")}
+                </Button>
+                <span role="status" className="text-[13px] text-red">
+                    {error ?? ""}
+                </span>
+            </div>
+        </form>
     );
 }
 

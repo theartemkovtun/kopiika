@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { accounts, queryKeys } from "@/api/endpoints";
-import type { CreateAccountPayload } from "@/api/types";
+import type { CreateAccountPayload, UpdateAccountPayload } from "@/api/types";
 
 /**
  * Every account with its balance, plus their combined worth in the user's own
@@ -37,6 +37,36 @@ export function useCreateAccount() {
 
     return useMutation({
         mutationFn: (payload: CreateAccountPayload) => accounts.create(payload),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({
+                queryKey: queryKeys.accounts.all,
+            });
+            void queryClient.invalidateQueries({
+                queryKey: queryKeys.transactions.configuration(),
+            });
+        },
+    });
+}
+
+/**
+ * Editing an account's name or colour — the only fields the API lets a
+ * client write back; see `UpdateAccountPayload`.
+ *
+ * Drops the same two caches `useCreateAccount` does: the balance tree, which
+ * carries the name and colour the detail and list screens draw, and the entry
+ * form's account picker, which holds its own copy of both.
+ */
+export function useUpdateAccount() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({
+            accountId,
+            payload,
+        }: {
+            accountId: string;
+            payload: UpdateAccountPayload;
+        }) => accounts.update(accountId, payload),
         onSuccess: () => {
             void queryClient.invalidateQueries({
                 queryKey: queryKeys.accounts.all,

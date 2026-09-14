@@ -35,7 +35,7 @@ export default async function MainLayout({
             <MobileHeader />
             <AppSidebar className="hidden md:flex" />
 
-            <main className="mx-auto w-full max-w-[var(--spacing-content)] px-5 pt-8 pb-16 md:px-14 md:pt-10 md:pb-[72px]">
+            <main className="mx-auto w-full max-w-[var(--spacing-content)]">
                 <UserProvider>
                     <PeriodProvider>{children}</PeriodProvider>
                 </UserProvider>

@@ -20,7 +20,7 @@ export default function NewAccountPage() {
     const t = useTranslations("newAccount");
 
     return (
-        <>
+        <div className="pt-8 pb-16 md:pt-10 md:pb-[72px]">
             <PageHeader title={t("title")} />
 
             <div className="mt-[30px] max-w-[520px]">
@@ -34,6 +34,6 @@ export default function NewAccountPage() {
                     <NewAccountForm />
                 </AccountGate>
             </div>
-        </>
+        </div>
     );
 }

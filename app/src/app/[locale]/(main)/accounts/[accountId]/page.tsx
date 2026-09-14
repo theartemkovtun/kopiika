@@ -19,8 +19,10 @@ export default async function AccountPage({
     const { accountId } = await params;
 
     return (
-        <AccountGate fallback={<AccountDetailFallback />}>
-            <AccountDetail accountId={accountId} />
-        </AccountGate>
+        <div className="pt-8 pb-16 md:pt-10 md:pb-[72px]">
+            <AccountGate fallback={<AccountDetailFallback />}>
+                <AccountDetail accountId={accountId} />
+            </AccountGate>
+        </div>
     );
 }

@@ -14,7 +14,7 @@ export default function ReportsPage() {
     const tReports = useTranslations("reports");
 
     return (
-        <>
+        <div className="pt-8 pb-16 md:pt-10 md:pb-[72px]">
             <PageHeader title={t("reports")} />
 
             <Placeholder label={tReports("flow")} className="mt-7">
@@ -23,6 +23,6 @@ export default function ReportsPage() {
                 spent per day; the flow chart; and category and account
                 breakdowns with amount and count bars.
             </Placeholder>
-        </>
+        </div>
     );
 }

@@ -14,6 +14,7 @@ import type {
     Transaction,
     TransactionsConfiguration,
     TransactionsStatistics,
+    UpdateAccountPayload,
     UpdateTransactionPayload,
     UpdateUserPayload,
     User,
@@ -49,6 +50,10 @@ export const accounts = {
 
     create: (payload: CreateAccountPayload) =>
         api.post<Account>("/v1/accounts", payload),
+
+    /** Partial: only the fields present in the payload are changed. */
+    update: (accountId: string, payload: UpdateAccountPayload) =>
+        api.put<Account>(`/v1/accounts/${accountId}`, payload),
 
     remove: (accountId: string) => api.delete(`/v1/accounts/${accountId}`),
 };

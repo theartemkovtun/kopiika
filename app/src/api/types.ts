@@ -91,6 +91,17 @@ export type CreateAccountPayload = {
     defaultValue?: string | null;
 };
 
+/**
+ * Currency and balance are absent on purpose — the API treats currency as an
+ * invariant every posted transaction relies on, and balance only ever moves
+ * through transaction posting, never a direct write.
+ */
+export type UpdateAccountPayload = {
+    name?: string;
+    description?: string | null;
+    colorHex?: string;
+};
+
 // --- categories ------------------------------------------------------------
 
 export type Category = {
