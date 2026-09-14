@@ -112,20 +112,12 @@
         "back": "← Accounts",
         "name": "Name",
         "nameHint": "e.g. Monobank card",
-        "type": "Type",
         "currency": "Currency",
         "opening": "Opening balance",
         "submit": "Create account",
         "cancel": "Cancel",
         "errName": "Give the account a name.",
-        "errOpening": "Opening balance must be zero or more.",
-        "note": "The account appears in your balance list and in the account picker on new entries."
-    },
-    "accountTypes": {
-        "debit": "Debit",
-        "wallet": "Wallet",
-        "deposit": "Deposit",
-        "credit": "Credit"
+        "errOpening": "Opening balance must be zero or more."
     },
     "entry": {
         "expense": "Expense",

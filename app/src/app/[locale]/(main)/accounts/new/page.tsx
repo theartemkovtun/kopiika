@@ -13,8 +13,8 @@ import { Link } from "@/i18n/navigation";
  * is no figure at the top of it to be one.
  *
  * Only the form is gated: it opens its currency row on the display currency,
- * which is the one thing here that comes off the user record. The title, the
- * way back and the note underneath are on the screen from the first paint.
+ * which is the one thing here that comes off the user record. The title and
+ * the way back are on the screen from the first paint.
  */
 export default function NewAccountPage() {
     const t = useTranslations("newAccount");
@@ -36,10 +36,6 @@ export default function NewAccountPage() {
                 <AccountGate>
                     <NewAccountForm />
                 </AccountGate>
-
-                <p className="mt-[22px] text-[13px] text-pretty text-mute">
-                    {t("note")}
-                </p>
             </div>
         </>
     );

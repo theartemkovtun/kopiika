@@ -1,50 +1,11 @@
 /**
- * The two things an account needs that the API has no column for: a type, and
- * a colour.
+ * What an account needs that the API has no column for: a colour.
  *
- * **Type.** The design's rows read "Main card · Debit" and its new-account form
- * offers four types to pick from. The API has no such field — an account
- * carries a free `description` and nothing else — so the chosen type is
- * written there, as the lower-case slug rather than as the label someone saw.
- *
- * That makes the subtitle behave exactly like a category name (see
- * `categoryLabel`): one of the four known slugs is translated, and anything
- * else — a description typed into another client — is shown as written.
- * Storing the label instead would freeze the account into the language it
- * happened to be created in.
- *
- * **Colour.** `colorHex` is required on create and is what an account is drawn
- * in, but the design offers nowhere to choose one. So a colour is assigned for
- * the account out of the design's own series rather than taken from a constant
- * — see `newAccountColor`.
+ * `colorHex` is required on create and is what an account is drawn in, but the
+ * design offers nowhere to choose one. So a colour is assigned for the account
+ * out of the design's own series rather than taken from a constant — see
+ * `newAccountColor`.
  */
-
-export const ACCOUNT_TYPES = ["debit", "wallet", "deposit", "credit"] as const;
-
-export type AccountType = (typeof ACCOUNT_TYPES)[number];
-
-/** What the design's form opens on. */
-export const DEFAULT_ACCOUNT_TYPE: AccountType = "debit";
-
-function isAccountType(value: string): value is AccountType {
-    return (ACCOUNT_TYPES as readonly string[]).includes(value);
-}
-
-/**
- * The subtitle beside an account's name: a known type translated, anything
- * else as written, and nothing at all for an account with no description.
- *
- * `t` is the `accountTypes` translator.
- */
-export function accountTypeLabel(
-    description: string | null | undefined,
-    t: (key: string) => string,
-): string | null {
-    const value = description?.trim() ?? "";
-    if (!value) return null;
-
-    return isAccountType(value) ? t(value) : value;
-}
 
 /**
  * `--ch1`..`--ch6` as the nearest sRGB at the light theme's lightness.
