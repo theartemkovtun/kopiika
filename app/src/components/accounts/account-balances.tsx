@@ -19,9 +19,9 @@ import { currencyLabel, toNumber } from "@/lib/money";
  *
  *  - **The converted figure leads.** Each row's large number is the balance in
  *    the display currency, because that is the one that adds up to the total
- *    above it; the account's own currency follows underneath, small, and only
- *    when the two differ. The API hands back both, so nothing is converted
- *    here.
+ *    above it; the account's own balance sits to its left, small, and only
+ *    when the currencies differ. The API hands back both, so nothing is
+ *    converted here.
  *  - **A colour comes from the account.** Each row is drawn in the account's
  *    own `colorHex`, so it keeps that colour wherever it appears and however
  *    the response happens to be ordered — the colour is assigned before the
@@ -162,45 +162,43 @@ export function AccountBalances() {
                     accounts.map((account, index) => (
                         <div
                             key={account.id}
-                            className={`grid min-h-[76px] grid-cols-[minmax(0,1fr)_auto] items-center gap-6 py-[15px] ${
+                            className={`grid min-h-[56px] grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-5 py-[14px] ${
                                 index === 0 ? "" : "border-t border-rule2"
                             }`}
                         >
-                            <div className="min-w-0">
-                                <div className="flex min-w-0 items-center gap-[14px]">
-                                    <span
-                                        aria-hidden
-                                        className="size-[9px] flex-none rounded-full"
-                                        style={{ background: account.color }}
-                                    />
-                                    <Link
-                                        href={`/accounts/${account.id}`}
-                                        className="block max-w-full truncate border-b border-transparent text-base leading-[1.15] font-medium tracking-[-0.012em] text-ink transition-colors hover:border-ink"
-                                    >
-                                        {account.name}
-                                    </Link>
-                                </div>
-                                {/* 23px is the dot plus its gap, so the code
-                                    hangs under the name rather than under the
-                                    dot. */}
-                                <div className="mt-[6px] pl-[23px] font-mono text-[11px] tracking-[0.1em] text-mute uppercase">
+                            <div className="flex min-w-0 items-center gap-3">
+                                <span
+                                    aria-hidden
+                                    className="size-[9px] flex-none rounded-full"
+                                    style={{ background: account.color }}
+                                />
+                                <Link
+                                    href={`/accounts/${account.id}`}
+                                    className="min-w-0 truncate border-b border-transparent text-base leading-[1.15] font-medium tracking-[-0.012em] text-ink transition-colors hover:border-ink"
+                                >
+                                    {account.name}
+                                </Link>
+                                <span className="flex-none font-mono text-[11px] tracking-[0.1em] text-mute uppercase">
                                     {currencyLabel(account.amount.currency)}
-                                </div>
+                                </span>
                             </div>
 
-                            <div className="text-right">
-                                <div className="font-mono text-[22px] leading-none tracking-[-0.03em] whitespace-nowrap">
-                                    {format(account.localizedAmount)}
+                            {/* The account's own balance, and only when its
+                                currency is a different one — otherwise the
+                                figure beside it already says it. */}
+                            {account.amount.currency !==
+                            account.localizedAmount.currency ? (
+                                <div className="font-mono text-[11px] leading-none whitespace-nowrap text-mute">
+                                    {format(account.amount)}
                                 </div>
-                                {/* The account's own currency, and only when
-                                    that is a different one — the figure above
-                                    already says what it is worth. */}
-                                {account.amount.currency !==
-                                account.localizedAmount.currency ? (
-                                    <div className="mt-[7px] font-mono text-xs whitespace-nowrap text-mute">
-                                        {format(account.amount)}
-                                    </div>
-                                ) : null}
+                            ) : null}
+
+                            {/* Pinned to the last column rather than flowing
+                                into the empty one, so every figure in the list
+                                stacks on the same right edge whether or not
+                                the row above it converted. */}
+                            <div className="col-start-3 justify-self-end font-mono text-[17px] leading-none tracking-[-0.03em] whitespace-nowrap">
+                                {format(account.localizedAmount)}
                             </div>
                         </div>
                     ))
@@ -257,22 +255,20 @@ function AccountRowsSkeleton() {
             {ACCOUNT_SKELETON_WIDTHS.map(([nameWidth, amountWidth], index) => (
                 <div
                     key={index}
-                    className={`grid min-h-[76px] grid-cols-[minmax(0,1fr)_auto] items-center gap-6 py-[15px] ${
+                    className={`grid min-h-[56px] grid-cols-[minmax(0,1fr)_auto] items-center gap-5 py-[14px] ${
                         index === 0 ? "" : "border-t border-rule2"
                     }`}
                 >
-                    <div className="min-w-0">
-                        <span className="flex items-center gap-[14px]">
-                            <Skeleton className="size-[9px] flex-none rounded-full bg-rule2" />
-                            <Skeleton
-                                className="h-[18px] bg-rule2"
-                                style={{ width: nameWidth }}
-                            />
-                        </span>
-                        <Skeleton className="mt-[6px] ml-[23px] h-[11px] w-[34px] bg-rule2" />
-                    </div>
+                    <span className="flex min-w-0 items-center gap-3">
+                        <Skeleton className="size-[9px] flex-none rounded-full bg-rule2" />
+                        <Skeleton
+                            className="h-[18px] bg-rule2"
+                            style={{ width: nameWidth }}
+                        />
+                        <Skeleton className="h-[11px] w-[34px] flex-none bg-rule2" />
+                    </span>
                     <Skeleton
-                        className="h-[22px] justify-self-end bg-rule2"
+                        className="h-[17px] justify-self-end bg-rule2"
                         style={{ width: amountWidth }}
                     />
                 </div>

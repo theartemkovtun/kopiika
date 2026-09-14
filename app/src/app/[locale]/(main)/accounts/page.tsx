@@ -47,22 +47,18 @@ export default function AccountsPage() {
                 )}
             </AccountGate>
 
+            {/* Centred, where every account row is ruled left-to-right: it is
+                the way out of the list rather than another line in it. */}
             <Link
                 href="/accounts/new"
-                className="grid min-h-[76px] w-full flex-none grid-cols-[minmax(0,1fr)_auto] items-center gap-6 py-[15px] text-left text-mute transition-colors hover:text-ink"
+                className="flex min-h-[56px] w-full flex-none items-center justify-center gap-[10px] py-[14px] text-center text-mute transition-colors hover:text-ink"
             >
-                <span className="flex min-w-0 items-center gap-[14px]">
-                    {/* A ring where an account has a filled dot: the row is an
-                        account-shaped gap in the list, not an account. */}
-                    <span
-                        aria-hidden
-                        className="size-[9px] flex-none rounded-full border border-current"
-                    />
-                    <span className="text-base leading-[1.15] font-medium tracking-[-0.012em]">
-                        {t("addAccount")}
-                    </span>
+                <span aria-hidden className="font-mono text-sm leading-none">
+                    +
                 </span>
-                <span className="font-mono text-base leading-none">+</span>
+                <span className="text-[13px] leading-none font-medium tracking-[-0.006em]">
+                    {t("addAccount")}
+                </span>
             </Link>
         </div>
     );
