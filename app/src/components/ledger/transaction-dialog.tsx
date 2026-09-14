@@ -252,7 +252,7 @@ function DialogBody({
                     <div className="mt-[14px] flex flex-col">
                         <DetailRow asLabel label={t("amount")} required>
                             <span className="flex min-w-0 flex-1 items-baseline gap-2">
-                                <span className="font-mono text-[13px] text-mute">
+                                <span className="text-[13px] text-mute">
                                     {currencyLabel(currency)}
                                 </span>
                                 <Input
@@ -354,7 +354,7 @@ function DialogBody({
                         {/* Shown, not editable: the API has no date field on an
                             update, so an entry cannot be moved to another day. */}
                         <DetailRow label={t("date")} className="border-b">
-                            <span className="font-mono text-sm text-mute">
+                            <span className="text-sm text-mute">
                                 {dayLabel(transaction.date)}
                             </span>
                         </DetailRow>
@@ -391,7 +391,7 @@ function DialogBody({
                         </span>
                         <span
                             className={cn(
-                                "font-mono text-xl tracking-[-0.01em] whitespace-nowrap",
+                                "text-xl tracking-[-0.01em] whitespace-nowrap",
                                 isIncome ? "text-green" : "text-red",
                             )}
                         >
@@ -428,7 +428,7 @@ function DialogBody({
                             compact
                             className="border-b"
                         >
-                            <span className="font-mono text-sm">
+                            <span className="text-sm">
                                 {dayLabel(transaction.date)}
                             </span>
                         </DetailRow>
@@ -515,7 +515,7 @@ function IconButton({
 }
 
 /**
- * A row inside the dialog: a 92px mono label, the value, a hairline above.
+ * A row inside the dialog: a 92px micro-label, the value, a hairline above.
  * `compact` is the reading density, the looser one is for editing.
  */
 function DetailRow({
@@ -543,7 +543,7 @@ function DetailRow({
                 className,
             )}
         >
-            <span className="shrink-0 basis-[92px] font-mono text-[11px] tracking-[0.1em] text-mute uppercase">
+            <span className="shrink-0 basis-[92px] text-[11px] tracking-[0.1em] text-mute uppercase">
                 {label}
                 {required ? (
                     <span aria-hidden className="text-red">

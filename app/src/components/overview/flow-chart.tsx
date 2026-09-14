@@ -84,7 +84,7 @@ export function FlowChart() {
     return (
         <section className="flex min-w-0 flex-col">
             <div className="mb-[18px] flex flex-wrap items-baseline gap-[18px]">
-                <h2 className="font-serif text-[26px] font-normal tracking-[-0.01em]">
+                <h2 className="text-[26px] font-normal tracking-[-0.01em] italic">
                     {yearView ? t("monthlyFlow") : t("dailyFlow")}
                 </h2>
                 {data ? (
@@ -96,7 +96,7 @@ export function FlowChart() {
                                 aria-pressed={series === toggle.id}
                                 onClick={() => setSeries(toggle.id)}
                                 className={cn(
-                                    "cursor-pointer border-b pb-[3px] font-mono text-xs transition-colors",
+                                    "cursor-pointer border-b pb-[3px] text-xs transition-colors",
                                     series === toggle.id
                                         ? "border-blue text-ink"
                                         : "border-transparent text-mute hover:text-blue",
@@ -112,9 +112,7 @@ export function FlowChart() {
             <div
                 className={cn(
                     "flex-1",
-                    !data
-                        ? "min-h-[166px] pb-[30px]"
-                        : "min-h-[196px]",
+                    !data ? "min-h-[166px] pb-[30px]" : "min-h-[196px]",
                 )}
             >
                 {!data ? (
@@ -201,7 +199,7 @@ export function FlowChartFallback() {
     return (
         <section className="flex min-w-0 flex-col">
             <div className="mb-[18px] flex flex-wrap items-baseline gap-[18px]">
-                <h2 className="font-serif text-[26px] font-normal tracking-[-0.01em]">
+                <h2 className="text-[26px] font-normal tracking-[-0.01em] italic">
                     {yearView ? t("monthlyFlow") : t("dailyFlow")}
                 </h2>
             </div>

@@ -66,11 +66,19 @@ export function normalizeHexColor(value: string): string | null {
     return (trimmed.startsWith("#") ? trimmed : `#${trimmed}`).toUpperCase();
 }
 
-/** Axis ticks are the design's mono micro-label, in the shape recharts takes. */
+/**
+ * Axis ticks are the design's micro-label, in the shape recharts takes.
+ *
+ * recharts writes its ticks as SVG <text>, which does not inherit the page's
+ * `font-feature-settings`, so the family is named here rather than left to the
+ * cascade — otherwise the one place figures are drawn outside the document
+ * flow would be the one place they are not tabular.
+ */
 export const AXIS_TICK = {
     fontSize: 11,
     fill: "var(--mute)",
-    fontFamily: "var(--font-jetbrains-mono), monospace",
+    fontFamily: "var(--font-google-sans), sans-serif",
+    fontFeatureSettings: '"tnum" 1',
 } as const;
 
 /**
@@ -86,8 +94,9 @@ export function compactFigure(value: number): string {
 }
 
 /**
- * The tooltip: a hairline box on the page ground, square, unshadowed, with the
- * figure in mono and the label it belongs to in sans.
+ * The tooltip: a hairline box on the page ground, square and unshadowed. One
+ * family throughout, with the figure held tabular so a hovered column does not
+ * jitter as the digits under the pointer change width.
  */
 export const TOOLTIP = {
     cursor: { fill: "var(--rule2)" },
@@ -95,14 +104,12 @@ export const TOOLTIP = {
         background: "var(--bg)",
         border: "1px solid var(--rule)",
         borderRadius: 0,
-        fontFamily: "var(--font-jetbrains-mono), monospace",
+        fontFamily: "var(--font-google-sans), sans-serif",
+        fontFeatureSettings: '"tnum" 1',
         fontSize: 12,
         color: "var(--ink)",
         boxShadow: "none",
     },
     itemStyle: { color: "var(--ink)" },
-    labelStyle: {
-        color: "var(--mute)",
-        fontFamily: "var(--font-instrument-sans), sans-serif",
-    },
+    labelStyle: { color: "var(--mute)" },
 } as const;

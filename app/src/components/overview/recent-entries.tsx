@@ -35,28 +35,33 @@ export function RecentEntries() {
 
     return (
         <section>
-            <div className="mb-[14px] flex items-baseline gap-[14px]">
-                <h2 className="font-serif text-[30px] font-normal tracking-[-0.01em]">
-                    {tNav("transactions")}
+            <div className="mb-3 flex items-baseline gap-[14px]">
+                <h2 className="text-[23px] font-normal tracking-[-0.01em] italic">
+                    {t("recentTransactions")}
                 </h2>
                 <Link
                     href="/transactions"
-                    className="ml-auto border-b border-blue text-[13px] text-blue transition-colors hover:border-ink hover:text-ink"
+                    aria-label={tNav("transactions")}
+                    className="ml-auto text-xs text-mute transition-colors hover:text-blue"
                 >
-                    {t("allEntries")}
+                    →
                 </Link>
             </div>
 
             {!data ? (
                 <EntriesSkeleton />
             ) : entries.length === 0 ? (
-                <p className="border-t border-rule2 pt-[11px] text-[15px] text-mute">
+                <p className="border-t border-rule pt-[11px] text-[15px] text-mute">
                     {t("noEntries")}
                 </p>
             ) : (
                 <div className="flex flex-col">
-                    {entries.map((entry) => (
-                        <EntryRow key={entry.id} entry={entry} />
+                    {entries.map((entry, index) => (
+                        <EntryRow
+                            key={entry.id}
+                            entry={entry}
+                            first={index === 0}
+                        />
                     ))}
                 </div>
             )}
@@ -80,15 +85,16 @@ export function RecentEntriesFallback() {
 
     return (
         <section>
-            <div className="mb-[14px] flex items-baseline gap-[14px]">
-                <h2 className="font-serif text-[30px] font-normal tracking-[-0.01em]">
-                    {tNav("transactions")}
+            <div className="mb-3 flex items-baseline gap-[14px]">
+                <h2 className="text-[23px] font-normal tracking-[-0.01em] italic">
+                    {t("recentTransactions")}
                 </h2>
                 <Link
                     href="/transactions"
-                    className="ml-auto border-b border-blue text-[13px] text-blue transition-colors hover:border-ink hover:text-ink"
+                    aria-label={tNav("transactions")}
+                    className="ml-auto text-xs text-mute transition-colors hover:text-blue"
                 >
-                    {t("allEntries")}
+                    →
                 </Link>
             </div>
 
@@ -119,7 +125,10 @@ function EntriesSkeleton() {
             {ENTRY_SKELETON_WIDTHS.map(([titleWidth, amountWidth], index) => (
                 <div
                     key={index}
-                    className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-[14px] border-t border-rule2 py-[11px]"
+                    className={cn(
+                        "grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-[14px] border-t py-[11px]",
+                        index === 0 ? "border-rule" : "border-rule2",
+                    )}
                 >
                     <Skeleton className="h-[12px] w-[34px] bg-rule2" />
                     {/* h-[22.5px]: the row's real height comes from the
@@ -145,7 +154,14 @@ function EntriesSkeleton() {
     );
 }
 
-function EntryRow({ entry }: { entry: Transaction }) {
+function EntryRow({
+    entry,
+    first,
+}: {
+    entry: Transaction;
+    /** Takes the structural rule that closes the heading off from the list. */
+    first: boolean;
+}) {
     const tCommon = useTranslations("common");
     const tCategories = useTranslations("categories");
     const { formatValue } = usePreferences();
@@ -154,10 +170,13 @@ function EntryRow({ entry }: { entry: Transaction }) {
     const isIncome = entry.type === "income";
 
     return (
-        <div className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-baseline gap-[14px] border-t border-rule2 py-[11px]">
-            <span className="font-mono text-xs text-mute">
-                {rowLabel(entry.date)}
-            </span>
+        <div
+            className={cn(
+                "grid grid-cols-[56px_minmax(0,1fr)_auto] items-baseline gap-[14px] border-t py-[11px]",
+                first ? "border-rule" : "border-rule2",
+            )}
+        >
+            <span className="text-xs text-mute">{rowLabel(entry.date)}</span>
 
             <span className="flex min-w-0 items-baseline gap-[10px]">
                 <span className="truncate">{entry.title}</span>
@@ -173,10 +192,7 @@ function EntryRow({ entry }: { entry: Transaction }) {
             </span>
 
             <span
-                className={cn(
-                    "font-mono text-sm",
-                    isIncome ? "text-green" : "text-red",
-                )}
+                className={cn("text-sm", isIncome ? "text-green" : "text-red")}
             >
                 {formatValue(
                     signedValue(entry.amount, entry.type),

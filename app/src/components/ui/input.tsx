@@ -11,8 +11,8 @@ import { cn } from "cn";
  * draw a second box inside the row.
  *
  * `size` sets the type scale rather than a height, because the row's padding
- * already gives the control its height. Amounts run large and monospaced; the
- * rest run at body size.
+ * already gives the control its height. Amounts run large; the rest run at
+ * body size.
  */
 const inputVariants = cva(
     "w-full min-w-0 bg-transparent text-ink outline-none placeholder:text-mute disabled:pointer-events-none disabled:opacity-50",
@@ -28,12 +28,12 @@ const inputVariants = cva(
                     "border-0 border-b border-rule px-0 py-[2px] focus-visible:border-ink",
             },
             inputSize: {
-                sm: "font-mono text-xs",
+                sm: "text-xs",
                 default: "text-base",
                 /** A description, on the entry form. */
                 lg: "text-[17px]",
-                /** An amount. Always monospaced, so the digits line up. */
-                amount: "font-mono text-[26px]",
+                /** An amount, set large. `tnum` on <html> lines the digits up. */
+                amount: "text-[26px]",
             },
         },
         defaultVariants: {

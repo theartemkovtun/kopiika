@@ -25,7 +25,7 @@ export function QueryError({
             <button
                 type="button"
                 onClick={onRetry}
-                className="mt-3 cursor-pointer border-b border-rule font-mono text-xs text-mute transition-colors hover:text-ink"
+                className="mt-3 cursor-pointer border-b border-rule text-xs text-mute transition-colors hover:text-ink"
             >
                 {t("retry")}
             </button>

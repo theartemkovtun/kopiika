@@ -122,13 +122,14 @@
     --radius-2xl: 0px;
     --radius-3xl: 0px;
 
+    /* One family. A heading is this in italic, a figure is this with tabular
+       figures — see the `tnum` rule on <html> below — so neither has a face of
+       its own to name. `--font-serif` and `--font-mono` are deliberately not
+       defined: Tailwind's own stacks stand behind those names, and a stray
+       `font-mono` left in a component would show up as a real monospace
+       rather than pass silently. */
     --font-sans:
-        var(--font-instrument-sans), "Helvetica Neue", Helvetica, Arial,
-        sans-serif;
-    --font-serif: var(--font-gentium), Georgia, "Times New Roman", Times, serif;
-    --font-mono:
-        var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo,
-        monospace;
+        var(--font-google-sans), "Helvetica Neue", Helvetica, Arial, sans-serif;
     --font-script: var(--font-bad-script), "Brush Script MT", cursive;
 
     /* The sidebar column and the reading column, as the design measures them. */

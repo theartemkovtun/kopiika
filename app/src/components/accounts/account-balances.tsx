@@ -88,10 +88,10 @@ export function AccountBalances() {
         <>
             <div className="grid grid-cols-[minmax(0,1fr)] items-end gap-5 pb-[22px]">
                 <div>
-                    <div className="font-mono text-[11px] tracking-[0.16em] text-mute uppercase">
+                    <div className="text-[11px] tracking-[0.16em] text-mute uppercase">
                         {t("totalBalance")}
                     </div>
-                    <div className="mt-3 font-mono text-[clamp(26px,3.4vw,40px)] leading-none tracking-[-0.03em]">
+                    <div className="mt-3 text-[clamp(26px,3.4vw,40px)] leading-none tracking-[-0.03em]">
                         {format(data.total)}
                     </div>
                 </div>
@@ -131,11 +131,11 @@ export function AccountBalances() {
                                     <span className="text-sm font-medium">
                                         {tip.name}
                                     </span>
-                                    <span className="font-mono text-xs opacity-[0.72]">
+                                    <span className="text-xs opacity-[0.72]">
                                         {Math.round(tip.share * 100)}%
                                     </span>
                                 </div>
-                                <div className="mt-[5px] flex items-baseline gap-3 font-mono text-xs">
+                                <div className="mt-[5px] flex items-baseline gap-3 text-xs">
                                     <span>{format(tip.localizedAmount)}</span>
                                     {tip.amount.currency !==
                                     tip.localizedAmount.currency ? (
@@ -144,7 +144,7 @@ export function AccountBalances() {
                                         </span>
                                     ) : null}
                                 </div>
-                                <div className="mt-1 font-mono text-[10px] tracking-[0.12em] uppercase opacity-[0.62]">
+                                <div className="mt-1 text-[10px] tracking-[0.12em] uppercase opacity-[0.62]">
                                     {currencyLabel(tip.amount.currency)}
                                 </div>
                             </div>
@@ -178,7 +178,7 @@ export function AccountBalances() {
                                 >
                                     {account.name}
                                 </Link>
-                                <span className="flex-none font-mono text-[11px] tracking-[0.1em] text-mute uppercase">
+                                <span className="flex-none text-[11px] tracking-[0.1em] text-mute uppercase">
                                     {currencyLabel(account.amount.currency)}
                                 </span>
                             </div>
@@ -188,7 +188,7 @@ export function AccountBalances() {
                                 figure beside it already says it. */}
                             {account.amount.currency !==
                             account.localizedAmount.currency ? (
-                                <div className="font-mono text-[11px] leading-none whitespace-nowrap text-mute">
+                                <div className="text-[11px] leading-none whitespace-nowrap text-mute">
                                     {format(account.amount)}
                                 </div>
                             ) : null}
@@ -197,7 +197,7 @@ export function AccountBalances() {
                                 into the empty one, so every figure in the list
                                 stacks on the same right edge whether or not
                                 the row above it converted. */}
-                            <div className="col-start-3 justify-self-end font-mono text-[17px] leading-none tracking-[-0.03em] whitespace-nowrap">
+                            <div className="col-start-3 justify-self-end text-[17px] leading-none tracking-[-0.03em] whitespace-nowrap">
                                 {format(account.localizedAmount)}
                             </div>
                         </div>
@@ -223,12 +223,12 @@ export function AccountBalancesFallback() {
         <>
             <div className="grid grid-cols-[minmax(0,1fr)] items-end gap-5 pb-[22px]">
                 <div>
-                    <div className="font-mono text-[11px] tracking-[0.16em] text-mute uppercase">
+                    <div className="text-[11px] tracking-[0.16em] text-mute uppercase">
                         {t("totalBalance")}
                     </div>
                     {/* A line box at the total's own size and leading, so the
                         rule under it does not move when the figure lands. */}
-                    <div className="mt-3 flex h-[1em] items-center font-mono text-[clamp(26px,3.4vw,40px)] leading-none">
+                    <div className="mt-3 flex h-[1em] items-center text-[clamp(26px,3.4vw,40px)] leading-none">
                         <Skeleton className="h-[0.7em] w-[6ch] bg-rule2" />
                     </div>
                 </div>

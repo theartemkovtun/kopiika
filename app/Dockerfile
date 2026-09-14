@@ -25,18 +25,18 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-# Every NEXT_PUBLIC_ value is inlined into the bundle at build time, so the
-# build has to be handed something. It is handed a sentinel, and the entrypoint
-# swaps in the real value at container start — one image, configured per
-# deployment instead of rebuilt per environment.
-ENV NEXT_PUBLIC_API_URL=__NEXT_PUBLIC_API_URL__ \
-    NEXT_PUBLIC_USER_POOL_ID=__NEXT_PUBLIC_USER_POOL_ID__ \
-    NEXT_PUBLIC_USER_POOL_CLIENT_ID=__NEXT_PUBLIC_USER_POOL_CLIENT_ID__ \
-    NEXT_PUBLIC_USER_POOL_DOMAIN=__NEXT_PUBLIC_USER_POOL_DOMAIN__ \
-    NEXT_PUBLIC_COGNITO_OAUTH_REDIRECT_SIGN_IN=__NEXT_PUBLIC_COGNITO_OAUTH_REDIRECT_SIGN_IN__ \
-    NEXT_PUBLIC_COGNITO_OAUTH_REDIRECT_SIGN_OUT=__NEXT_PUBLIC_COGNITO_OAUTH_REDIRECT_SIGN_OUT__
-
+# The NEXT_PUBLIC_ values come from .env.production, which `next build` loads
+# on its own: sentinels, which the entrypoint swaps for the real values at
+# container start — one image, configured per deployment rather than rebuilt
+# per environment. .dockerignore keeps every other .env file out of the
+# context, so nothing of yours outranks it here.
 RUN npm run build
+
+# next build copies .env* into the standalone output, where the server would
+# read it at runtime. A real environment variable outranks a dotenv file in
+# @next/env, so it would change nothing — but an image carrying a file of
+# __SENTINEL__ values is a trap for whoever opens it next.
+RUN rm -f .next/standalone/.env.production
 
 # There is no public/ in the repo today; the runtime stage copies it either way,
 # so adding one later needs no change here.

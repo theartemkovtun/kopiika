@@ -90,7 +90,7 @@ function DialogContent({
 
 /**
  * A row of micro-label and actions, not a title bar — which is why it is a flex
- * row and why its type is the design's all-caps mono label.
+ * row and why its type is the design's all-caps micro-label.
  */
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
     return (
@@ -123,7 +123,7 @@ function DialogTitle({
         <DialogPrimitive.Title
             data-slot="dialog-title"
             className={cn(
-                "flex-1 font-mono text-[11px] font-normal tracking-[0.14em] text-mute uppercase",
+                "flex-1 text-[11px] font-normal tracking-[0.14em] text-mute uppercase",
                 className,
             )}
             {...props}

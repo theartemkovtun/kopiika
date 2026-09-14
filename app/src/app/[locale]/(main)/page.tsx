@@ -16,10 +16,7 @@ import {
     CategoryBreakdown,
     CategoryBreakdownFallback,
 } from "@/components/overview/category-breakdown";
-import {
-    FlowChart,
-    FlowChartFallback,
-} from "@/components/overview/flow-chart";
+import { FlowChart, FlowChartFallback } from "@/components/overview/flow-chart";
 import {
     LATEST,
     RecentEntries,
@@ -38,12 +35,12 @@ import { useLatestTransactions } from "@/hooks/use-transactions";
  * Overview. The only screen that carries the month strip — every other one
  * either picks its own range or has none.
  *
- * The title is the period itself: the month in the serif plate, the year as its
- * italic aside. In year view the year takes the plate and the aside drops away.
- * Both come off the browser's clock, and the strip under them off the same, so
- * the head of the page is drawn before anything is asked of the API — and the
- * statistics read below is issued in the same breath rather than after the
- * account record comes back.
+ * The title is the period itself: the month set large and italic, the year as
+ * its smaller aside. In year view the year takes the plate and the aside drops
+ * away. Both come off the browser's clock, and the strip under them off the
+ * same, so the head of the page is drawn before anything is asked of the API —
+ * and the statistics read below is issued in the same breath rather than after
+ * the account record comes back.
  *
  * Below it the page is three bands, and each one narrows: the totals, then what
  * they were made of, then the entries and balances behind them.
@@ -72,8 +69,7 @@ export default function OverviewPage({
     searchParams: Promise<{ month?: string; year?: string }>;
 }) {
     const calendar = useTranslations("calendar");
-    const { month, year, yearView, isCurrentMonth, today, range } =
-        usePeriod();
+    const { month, year, yearView, isCurrentMonth, today, range } = usePeriod();
 
     const { error, refetch } = useStatistics(range);
     useLatestTransactions(LATEST);

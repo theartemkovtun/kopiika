@@ -1,7 +1,7 @@
 import { cn } from "cn";
 
 /**
- * One ruled form row: a fixed-width mono label on the left, the control filling
+ * One ruled form row: a fixed-width micro-label on the left, the control filling
  * the rest, a hairline underneath. It is what both forms in the app are built
  * out of — the design has no boxed fields anywhere, only rows.
  *
@@ -40,7 +40,7 @@ export function FormRow({
         >
             <span
                 className={cn(
-                    "box-content shrink-0 basis-[92px] pr-6 font-mono text-[11px] tracking-[0.1em] text-mute uppercase",
+                    "box-content shrink-0 basis-[92px] pr-6 text-[11px] tracking-[0.1em] text-mute uppercase",
                     labelClassName,
                 )}
             >

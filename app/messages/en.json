@@ -57,7 +57,13 @@
         "monthlyFlow": "Monthly flow",
         "totalBalance": "Total Balance",
         "nothingSpent": "Nothing spent in this period.",
-        "noEntries": "No entries yet."
+        "noEntries": "No entries yet.",
+        "recentTransactions": "Recent transactions",
+        "topAccounts": "Top {shown} of {total} accounts",
+        "vsDate": "vs {date}",
+        "vsPreviousMonth": "vs previous month",
+        "vsPreviousYear": "vs previous year",
+        "vsTodayPreviousYear": "vs today of previous year"
     },
     "ledger": {
         "type": "Type",

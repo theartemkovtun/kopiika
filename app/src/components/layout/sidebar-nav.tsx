@@ -48,7 +48,7 @@ export function SidebarNav({
                                 : "border-b-transparent text-ink hover:text-blue",
                         )}
                     >
-                        <span className="font-mono text-[11px] text-mute">
+                        <span className="text-[11px] text-mute">
                             {String(index + 1).padStart(2, "0")}
                         </span>
                         <span className="text-[15px]">{t(item.id)}</span>

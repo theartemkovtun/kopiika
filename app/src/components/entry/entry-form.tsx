@@ -28,7 +28,7 @@ import { CURRENCIES, parseAmountInput } from "@/lib/money";
 /**
  * The entry form.
  *
- * It is a stack of ruled rows rather than a card of boxed fields: a mono label
+ * It is a stack of ruled rows rather than a card of boxed fields: a label
  * at a fixed 92px, the control filling the rest, and the row's own hairline as
  * the only line. The heavier rule under Account closes the stack.
  *
@@ -218,7 +218,6 @@ export function EntryForm({
                     />
                     <Select value={currency} onValueChange={selectCurrency}>
                         <SelectTrigger
-                            font="mono"
                             tone="mute"
                             triggerSize="sm"
                             underline="rule2"
@@ -232,7 +231,6 @@ export function EntryForm({
                                 <SelectItem
                                     key={option.code}
                                     value={option.code}
-                                    className="font-mono"
                                 >
                                     {option.label}
                                 </SelectItem>

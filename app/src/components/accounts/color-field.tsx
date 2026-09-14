@@ -77,7 +77,7 @@ export function ColorField({
                 style={isCustom ? { background: value } : undefined}
             >
                 {isCustom ? null : (
-                    <span className="font-mono text-[13px] leading-none text-mute">
+                    <span className="text-[13px] leading-none text-mute">
                         +
                     </span>
                 )}
@@ -136,7 +136,7 @@ export function ColorField({
                             }
                         />
                         <label className="flex min-w-0 flex-1 flex-col gap-[5px]">
-                            <span className="font-mono text-[10px] tracking-[0.12em] text-mute uppercase">
+                            <span className="text-[10px] tracking-[0.12em] text-mute uppercase">
                                 {t("colorValue")}
                             </span>
                             <Input
@@ -149,7 +149,7 @@ export function ColorField({
                                 onChange={(event) =>
                                     setDraft(event.target.value)
                                 }
-                                className="font-mono text-sm"
+                                className="text-sm"
                             />
                         </label>
                     </div>

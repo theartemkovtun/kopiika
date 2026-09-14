@@ -42,7 +42,7 @@ export default function ExternalAuthPage() {
     }, [router]);
 
     return (
-        <p className="font-mono text-[11px] tracking-[0.14em] text-mute uppercase">
+        <p className="text-[11px] tracking-[0.14em] text-mute uppercase">
             {t("signingIn")}
         </p>
     );

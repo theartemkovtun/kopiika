@@ -84,7 +84,7 @@ export function Ledger({
                 <button
                     type="button"
                     onClick={() => void refetch()}
-                    className="mt-3 cursor-pointer border-b border-rule font-mono text-xs text-mute transition-colors hover:text-ink"
+                    className="mt-3 cursor-pointer border-b border-rule text-xs text-mute transition-colors hover:text-ink"
                 >
                     {tCommon("retry")}
                 </button>
@@ -116,7 +116,7 @@ export function Ledger({
 
             {isLoading || isFetchingNextPage || hasNextPage ? (
                 <div
-                    className="py-5 font-mono text-xs text-mute"
+                    className="py-5 text-xs text-mute"
                     aria-label={tCommon("loading")}
                 >
                     ···
@@ -160,7 +160,7 @@ function DayBlock({
             {startsMonth ? (
                 <div
                     className={cn(
-                        "pb-[14px] text-center font-mono text-[11px] tracking-[0.18em] text-mute uppercase",
+                        "pb-[14px] text-center text-[11px] tracking-[0.18em] text-mute uppercase",
                         isFirst ? "pt-[2px]" : "pt-[34px]",
                     )}
                 >
@@ -225,9 +225,7 @@ function LedgerRow({
                     "after:absolute after:right-0 after:bottom-0 after:left-[86px] after:h-px after:bg-rule2 after:content-['']",
             )}
         >
-            <span className="font-mono text-xs whitespace-nowrap text-mute">
-                {date}
-            </span>
+            <span className="text-xs whitespace-nowrap text-mute">{date}</span>
 
             <span className="flex min-w-0 items-baseline gap-3">
                 <button
@@ -243,7 +241,7 @@ function LedgerRow({
                     {transaction.title}
                 </button>
                 {!isIncome ? (
-                    <span className="min-w-0 shrink truncate font-mono text-[11px] text-mute">
+                    <span className="min-w-0 shrink truncate text-[11px] text-mute">
                         {transaction.category
                             ? categoryLabel(transaction.category, tCategories)
                             : tCommon("noCategory")}
@@ -253,7 +251,7 @@ function LedgerRow({
 
             <span
                 className={cn(
-                    "ml-auto font-mono text-[15px] whitespace-nowrap",
+                    "ml-auto text-[15px] whitespace-nowrap",
                     isIncome ? "text-green" : "text-red",
                 )}
             >

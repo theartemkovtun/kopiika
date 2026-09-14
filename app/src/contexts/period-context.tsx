@@ -5,6 +5,7 @@ import { createContext, use, useCallback, useMemo, useState } from "react";
 import {
     FIRST_YEAR,
     daysInMonth,
+    fromIsoDate,
     previousMonthRange,
     toIsoDate,
 } from "@/lib/dates";
@@ -31,12 +32,29 @@ export type Period = {
 
 export type DateRange = { fromDate: string; toDate: string };
 
-/** The period a figure is measured against, and the month to name it by. */
+/**
+ * The period a figure is measured against, and enough about it for the note
+ * under the figure to say what that period was.
+ *
+ * The wording is left to the Overview — this says what the range *is*, not how
+ * to write it, because the two scopes are worded differently and only one of
+ * them names a day.
+ */
 export type Comparison = {
-    /** 0-indexed. */
-    month: number;
-    year: number;
+    /** The range read for the figure the selection is measured against. */
     range: DateRange;
+    /** Which kind of period was selected, and so which wording it takes. */
+    scope: "month" | "year";
+    /**
+     * The day the previous period was cut at, when the selection is still
+     * running and that cut landed on today's own date.
+     *
+     * Null when the whole previous period was read — nothing to name — and
+     * null again when the previous period was too short to hold today's day
+     * (the 31st against a 30-day month): the range is clamped to its last day,
+     * and naming that day would claim a span nobody asked for.
+     */
+    throughDate: string | null;
 };
 
 type PeriodContextValue = Period & {
@@ -57,11 +75,12 @@ type PeriodContextValue = Period & {
     /** The selection as the inclusive day range the API takes. */
     range: DateRange;
     /**
-     * What the selection is read against: the month before it, cut to the same
-     * span while the selected month is still running. Null in year view, where
-     * the design carries no comparison at all.
+     * What the selection is read against: the period before it — the previous
+     * month, or the previous year — cut to the same span while the selected
+     * one is still running, so that a month three days old is not measured
+     * against a whole one.
      */
-    comparison: Comparison | null;
+    comparison: Comparison;
 };
 
 const PeriodContext = createContext<PeriodContextValue | null>(null);
@@ -120,7 +139,9 @@ export function derivePeriodFromParams(
     const maxMonth = year === today.year ? today.month : 11;
     const monthParam = Number(params.month) - 1;
     const month =
-        Number.isInteger(monthParam) && monthParam >= 0 && monthParam <= maxMonth
+        Number.isInteger(monthParam) &&
+        monthParam >= 0 &&
+        monthParam <= maxMonth
             ? monthParam
             : Math.min(today.month, maxMonth);
 
@@ -226,9 +247,33 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
                   toDate: toIsoDate(year, month, daysInMonth(year, month)),
               };
 
-        const comparison: Comparison | null = yearView
-            ? null
-            : (() => {
+        const comparison: Comparison = yearView
+            ? ((): Comparison => {
+                  const previous = year - 1;
+                  const isCurrentYear = year === today.year;
+
+                  // The same cut the month view makes, a scale up: a year
+                  // still running is read against the same stretch of the one
+                  // before it. February 29th has no counterpart in three years
+                  // out of four, so the day is clamped to that month's last.
+                  const toDate = isCurrentYear
+                      ? toIsoDate(
+                            previous,
+                            today.month,
+                            Math.min(
+                                today.day,
+                                daysInMonth(previous, today.month),
+                            ),
+                        )
+                      : toIsoDate(previous, 11, 31);
+
+                  return {
+                      range: { fromDate: toIsoDate(previous, 0, 1), toDate },
+                      scope: "year",
+                      throughDate: isCurrentYear ? toDate : null,
+                  };
+              })()
+            : ((): Comparison => {
                   const previous = previousMonthRange(
                       year,
                       month,
@@ -236,12 +281,16 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
                   );
 
                   return {
-                      month: previous.month,
-                      year: previous.year,
                       range: {
                           fromDate: previous.fromDate,
                           toDate: previous.toDate,
                       },
+                      scope: "month",
+                      throughDate:
+                          isCurrentMonth &&
+                          fromIsoDate(previous.toDate).day === today.day
+                              ? previous.toDate
+                              : null,
                   };
               })();
 

@@ -25,8 +25,13 @@ const NAMED = 5;
  *
  * The bar is what the total is made up of, so only accounts in credit take a
  * segment; one in the red subtracts from the total rather than adding a band
- * to it. Each row carries its balance in its own currency — the total above is
- * the one figure converted, because it is the only one that has to add up.
+ * to it.
+ *
+ * A row leads with the account's **own** currency, which is the opposite way
+ * round from the Accounts screen: there the list has to add up to the total
+ * over it, so the converted figure leads and the native one trails. Here the
+ * converted figure is the small one, shown only when it says something the
+ * figure beside it does not.
  */
 export function AccountsSummary() {
     const t = useTranslations("overview");
@@ -52,13 +57,23 @@ export function AccountsSummary() {
     return (
         <section>
             <div className="mb-3 flex items-baseline gap-[14px]">
-                <h2 className="font-serif text-[30px] font-normal tracking-[-0.01em]">
+                <h2 className="text-[23px] font-normal tracking-[-0.01em] italic">
                     {tNav("accounts")}
                 </h2>
+                {/* Only when some are missing: with five or fewer the list is
+                    all of them, and saying so would be noise. */}
+                {accounts.length > NAMED ? (
+                    <span className="text-[11px] tracking-[0.12em] text-mute uppercase">
+                        {t("topAccounts", {
+                            shown: NAMED,
+                            total: accounts.length,
+                        })}
+                    </span>
+                ) : null}
                 <Link
                     href="/accounts"
                     aria-label={tNav("accounts")}
-                    className="ml-auto font-mono text-xs text-mute transition-colors hover:text-blue"
+                    className="ml-auto text-xs text-mute transition-colors hover:text-blue"
                 >
                     →
                 </Link>
@@ -66,7 +81,7 @@ export function AccountsSummary() {
 
             <div className="flex flex-col">
                 <div className="border-t border-rule pt-[22px] pb-[14px]">
-                    <div className="font-mono text-[11px] tracking-[0.14em] text-mute uppercase">
+                    <div className="text-[11px] tracking-[0.14em] text-mute uppercase">
                         {t("totalBalance")}
                     </div>
                     {/* h-[1.5em]: unlike the summary band's figures, this
@@ -75,7 +90,7 @@ export function AccountsSummary() {
                         row itself, rather than on the skeleton bar, keeps the
                         loading state the same height as the real total
                         without drawing a bar as tall as the leading. */}
-                    <div className="mt-[6px] flex h-[1.5em] items-center font-mono text-[28px] tracking-[-0.02em]">
+                    <div className="mt-[6px] flex h-[1.5em] items-center text-[28px] tracking-[-0.02em]">
                         {data ? (
                             format(data.total)
                         ) : (
@@ -120,16 +135,22 @@ export function AccountsSummary() {
                                 />
                                 <span className="min-w-0 truncate">
                                     {account.name}
-                                    {account.description ? (
-                                        <span className="text-xs text-mute">
-                                            {" "}
-                                            {account.description}
-                                        </span>
-                                    ) : null}
                                 </span>
                             </span>
-                            <span className="font-mono text-sm whitespace-nowrap">
-                                {format(account.amount)}
+                            <span className="flex items-baseline gap-[10px] whitespace-nowrap">
+                                {/* What it is worth in the display currency —
+                                    the figure that added up to the total
+                                    above — and only when that is not already
+                                    what the row says. */}
+                                {account.amount.currency !==
+                                account.localizedAmount.currency ? (
+                                    <span className="text-xs text-mute">
+                                        {format(account.localizedAmount)}
+                                    </span>
+                                ) : null}
+                                <span className="text-sm">
+                                    {format(account.amount)}
+                                </span>
                             </span>
                         </div>
                     ))
@@ -158,13 +179,13 @@ export function AccountsSummaryFallback() {
     return (
         <section>
             <div className="mb-3 flex items-baseline gap-[14px]">
-                <h2 className="font-serif text-[30px] font-normal tracking-[-0.01em]">
+                <h2 className="text-[23px] font-normal tracking-[-0.01em] italic">
                     {tNav("accounts")}
                 </h2>
                 <Link
                     href="/accounts"
                     aria-label={tNav("accounts")}
-                    className="ml-auto font-mono text-xs text-mute transition-colors hover:text-blue"
+                    className="ml-auto text-xs text-mute transition-colors hover:text-blue"
                 >
                     →
                 </Link>
@@ -172,10 +193,10 @@ export function AccountsSummaryFallback() {
 
             <div className="flex flex-col">
                 <div className="border-t border-rule pt-[22px] pb-[14px]">
-                    <div className="font-mono text-[11px] tracking-[0.14em] text-mute uppercase">
+                    <div className="text-[11px] tracking-[0.14em] text-mute uppercase">
                         {t("totalBalance")}
                     </div>
-                    <div className="mt-[6px] flex h-[1.5em] items-center font-mono text-[28px] tracking-[-0.02em]">
+                    <div className="mt-[6px] flex h-[1.5em] items-center text-[28px] tracking-[-0.02em]">
                         <Skeleton className="h-[1em] w-[150px] bg-rule2" />
                     </div>
                 </div>

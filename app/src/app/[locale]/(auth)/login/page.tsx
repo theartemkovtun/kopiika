@@ -48,7 +48,7 @@ export default function LoginPage() {
 
     return (
         <div className="flex flex-col items-center text-center">
-            <h1 className="font-serif text-[40px] leading-[0.95] font-normal tracking-[-0.02em]">
+            <h1 className="text-[40px] leading-[0.95] font-normal tracking-[-0.02em] italic">
                 {t("loginTitle")}
             </h1>
 

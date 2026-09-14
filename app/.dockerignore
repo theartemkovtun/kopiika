@@ -7,9 +7,12 @@
 .idea
 .DS_Store
 
-# Secrets and local-only config — the image is configured at run time
+# Secrets and local-only config — the image is configured at run time. The one
+# exception is .env.production, which carries no values: it is the placeholder
+# file `next build` reads, and the entrypoint rewrites what it inlines.
 .env
 .env.*
+!.env.production
 
 # Installed and built locally; the image installs and builds its own, and a
 # host node_modules would shadow the one the deps stage resolved for musl

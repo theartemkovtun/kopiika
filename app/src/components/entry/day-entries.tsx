@@ -51,10 +51,10 @@ export function DayEntries({
     return (
         <section aria-label={heading}>
             <div className="flex items-baseline justify-between gap-3 border-b border-rule pb-2">
-                <h2 className="font-mono text-[11px] tracking-[0.1em] text-mute uppercase">
+                <h2 className="text-[11px] tracking-[0.1em] text-mute uppercase">
                     {heading}
                 </h2>
-                <span className="font-mono text-xs text-mute">
+                <span className="text-xs text-mute">
                     {formatValue(total, undefined, { signed: true })}
                 </span>
             </div>
@@ -105,14 +105,14 @@ function EntryRow({
             <span className="flex min-w-0 items-baseline gap-[9px]">
                 <span className="min-w-0 truncate text-sm">{entry.title}</span>
                 {entry.type === "outcome" ? (
-                    <span className="font-mono text-[10px] tracking-[0.08em] whitespace-nowrap text-mute uppercase">
+                    <span className="text-[10px] tracking-[0.08em] whitespace-nowrap text-mute uppercase">
                         {categoryName}
                     </span>
                 ) : null}
             </span>
             <span
                 className={cn(
-                    "font-mono text-sm whitespace-nowrap",
+                    "text-sm whitespace-nowrap",
                     entry.type === "income" ? "text-green" : "text-red",
                 )}
             >

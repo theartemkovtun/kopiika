@@ -9,7 +9,7 @@ export default function SignupPage() {
 
     return (
         <>
-            <h1 className="font-serif text-[40px] leading-[0.95] font-normal tracking-[-0.02em]">
+            <h1 className="text-[40px] leading-[0.95] font-normal tracking-[-0.02em] italic">
                 {t("signupTitle")}
             </h1>
             <Placeholder label={t("signupTitle")} className="mt-7">

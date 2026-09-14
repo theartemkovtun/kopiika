@@ -134,7 +134,6 @@ export function NewAccountForm() {
             <FormRow label={t("currency")} labelClassName={LABEL}>
                 <Select value={currency} onValueChange={edit(setCurrency)}>
                     <SelectTrigger
-                        font="mono"
                         aria-label={t("currency")}
                         className="w-full min-w-0"
                     >
@@ -142,11 +141,7 @@ export function NewAccountForm() {
                     </SelectTrigger>
                     <SelectContent className="min-w-[140px]">
                         {CURRENCIES.map((option) => (
-                            <SelectItem
-                                key={option.code}
-                                value={option.code}
-                                className="font-mono"
-                            >
+                            <SelectItem key={option.code} value={option.code}>
                                 {option.label}
                             </SelectItem>
                         ))}

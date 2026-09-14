@@ -32,10 +32,6 @@ const triggerVariants = cva(
                 ink: "text-ink data-[placeholder]:text-mute",
                 mute: "text-mute",
             },
-            font: {
-                sans: "font-sans",
-                mono: "font-mono",
-            },
             triggerSize: {
                 sm: "text-[13px]",
                 default: "text-[17px]",
@@ -45,7 +41,6 @@ const triggerVariants = cva(
         defaultVariants: {
             underline: "none",
             tone: "ink",
-            font: "sans",
             triggerSize: "default",
         },
     },
@@ -74,7 +69,6 @@ function SelectTrigger({
     children,
     underline,
     tone,
-    font,
     triggerSize,
     ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger> &
@@ -86,7 +80,6 @@ function SelectTrigger({
                 triggerVariants({
                     underline,
                     tone,
-                    font,
                     triggerSize,
                     className,
                 }),
@@ -152,7 +145,7 @@ function SelectLabel({
         <SelectPrimitive.Label
             data-slot="select-label"
             className={cn(
-                "px-3 py-2 font-mono text-[10px] tracking-[0.12em] text-mute uppercase",
+                "px-3 py-2 text-[10px] tracking-[0.12em] text-mute uppercase",
                 className,
             )}
             {...props}

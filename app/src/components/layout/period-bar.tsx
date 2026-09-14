@@ -15,6 +15,10 @@ import { usePeriod } from "@/contexts/period-context";
  *
  * `Year` sits past a divider because it is a different kind of choice: not a
  * thirteenth month but a way of collapsing all of them.
+ *
+ * The selected chip is underlined rather than ruled: at 5px of offset the line
+ * belongs to the word, where a bottom border belonged to the button and had to
+ * be reserved on every other chip to keep the row from shifting.
  */
 export function PeriodBar({ className }: { className?: string }) {
     const t = useTranslations("calendar");
@@ -37,7 +41,7 @@ export function PeriodBar({ className }: { className?: string }) {
     return (
         <div
             className={cn(
-                "flex flex-wrap items-center gap-1 border-y border-rule py-[10px] font-mono text-xs",
+                "flex flex-wrap items-center gap-1 border-y border-rule py-[10px] text-xs",
                 className,
             )}
         >
@@ -53,12 +57,12 @@ export function PeriodBar({ className }: { className?: string }) {
                         aria-pressed={selected}
                         onClick={() => selectMonth(index)}
                         className={cn(
-                            "border-b px-[7px] py-1 transition-colors",
+                            "px-[7px] py-1 underline-offset-[5px] transition-colors",
                             disabled
-                                ? "pointer-events-none border-transparent text-rule"
+                                ? "pointer-events-none text-rule"
                                 : selected
-                                  ? "border-blue text-blue"
-                                  : "cursor-pointer border-transparent text-mute hover:text-blue",
+                                  ? "text-blue underline decoration-1"
+                                  : "cursor-pointer text-mute hover:text-blue",
                         )}
                     >
                         {label}
@@ -73,10 +77,10 @@ export function PeriodBar({ className }: { className?: string }) {
                 aria-pressed={yearView}
                 onClick={selectYear}
                 className={cn(
-                    "cursor-pointer border-b px-[7px] py-1 transition-colors",
+                    "cursor-pointer px-[7px] py-1 underline-offset-[5px] transition-colors",
                     yearView
-                        ? "border-blue text-blue"
-                        : "border-transparent text-mute hover:text-blue",
+                        ? "text-blue underline decoration-1"
+                        : "text-mute hover:text-blue",
                 )}
             >
                 {tPeriod("year")}

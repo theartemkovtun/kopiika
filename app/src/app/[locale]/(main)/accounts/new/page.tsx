@@ -25,10 +25,7 @@ export default function NewAccountPage() {
 
             <div className="mt-[30px] max-w-[520px]">
                 <Button asChild variant="ghost" size="text">
-                    <Link
-                        href="/accounts"
-                        className="font-mono text-xs text-mute"
-                    >
+                    <Link href="/accounts" className="text-xs text-mute">
                         {t("back")}
                     </Link>
                 </Button>

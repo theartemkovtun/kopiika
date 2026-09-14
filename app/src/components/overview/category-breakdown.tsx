@@ -53,7 +53,7 @@ export function CategoryBreakdown() {
     return (
         <section className="min-w-0">
             <div className="mb-[18px] flex items-baseline gap-[14px]">
-                <h2 className="font-serif text-[26px] font-normal tracking-[-0.01em]">
+                <h2 className="text-[26px] font-normal tracking-[-0.01em] italic">
                     {t("whereItWent")}
                 </h2>
             </div>
@@ -130,7 +130,7 @@ export function CategoryBreakdownFallback() {
     return (
         <section className="min-w-0">
             <div className="mb-[18px] flex items-baseline gap-[14px]">
-                <h2 className="font-serif text-[26px] font-normal tracking-[-0.01em]">
+                <h2 className="text-[26px] font-normal tracking-[-0.01em] italic">
                     {t("whereItWent")}
                 </h2>
             </div>
@@ -151,10 +151,7 @@ function ChartSkeleton() {
 
 function DonutSkeleton() {
     return (
-        <div
-            className="flex h-[196px] items-center justify-center"
-            aria-hidden
-        >
+        <div className="flex h-[196px] items-center justify-center" aria-hidden>
             <div className="relative size-[176px]">
                 <Skeleton className="size-full rounded-full bg-rule2" />
                 <div className="absolute inset-[30%] rounded-full bg-bg" />
@@ -185,10 +182,7 @@ function LegendSkeleton() {
                     className="flex h-[19.5px] flex-none items-center gap-2"
                 >
                     <Skeleton className="size-[10px] flex-none rounded-full bg-rule2" />
-                    <Skeleton
-                        className="h-[13px] bg-rule2"
-                        style={{ width }}
-                    />
+                    <Skeleton className="h-[13px] bg-rule2" style={{ width }} />
                     <Skeleton className="h-[11px] w-[22px] bg-rule2" />
                 </div>
             ))}
@@ -253,9 +247,7 @@ function Legend({ items }: { items: LegendItem[] }) {
                             style={{ background: item.color }}
                         />
                         <span>{item.name}</span>
-                        <span className="font-mono text-xs text-mute">
-                            {item.share}
-                        </span>
+                        <span className="text-xs text-mute">{item.share}</span>
                     </div>
                 ))}
             </div>

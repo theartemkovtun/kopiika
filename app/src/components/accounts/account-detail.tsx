@@ -144,17 +144,17 @@ export function AccountDetail({ accountId }: { accountId: string }) {
                         className="size-[11px] flex-none rounded-full"
                         style={{ background: color }}
                     />
-                    <h1 className="min-w-0 text-[clamp(26px,3vw,34px)] leading-[1.05] font-medium tracking-[-0.02em]">
+                    <h1 className="min-w-0 text-[clamp(26px,3vw,34px)] leading-[1.05] font-medium tracking-[-0.02em] italic">
                         {account.name}
                     </h1>
                 </div>
 
                 <div className="mt-5 flex flex-wrap items-baseline gap-4">
-                    <div className="font-mono text-[clamp(28px,3.6vw,42px)] leading-none tracking-[-0.03em]">
+                    <div className="text-[clamp(28px,3.6vw,42px)] leading-none tracking-[-0.03em]">
                         {format(account.amount)}
                     </div>
                     {isForeign ? (
-                        <div className="font-mono text-[clamp(17px,2vw,22px)] leading-none tracking-[-0.02em] text-mute">
+                        <div className="text-[clamp(17px,2vw,22px)] leading-none tracking-[-0.02em] text-mute">
                             {format(account.localizedAmount)}
                         </div>
                     ) : null}
@@ -184,10 +184,10 @@ export function AccountDetail({ accountId }: { accountId: string }) {
 
             <section className="mt-10">
                 <div className="mb-3 flex flex-wrap items-baseline gap-[14px]">
-                    <h2 className="font-serif text-[23px] font-normal tracking-[-0.01em]">
+                    <h2 className="text-[23px] font-normal tracking-[-0.01em] italic">
                         {t("recentEntries")}
                     </h2>
-                    <span className="font-mono text-[11px] tracking-[0.12em] text-mute uppercase">
+                    <span className="text-[11px] tracking-[0.12em] text-mute uppercase">
                         {t("latest10")}
                     </span>
                     <Link
@@ -229,10 +229,10 @@ export function AccountDetail({ accountId }: { accountId: string }) {
 function Meta({ label, value }: { label: string; value: string }) {
     return (
         <span className="flex items-baseline gap-[10px]">
-            <span className="font-mono text-[10px] tracking-[0.14em] text-mute uppercase">
+            <span className="text-[10px] tracking-[0.14em] text-mute uppercase">
                 {label}
             </span>
-            <span className="font-mono text-sm text-ink">{value}</span>
+            <span className="text-sm text-ink">{value}</span>
         </span>
     );
 }
@@ -241,7 +241,7 @@ function BackLink({ label }: { label: string }) {
     return (
         <Link
             href="/accounts"
-            className="font-mono text-xs text-mute transition-colors hover:text-blue"
+            className="text-xs text-mute transition-colors hover:text-blue"
         >
             {label}
         </Link>
@@ -273,16 +273,14 @@ function EntryRow({
             onClick={onOpen}
             className="grid w-full cursor-pointer grid-cols-[64px_minmax(0,1fr)_auto] items-baseline gap-[14px] border-t border-rule2 py-[11px] text-left text-[13.5px] text-ink transition-colors hover:text-blue"
         >
-            <span className="font-mono text-xs text-mute">
-                {rowLabel(entry.date)}
-            </span>
+            <span className="text-xs text-mute">{rowLabel(entry.date)}</span>
 
             <span className="flex min-w-0 items-baseline gap-[10px]">
                 <span className="truncate">{entry.title}</span>
                 {/* Income has no category worth naming — it came in, and the
                     green already says so. */}
                 {!isIncome ? (
-                    <span className="flex-none font-mono text-[11px] whitespace-nowrap text-mute">
+                    <span className="flex-none text-[11px] whitespace-nowrap text-mute">
                         {entry.category
                             ? categoryLabel(entry.category, tCategories)
                             : tCommon("noCategory")}
@@ -292,7 +290,7 @@ function EntryRow({
 
             <span
                 className={cn(
-                    "font-mono text-sm whitespace-nowrap",
+                    "text-sm whitespace-nowrap",
                     isIncome ? "text-green" : "text-red",
                 )}
             >
@@ -319,7 +317,7 @@ export function AccountDetailFallback() {
                     <Skeleton className="size-[11px] flex-none rounded-full bg-rule2" />
                     <Skeleton className="h-[30px] w-[210px] bg-rule2" />
                 </div>
-                <div className="mt-5 flex h-[1em] items-center font-mono text-[clamp(28px,3.6vw,42px)] leading-none">
+                <div className="mt-5 flex h-[1em] items-center text-[clamp(28px,3.6vw,42px)] leading-none">
                     <Skeleton className="h-[0.7em] w-[7ch] bg-rule2" />
                 </div>
                 <div className="mt-[22px] h-[46px] bg-blue-soft" />
@@ -327,7 +325,7 @@ export function AccountDetailFallback() {
 
             <section className="mt-10">
                 <div className="mb-3 flex items-baseline gap-[14px]">
-                    <h2 className="font-serif text-[23px] font-normal tracking-[-0.01em]">
+                    <h2 className="text-[23px] font-normal tracking-[-0.01em] italic">
                         {t("recentEntries")}
                     </h2>
                 </div>

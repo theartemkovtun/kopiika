@@ -44,21 +44,23 @@ pruned `node_modules`, `.next/static`, `public/` — on `node:24-alpine` as the
 unprivileged `node` user. About 225 MB.
 
 Every value the app reads is `NEXT_PUBLIC_`, and Next inlines those into the
-bundle at build time. So the build is handed `__NEXT_PUBLIC_API_URL__`-style
-sentinels and `docker-entrypoint.sh` rewrites them from the environment at
-startup: one image runs in any environment, and pointing it at another API is a
-restart rather than a rebuild. On a platform like Render that means the Docker
+bundle at build time. So the build reads `.env.production` — six
+`__NEXT_PUBLIC_API_URL__`-style sentinels and no real values — and
+`docker-entrypoint.sh` rewrites them from the environment at startup: one image
+runs in any environment, and pointing it at another API is a restart rather
+than a rebuild. Locally that file is outranked by your `.env.local`, so
+`bun run build` is unaffected. On a platform like Render that means the Docker
 runtime with the variables set in the dashboard, nothing passed at build. A
 variable left unset is named on stderr when the container starts, instead of
 reaching the browser as a literal `__NAME__`.
 
-A new `NEXT_PUBLIC_` variable needs its sentinel added to the `ENV` block in the
-Dockerfile; the entrypoint finds it by name from there.
+A new `NEXT_PUBLIC_` variable needs its sentinel added to `.env.production`;
+the entrypoint finds it by name from the environment.
 
 ## The design
 
-Everything visual comes from the Claude Design canvas:
-<https://claude.ai/code/artifact/021d00e0-2d88-4a77-92e8-c8e459054736>
+Everything visual comes from the Claude Design canvas, `Kopiika v9`:
+<https://claude.ai/design/p/ff82fd75-91cb-4fbb-a975-51f08f8c419f?file=Kopiika+v9.dc.html>
 
 The vocabulary is worth knowing before changing anything:
 
@@ -78,12 +80,25 @@ so a rule copied out of the canvas works unchanged. The shadcn token names
 (`--color-background`, `--color-primary`, …) are aliases onto the same values,
 which is why an unmodified shadcn component already lands inside the design.
 
-Four type roles, wired in `src/lib/fonts.ts`:
+Two faces, wired in `src/lib/fonts.ts`:
 
 - **script** — Bad Script, the wordmark, once per page
-- **serif** — Gentium Book Plus, every heading
-- **sans** — Instrument Sans, body and controls
-- **mono** — JetBrains Mono, every number and every all-caps micro-label
+- **sans** — Google Sans, everything else
+
+v9 collapsed four families into one, so the two roles the extra faces used to
+carry are now settings on that one:
+
+- **a heading is the sans in italic** — `italic` on the element, at 400 (500 for
+  an account's name), never a separate family. There is no `font-serif`.
+- **a figure is the sans with tabular figures** — `font-feature-settings: "tnum"`
+  is set on `<html>` in `globals.css`, so a column of amounts lines up without
+  any element asking for it. There is no `font-mono` either: both tokens are
+  left undefined on purpose, so that a stray `font-mono` copied in from a
+  shadcn block shows up as a real monospace instead of passing silently.
+
+The one place that has to name the family itself is `src/lib/charts.ts`:
+recharts writes its ticks and tooltips as SVG, which inherits neither the body
+font nor the `tnum` setting.
 
 Three rules the design never breaks: nothing is rounded (the whole radius scale
 is `0`), nothing casts a shadow except a dropdown panel, and emphasis is carried
@@ -256,13 +271,22 @@ the range, empty ones included, so the monthly bars are that series folded into
 twelve buckets. All twelve are always drawn, even mid-year, so that walking back
 through the years never changes the width of a bar.
 
-The comparison note under each total — "−₴4,000 vs this point in August" — is
-the one thing the API cannot answer in a single call, so a second range is read.
-`usePeriod().comparison` is what shapes it: the month before the selected one,
-**cut to the same day-of-month** while the selected month is still running,
+The comparison note the design puts under each total — "−₴4,000 vs Aug 12" —
+is **wired but not drawn**. It is the one thing the API cannot answer in a
+single call, so it would cost a second read of the previous period on every
+page view, which is a request per period for one line.
+
+What holds it off is two places in `src/components/overview/summary.tsx`: the
+`useStatistics(null)` call, which leaves that query disabled rather than
+removing it, and the `{false &&` around the note itself. Everything behind it
+still works. `usePeriod().comparison` shapes the range — the period before the
+selected one, **cut to the same span** while the selected one is still running,
 because measuring a month that is three days old against a whole one would read
-as a collapse. Year view has no note at all, and the height it would take is
-held anyway so the band does not change shape.
+as a collapse; year view does the same a scale up, January to today against
+January to the same day a year earlier, and says so in words rather than naming
+a day, since "vs Sep 14" over nine months of figures would read as one. The
+note's sign is the change, not the direction of the money: `+₴500` under Spent
+means five hundred more went out than by the same point before.
 
 Three places where the design and the API do not line up, and how it was
 settled:
@@ -285,9 +309,12 @@ settled:
    ("other") reads faintly on the dark ground and `#E9DCC9` ("charity") on the
    light.
 
-2. **An account has no type.** The design's rows read "Monobank · debit"; the
-   API has only `description`, so that is what the subtitle shows, and nothing
-   when it is empty.
+2. **An account row leads with its own currency here, and with the converted
+   figure on the Accounts screen.** The two are the opposite way round on
+   purpose: this panel is a list of accounts, where the Accounts screen is a
+   list that has to add up to the total above it. The converted figure appears
+   here as the small one beside the balance, and only when the currencies
+   differ. Above five accounts the heading says how many are being left out.
 3. **A share is a share of categorised spending.** The API leaves uncategorised
    spending out of the category breakdown rather than pooling it, so the slices
    need not add up to Spent above them.
@@ -299,20 +326,15 @@ recent-entries list is deliberately _not_ bounded by the period strip: it
 answers "what have I written lately", which a month-bounded read cannot answer
 on the 1st.
 
-One departure from the repo's own type rule, taken from the design file: the
-INCOME / SPENT / KEPT labels are the only all-caps micro-labels in the design
-set in the sans rather than the mono. Every other one — the ledger rail, the
-entry form, TOTAL BALANCE in the same panel — names JetBrains Mono explicitly.
-
 ### The accounts screen
 
 `/accounts` is one read wide. `GET /v1/accounts/balance` answers every account
 and their combined worth together, so the total, the share bar and the rows all
 come out of the same response — and the total is the only figure converted,
-because it is the only one that has to add up. Each row carries its balance in
-the account's own currency, with the display-currency figure repeated in the
-middle column only when the two differ; the API hands back both, so nothing is
-converted in the client.
+because it is the only one that has to add up. The figure a row leads with is
+therefore the converted one, and the account's own balance sits to its left,
+small, and only when the two currencies differ; the API hands back both, so
+nothing is converted in the client.
 
 An account is drawn in the `colorHex` stored against it, and the Overview reads
 the same field — so an account keeps one colour across both screens, and
@@ -321,22 +343,19 @@ colour falls back to the positional `--ch*` series; see `storedColor`. The bar
 is what the total is made of, which is why only accounts in credit take a band:
 one in the red subtracts from the total rather than adding to it.
 
-Opening an account is where the design and the API part company twice, and
-`src/lib/accounts.ts` is where both are settled:
+Opening an account is settled in `src/lib/accounts.ts`:
 
-1. **An account has no type.** The design's form offers four — debit, wallet,
-   deposit, credit — and its rows read "Main card · Debit". The API has only a
-   free `description`, so the chosen type is written there as the lower-case
-   **slug**, and the subtitle translates the four known ones and shows anything
-   else as written. It is the same arrangement as the seeded category names,
-   for the same reason: storing the label would freeze the account into the
-   language it happened to be created in.
-2. **An account has no colour picker.** `colorHex` is required on create and
-   the design offers nowhere to choose one, so the field is filled from the
-   design's own series — `--ch1`..`--ch6` as the nearest sRGB — cycled by how
-   many accounts are already held, so the first six differ. It is a suggestion
-   at the moment of creation only — the colour is stored on the account, and is
-   then what every screen draws it in.
+1. **An account has no type.** Earlier designs collected one — debit, wallet,
+   deposit, credit — and their rows read "Main card · Debit"; v8 dropped the
+   picker and the subtitle and v9 has neither, so nothing is written to the
+   API's free `description` any more and no screen reads it.
+2. **A colour is picked, not assigned.** `colorHex` is required on create, and
+   v9 gives the form a picker for it: six presets — `--ch1`..`--ch6` as the
+   nearest sRGB, in `ACCOUNT_SWATCHES` — with a custom colour behind them. The
+   field opens on the next swatch in the series, cycled by how many accounts
+   are already held so the first six differ, but that is a suggestion at the
+   moment of creation only. The colour is then stored on the account and is
+   what every screen draws it in.
 
 Two smaller notes. The opening balance may be left empty, and empty is sent as
 _no value_ rather than as a zero — which is why it is read with
@@ -376,9 +395,9 @@ Stubbed, showing what belongs in it: Reports. So are the email/password
 screens — sign-up, confirmation and password reset — and nothing links to them,
 because Google is the only way in.
 
-## Known gap
+## A gap that closed
 
-Instrument Sans ships latin and latin-ext only — it has **no Cyrillic**, so
-Ukrainian body copy falls through to the stack in `src/lib/fonts.ts`. The serif,
-mono and script faces all carry Cyrillic, so headings and figures are
-unaffected. Worth a decision before the Ukrainian UI ships.
+The four-family set had no Cyrillic in its body face: Instrument Sans ships
+latin and latin-ext only, so Ukrainian copy fell through to the fallback stack
+while the headings and figures around it did not. Google Sans carries Cyrillic,
+so v9's single family renders the whole UI in one face in both languages.

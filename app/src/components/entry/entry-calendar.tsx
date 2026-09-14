@@ -94,7 +94,7 @@ export function EntryCalendar({
                 </MonthArrow>
                 <span
                     aria-live="polite"
-                    className="min-w-[116px] text-center font-mono text-xs tracking-[0.06em]"
+                    className="min-w-[116px] text-center text-xs tracking-[0.06em]"
                 >
                     {months[view.month]} {view.year}
                 </span>
@@ -111,7 +111,7 @@ export function EntryCalendar({
                 {WEEKDAY_ORDER.map((index) => (
                     <div
                         key={index}
-                        className="pb-[6px] text-center font-mono text-[10px] tracking-[0.06em] text-mute uppercase"
+                        className="pb-[6px] text-center text-[10px] tracking-[0.06em] text-mute uppercase"
                     >
                         {weekdays[index]}
                     </div>
@@ -134,7 +134,7 @@ export function EntryCalendar({
                             aria-pressed={isSelected}
                             onClick={() => onSelect(date)}
                             className={cn(
-                                "flex cursor-pointer flex-col items-center justify-center gap-1 py-[7px] font-mono text-[13px] tabular-nums transition-colors",
+                                "flex cursor-pointer flex-col items-center justify-center gap-1 py-[7px] text-[13px] tabular-nums transition-colors",
                                 isFuture &&
                                     "pointer-events-none cursor-default text-mute opacity-[0.38]",
                                 !isFuture &&
@@ -188,7 +188,7 @@ function MonthArrow({
             aria-label={label}
             onClick={onClick}
             className={cn(
-                "px-[6px] py-[2px] font-mono text-[15px] leading-none text-mute transition-colors",
+                "px-[6px] py-[2px] text-[15px] leading-none text-mute transition-colors",
                 disabled
                     ? "pointer-events-none opacity-35"
                     : "cursor-pointer hover:text-ink",

@@ -15,7 +15,7 @@ import { toIsoDate, todayParts } from "@/lib/dates";
  *
  * It sticks as the ledger scrolls, which is the whole reason it is a rail and
  * not a bar: the list under it is unbounded, so the controls that narrow it
- * have to stay reachable. Every section is a hairline and a mono micro-label,
+ * have to stay reachable. Every section is a hairline and a micro-label,
  * and nothing here has a box of its own.
  *
  * The type row and the date presets are single-choice and mark the active one
@@ -89,14 +89,14 @@ export function LedgerFilterRail({
         >
             <div>
                 <div className="mb-[10px] flex items-baseline gap-[10px]">
-                    <span className="flex-1 font-mono text-[11px] tracking-[0.14em] text-mute uppercase">
+                    <span className="flex-1 text-[11px] tracking-[0.14em] text-mute uppercase">
                         {t("type")}
                     </span>
                     {hasFilters ? (
                         <button
                             type="button"
                             onClick={() => onChange({})}
-                            className="cursor-pointer border-b border-rule font-mono text-[11px] text-mute transition-colors hover:text-ink"
+                            className="cursor-pointer border-b border-rule text-[11px] text-mute transition-colors hover:text-ink"
                         >
                             {tCommon("clearAll")}
                         </button>
@@ -166,7 +166,7 @@ export function LedgerFilterRail({
                                     })
                                 }
                                 className={cn(
-                                    "cursor-pointer border px-2 py-1 font-mono text-[11px] transition-colors",
+                                    "cursor-pointer border px-2 py-1 text-[11px] transition-colors",
                                     active
                                         ? "border-blue bg-blue-soft text-ink"
                                         : "border-rule text-mute hover:text-ink",
@@ -230,7 +230,7 @@ function Section({
 }) {
     return (
         <section className="border-t border-rule pt-[13px]">
-            <h2 className="mb-[6px] font-mono text-[11px] font-normal tracking-[0.14em] text-mute uppercase">
+            <h2 className="mb-[6px] text-[11px] font-normal tracking-[0.14em] text-mute uppercase">
                 {label}
             </h2>
             {children}
@@ -249,14 +249,14 @@ function DateField({
 }) {
     return (
         <label className="flex items-baseline gap-[10px] border-b border-rule2 py-[6px]">
-            <span className="shrink-0 basis-[34px] font-mono text-[11px] text-mute">
+            <span className="shrink-0 basis-[34px] text-[11px] text-mute">
                 {label}
             </span>
             <input
                 type="date"
                 value={value}
                 onChange={(event) => onChange(event.target.value || undefined)}
-                className="min-w-0 flex-1 border-none bg-transparent py-[2px] font-mono text-xs text-ink outline-none"
+                className="min-w-0 flex-1 border-none bg-transparent py-[2px] text-xs text-ink outline-none"
             />
         </label>
     );

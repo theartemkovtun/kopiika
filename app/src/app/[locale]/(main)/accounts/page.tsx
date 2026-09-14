@@ -53,7 +53,7 @@ export default function AccountsPage() {
                 href="/accounts/new"
                 className="flex min-h-[56px] w-full flex-none items-center justify-center gap-[10px] py-[14px] text-center text-mute transition-colors hover:text-ink"
             >
-                <span aria-hidden className="font-mono text-sm leading-none">
+                <span aria-hidden className="text-sm leading-none">
                     +
                 </span>
                 <span className="text-[13px] leading-none font-medium tracking-[-0.006em]">

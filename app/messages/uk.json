@@ -57,7 +57,13 @@
         "monthlyFlow": "Рух за місяцями",
         "totalBalance": "Загальний баланс",
         "nothingSpent": "За цей період витрат немає.",
-        "noEntries": "Записів поки немає."
+        "noEntries": "Записів поки немає.",
+        "recentTransactions": "Останні операції",
+        "topAccounts": "{shown} із {total} рахунків",
+        "vsDate": "vs {date}",
+        "vsPreviousMonth": "vs попередній місяць",
+        "vsPreviousYear": "vs попередній рік",
+        "vsTodayPreviousYear": "vs сьогодні попереднього року"
     },
     "ledger": {
         "type": "Тип",

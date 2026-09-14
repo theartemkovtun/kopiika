@@ -3,7 +3,7 @@ import { cn } from "cn";
 /**
  * A named gap in the skeleton.
  *
- * It is built out of the design's own parts — a hairline, a mono micro-label,
+ * It is built out of the design's own parts — a hairline, a micro-label,
  * a muted note — so an unfinished screen still reads as the same document,
  * and so the rules that will hold the real content are already on the page.
  */
@@ -21,7 +21,7 @@ export function Placeholder({
             className={cn("border-t border-rule py-11", className)}
             aria-label={label}
         >
-            <div className="font-mono text-[11px] tracking-[0.14em] text-mute uppercase">
+            <div className="text-[11px] tracking-[0.14em] text-mute uppercase">
                 {label}
             </div>
             {children ? (
