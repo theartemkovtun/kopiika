@@ -314,6 +314,86 @@
                     }
                 }
             },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update one of the authenticated user's accounts. Only the fields present in the payload are changed; currency and balance cannot be set this way",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "accounts"
+                ],
+                "summary": "Update account",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account id",
+                        "name": "accountId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fields to update",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.UpdateAccountSchema"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.AccountSchema"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -1930,6 +2010,26 @@
                     "description": "TransactionsPerDay is how many days of the range carried any activity,\ndivided by the number of days between its two ends. It is a rate, not a\ncount, and it is reported as a string like every other number here.",
                     "type": "string",
                     "example": "0.73"
+                }
+            }
+        },
+        "schemas.UpdateAccountSchema": {
+            "type": "object",
+            "properties": {
+                "colorHex": {
+                    "type": "string",
+                    "maxLength": 7,
+                    "example": "#1E88E5"
+                },
+                "description": {
+                    "type": "string",
+                    "maxLength": 256,
+                    "example": "Main salary card"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "Monobank card"
                 }
             }
         },

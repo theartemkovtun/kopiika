@@ -19,6 +19,16 @@ type CreateAccountSchema struct {
 	DefaultValue *decimal.Decimal `json:"defaultValue" swaggertype:"string" example:"1250.50"`
 }
 
+// UpdateAccountSchema is the partial update payload: only the fields present
+// are changed. Currency and value are absent on purpose — currency is an
+// invariant every posted transaction relies on, and value only ever moves
+// through transaction posting, never a direct write.
+type UpdateAccountSchema struct {
+	Name        *string `json:"name" binding:"omitempty,max=64" example:"Monobank card"`
+	Description *string `json:"description" binding:"omitempty,max=256" example:"Main salary card"`
+	ColorHex    *string `json:"colorHex" binding:"omitempty,max=7" example:"#1E88E5"`
+}
+
 type AccountSchema struct {
 	Id          uuid.UUID    `json:"id" example:"123e4567-e89b-12d3-a456-426614174000"`
 	Name        string       `json:"name" example:"Monobank card"`

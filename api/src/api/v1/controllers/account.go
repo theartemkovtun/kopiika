@@ -198,6 +198,63 @@ func GetAccount(c *gin.Context) {
 	c.JSON(http.StatusOK, account)
 }
 
+// UpdateAccount handles partially updating an account
+// @Summary Update account
+// @Description Update one of the authenticated user's accounts. Only the fields present in the payload are changed; currency and balance cannot be set this way
+// @Tags accounts
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param accountId path string true "Account id"
+// @Param payload body schemas.UpdateAccountSchema true "Fields to update"
+// @Success 200 {object} schemas.AccountSchema
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /v1/accounts/{accountId} [put]
+func UpdateAccount(c *gin.Context) {
+	userId, _ := c.Get("user_id")
+
+	accountId, err := uuid.Parse(c.Param("accountId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid account id",
+		})
+		return
+	}
+
+	var payload schemas.UpdateAccountSchema
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request body",
+		})
+		return
+	}
+
+	account, err := services.UpdateAccount(userId.(uuid.UUID), accountId, payload)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Account not found",
+		})
+		return
+	}
+	if errors.Is(err, services.ErrRateUnavailable) {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "No currency rate available to localize the account",
+		})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Failed to update account",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, account)
+}
+
 // DeleteAccount handles soft deleting an account
 // @Summary Delete account
 // @Description Soft delete one of the authenticated user's accounts. Idempotent.

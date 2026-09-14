@@ -186,6 +186,39 @@ func GetAccountsBalance(userId uuid.UUID) (schemas.AccountsBalanceSchema, error)
 	return response, nil
 }
 
+// UpdateAccount partially updates one of the user's accounts: only the fields
+// present in the schema are changed.
+func UpdateAccount(userId uuid.UUID, accountId uuid.UUID, schema schemas.UpdateAccountSchema) (schemas.AccountSchema, error) {
+	var account models.Account
+	if err := core.DB.First(&account, "id = ? AND user_id = ? AND deleted_at IS NULL", accountId, userId).Error; err != nil {
+		return schemas.AccountSchema{}, err
+	}
+
+	updates := map[string]any{}
+	if schema.Name != nil {
+		updates["name"] = *schema.Name
+	}
+	if schema.Description != nil {
+		updates["description"] = *schema.Description
+	}
+	if schema.ColorHex != nil {
+		updates["color_hex"] = *schema.ColorHex
+	}
+
+	if len(updates) > 0 {
+		if err := core.DB.Model(&account).Updates(updates).Error; err != nil {
+			return schemas.AccountSchema{}, err
+		}
+	}
+
+	converter, err := converterForUser(userId)
+	if err != nil {
+		return schemas.AccountSchema{}, err
+	}
+
+	return toAccountSchema(account, converter)
+}
+
 // DeleteAccount soft deletes the account. It is idempotent: deleting an account
 // that is already gone is not an error.
 func DeleteAccount(userId uuid.UUID, accountId uuid.UUID) error {

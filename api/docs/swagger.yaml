@@ -445,6 +445,21 @@ definitions:
         example: "0.73"
         type: string
     type: object
+  schemas.UpdateAccountSchema:
+    properties:
+      colorHex:
+        example: '#1E88E5'
+        maxLength: 7
+        type: string
+      description:
+        example: Main salary card
+        maxLength: 256
+        type: string
+      name:
+        example: Monobank card
+        maxLength: 64
+        type: string
+    type: object
   schemas.UpdateTransactionSchema:
     properties:
       accountId:
@@ -740,6 +755,60 @@ paths:
       security:
       - BearerAuth: []
       summary: Get account
+      tags:
+      - accounts
+    put:
+      consumes:
+      - application/json
+      description: Update one of the authenticated user's accounts. Only the fields
+        present in the payload are changed; currency and balance cannot be set this
+        way
+      parameters:
+      - description: Account id
+        in: path
+        name: accountId
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.UpdateAccountSchema'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.AccountSchema'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update account
       tags:
       - accounts
   /v1/accounts/balance:
