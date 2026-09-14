@@ -186,19 +186,25 @@ const transactionColumns = `
 // a whole day's rate table instead reads every currency the fetcher has ever
 // recorded, nearly all of which the response never mentions.
 //
-// The join condition on the lateral skips the lookup when the transaction is
-// already denominated in the user's own currency, where there is nothing to
-// convert and no rate row to find.
+// The currency guard sits inside the subquery rather than in the lateral's ON
+// clause. A LEFT JOIN LATERAL runs its subquery for every outer row and only
+// then applies ON, so a guard there filters the result without preventing the
+// work: a transaction already denominated in the user's own currency would ask
+// for a pair like uah -> uah, which the fetcher never records, and proving that
+// absence reads the whole rate history. Inside the WHERE it becomes a one-time
+// filter and the scan is never executed. Either way rate.rate comes back NULL
+// for those rows, which is what the caller expects.
 const transactionJoins = `
 LEFT JOIN categories c ON c.id = t.category_id
 LEFT JOIN accounts a ON a.id = t.account_id
 LEFT JOIN LATERAL (
 	SELECT r.rate
 	FROM currency.currency_rates r
-	WHERE r."to" = target.currency AND r."from" = t.currency AND r.date <= t.date
+	WHERE t.currency IS DISTINCT FROM target.currency
+	  AND r."to" = target.currency AND r."from" = t.currency AND r.date <= t.date
 	ORDER BY r.date DESC
 	LIMIT 1
-) rate ON t.currency IS DISTINCT FROM target.currency`
+) rate ON true`
 
 // listTransactionsSQL is the whole listing in one statement.
 //

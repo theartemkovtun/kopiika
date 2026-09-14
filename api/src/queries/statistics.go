@@ -147,6 +147,12 @@ json_build_object(
 // single index descent. An amount is NULL only when that rate does not exist,
 // which is what unconvertible counts.
 //
+// The currency guard sits inside the lateral for the reason spelled out over
+// transactionJoins: in the ON clause it filters the result without preventing
+// the lookup, and the same-currency rows it is meant to skip are exactly the
+// ones whose lookup is most expensive. The CASE below already covers those rows
+// with a literal 1, so the rate they do not need is never read.
+//
 // The day series is generated as a plain timestamp rather than a date. Two
 // dates would resolve generate_series to its timestamptz overload, which makes
 // the series — and so every day label in the response — depend on the server's
@@ -168,10 +174,11 @@ WITH target AS (
 	LEFT JOIN LATERAL (
 		SELECT r.rate
 		FROM currency.currency_rates r
-		WHERE r."to" = target.currency AND r."from" = t.currency AND r.date <= t.date
+		WHERE t.currency IS DISTINCT FROM target.currency
+		  AND r."to" = target.currency AND r."from" = t.currency AND r.date <= t.date
 		ORDER BY r.date DESC
 		LIMIT 1
-	) rate ON t.currency IS DISTINCT FROM target.currency
+	) rate ON true
 	WHERE t.user_id = ? AND t.deleted_at IS NULL AND t.date >= ? AND t.date <= ?
 ), totals AS (
 	SELECT
