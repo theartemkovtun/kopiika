@@ -3,6 +3,7 @@ package controllers
 import (
 	"errors"
 	"io"
+	"log"
 	"net/http"
 
 	"kopiika-api-go/src/schemas"
@@ -42,6 +43,9 @@ func GetCurrentUser(c *gin.Context) {
 	if c.Query("profile") == "true" {
 		profile, err := services.GetUserProfile(userId.(uuid.UUID))
 		if err != nil {
+			// The client only gets a generic 502; the underlying AWS/Cognito error
+			// (credentials, IAM, pool id, timeout) is only visible here.
+			log.Printf("GetUserProfile(%s): %v", userId.(uuid.UUID), err)
 			c.JSON(http.StatusBadGateway, gin.H{
 				"error": "Failed to fetch the user profile from the identity provider",
 			})
