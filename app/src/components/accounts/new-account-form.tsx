@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { ApiError } from "@/api/client";
+import { ColorField } from "@/components/accounts/color-field";
 import { Button } from "@/components/ui/button";
 import { FormRow } from "@/components/ui/form-row";
 import { Input } from "@/components/ui/input";
@@ -18,16 +19,22 @@ import { usePreferences } from "@/contexts/preferences-context";
 import { useAccountsBalance, useCreateAccount } from "@/hooks/use-accounts";
 import { Link, useRouter } from "@/i18n/navigation";
 import { newAccountColor } from "@/lib/accounts";
-import { CURRENCIES, currencyLabel, parseDecimalInput } from "@/lib/money";
+import { CURRENCIES, parseDecimalInput } from "@/lib/money";
+
+/** The design's own label column on this form: 160px, no gutter. */
+const LABEL = "basis-[160px] pr-0";
 
 /**
- * Opening an account: a name, a currency and what is already in it.
+ * Opening an account: a name, a currency, a colour and what is already in it.
  *
- * The one thing here that does not map onto the API one for one is the colour
- * it insists on, which is picked from the design's series rather than by the
- * person filling this in — see `@/lib/accounts`. Nothing is written to
- * `description`: the account type the earlier design collected was dropped
- * along with the subtitle that showed it.
+ * The **colour** is the row that does not look like one. `colorHex` is
+ * required by the API and is what the account is drawn in everywhere after
+ * this, so v9 gives it a picker rather than assigning one quietly; see
+ * `ColorField`. Until someone touches it the field shows the next colour in
+ * the series, which is why the suggestion is derived rather than held in
+ * state — the account count arrives with the balance read, after this mounts,
+ * and a suggestion that ignored it would hand the first two accounts the same
+ * colour.
  *
  * The currency opens on the display currency, as the design does, which is
  * also why the form sits behind the gate: it is the one thing here that has to
@@ -35,23 +42,30 @@ import { CURRENCIES, currencyLabel, parseDecimalInput } from "@/lib/money";
  * with nothing in it is a real answer, so it is `parseDecimalInput` rather than
  * `parseAmountInput` that reads it, and an empty field is sent as no value at
  * all rather than as a zero.
+ *
+ * Nothing is written to the API's `description` any more: the account type the
+ * earlier design collected was dropped in v8 and has no field here in v9.
  */
 export function NewAccountForm() {
     const t = useTranslations("newAccount");
+    const tAccounts = useTranslations("accounts");
     const tCommon = useTranslations("common");
 
     const router = useRouter();
     const { currency: displayCurrency } = usePreferences();
 
     // Already in the cache on the way here from the Accounts screen; it is
-    // read for the count alone, to cycle the stored colour.
+    // read for the count alone, to cycle the suggested colour.
     const { data: balance } = useAccountsBalance();
     const { mutate: createAccount, isPending } = useCreateAccount();
 
     const [name, setName] = useState("");
     const [currency, setCurrency] = useState(displayCurrency);
+    const [picked, setPicked] = useState<string | null>(null);
     const [opening, setOpening] = useState("");
     const [error, setError] = useState<string | null>(null);
+
+    const color = picked ?? newAccountColor(balance?.accounts.length ?? 0);
 
     /** Any edit clears the last outcome: it described the previous attempt. */
     function edit<T>(set: (value: T) => void) {
@@ -81,7 +95,7 @@ export function NewAccountForm() {
         createAccount(
             {
                 name: name.trim(),
-                colorHex: newAccountColor(balance?.accounts.length ?? 0),
+                colorHex: color,
                 currency,
                 defaultValue,
             },
@@ -103,7 +117,7 @@ export function NewAccountForm() {
                 asLabel
                 label={t("name")}
                 required
-                labelClassName="basis-[108px] pr-0"
+                labelClassName={LABEL}
                 className="border-t border-t-rule"
             >
                 <Input
@@ -117,7 +131,7 @@ export function NewAccountForm() {
                 />
             </FormRow>
 
-            <FormRow label={t("currency")} labelClassName="basis-[108px] pr-0">
+            <FormRow label={t("currency")} labelClassName={LABEL}>
                 <Select value={currency} onValueChange={edit(setCurrency)}>
                     <SelectTrigger
                         font="mono"
@@ -140,27 +154,31 @@ export function NewAccountForm() {
                 </Select>
             </FormRow>
 
+            {/* Swatches are a row of buttons, so this row cannot be a label and
+                sits on the centre line rather than on a baseline there is no
+                text to share. */}
+            <FormRow
+                label={tAccounts("color")}
+                labelClassName={LABEL}
+                className="items-center"
+            >
+                <ColorField value={color} onChange={edit(setPicked)} />
+            </FormRow>
+
             <FormRow
                 asLabel
                 label={t("opening")}
-                labelClassName="basis-[108px] pr-0"
+                labelClassName={LABEL}
                 className="border-b-rule"
             >
-                <span className="flex min-w-0 flex-1 items-baseline gap-[10px]">
-                    <span className="font-mono text-[13px] text-mute">
-                        {currencyLabel(currency)}
-                    </span>
-                    <Input
-                        inputSize="amount"
-                        inputMode="decimal"
-                        autoComplete="off"
-                        placeholder="0"
-                        value={opening}
-                        onChange={(event) =>
-                            edit(setOpening)(event.target.value)
-                        }
-                    />
-                </span>
+                <Input
+                    inputSize="amount"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    placeholder="0"
+                    value={opening}
+                    onChange={(event) => edit(setOpening)(event.target.value)}
+                />
             </FormRow>
 
             <div className="mt-[26px] flex flex-wrap items-center gap-5">

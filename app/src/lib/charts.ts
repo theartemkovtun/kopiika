@@ -48,10 +48,22 @@ export function storedColor(
     hexColor: string | null | undefined,
     index: number,
 ): string {
-    const value = hexColor?.trim() ?? "";
-    if (!HEX.test(value)) return seriesColor(index);
+    return normalizeHexColor(hexColor ?? "") ?? seriesColor(index);
+}
 
-    return value.startsWith("#") ? value : `#${value}`;
+/**
+ * A colour as the column should hold it — hash added, case settled — or null
+ * when it is not a colour at all.
+ *
+ * This is the same test `storedColor` applies on the way out, applied on the
+ * way in: the colour field refuses a typed value that would not survive the
+ * round trip rather than storing one that draws as a fallback later.
+ */
+export function normalizeHexColor(value: string): string | null {
+    const trimmed = value.trim();
+    if (!HEX.test(trimmed)) return null;
+
+    return (trimmed.startsWith("#") ? trimmed : `#${trimmed}`).toUpperCase();
 }
 
 /** Axis ticks are the design's mono micro-label, in the shape recharts takes. */

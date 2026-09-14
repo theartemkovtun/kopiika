@@ -96,6 +96,9 @@
     "accounts": {
         "totalBalance": "Total Balance",
         "addAccount": "New account",
+        "color": "Colour",
+        "colorPick": "Custom colour",
+        "colorValue": "Value",
         "empty": "No accounts yet.",
         "shareOfTotal": "Share of total",
         "activeDays": "Active days",

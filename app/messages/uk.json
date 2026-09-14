@@ -96,6 +96,9 @@
     "accounts": {
         "totalBalance": "Загальний баланс",
         "addAccount": "Новий рахунок",
+        "color": "Колір",
+        "colorPick": "Власний колір",
+        "colorValue": "Значення",
         "empty": "Рахунків поки немає.",
         "shareOfTotal": "Частка від усього",
         "activeDays": "Активних днів",

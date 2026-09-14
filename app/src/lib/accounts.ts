@@ -1,10 +1,15 @@
 /**
- * What an account needs that the API has no column for: a colour.
+ * What an account needs beyond its name, currency and balance: a colour.
  *
- * `colorHex` is required on create and is what an account is drawn in, but the
- * design offers nowhere to choose one. So a colour is assigned for the account
- * out of the design's own series rather than taken from a constant — see
- * `newAccountColor`.
+ * `colorHex` is required on create and is what an account is drawn in
+ * everywhere — the list row's dot, its band on the share bar, its heading on
+ * the detail screen. As of v9 the design lets someone pick it: six presets on
+ * the form, and a custom colour behind them. `ACCOUNT_SWATCHES` is that
+ * preset row, and `newAccountColor` is what the form opens on.
+ *
+ * The account *type* the earlier design collected is gone — v8 dropped the
+ * picker and the subtitle, and v9 has neither — so nothing is written to the
+ * API's `description` any more.
  */
 
 /**
@@ -17,7 +22,7 @@
  * ground too. An account created in another client can hold any hex at all,
  * including one that reads faintly in one theme or the other.
  */
-const NEW_ACCOUNT_COLORS = [
+export const ACCOUNT_SWATCHES = [
     "#4B7CBA",
     "#B1604C",
     "#448C56",
@@ -27,15 +32,16 @@ const NEW_ACCOUNT_COLORS = [
 ] as const;
 
 /**
- * Cycled by how many accounts are already held, so the first six differ.
+ * The swatch the form opens on, cycled by how many accounts are already held
+ * so the first six differ.
  *
  * Only a suggestion at the moment of creation: the colour is stored on the
  * account and stays with it, so a later account being deleted never recolours
  * the ones around it.
  */
 export function newAccountColor(existing: number): string {
-    const index = Math.max(0, existing) % NEW_ACCOUNT_COLORS.length;
-    return NEW_ACCOUNT_COLORS[index];
+    const index = Math.max(0, existing) % ACCOUNT_SWATCHES.length;
+    return ACCOUNT_SWATCHES[index];
 }
 
 /**
