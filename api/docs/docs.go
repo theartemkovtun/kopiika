@@ -1554,6 +1554,24 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.AmountWithPreviousPeriodDiffSchema": {
+            "type": "object",
+            "properties": {
+                "currency": {
+                    "type": "string",
+                    "example": "uah"
+                },
+                "previousPeriodDiff": {
+                    "description": "PreviousPeriodDiff is this figure minus the same figure over the\ncomparable previous period, in the same currency. Positive means it grew.",
+                    "type": "string",
+                    "example": "120.50"
+                },
+                "value": {
+                    "type": "string",
+                    "example": "1250.50"
+                }
+            }
+        },
         "schemas.CategorySchema": {
             "type": "object",
             "properties": {
@@ -1964,10 +1982,10 @@ const docTemplate = `{
                     }
                 },
                 "difference": {
-                    "$ref": "#/definitions/schemas.AmountSchema"
+                    "$ref": "#/definitions/schemas.AmountWithPreviousPeriodDiffSchema"
                 },
                 "income": {
-                    "$ref": "#/definitions/schemas.AmountSchema"
+                    "$ref": "#/definitions/schemas.AmountWithPreviousPeriodDiffSchema"
                 },
                 "incomeTransactions": {
                     "type": "integer",
@@ -1991,7 +2009,7 @@ const docTemplate = `{
                     "$ref": "#/definitions/schemas.TransactionSchema"
                 },
                 "outcome": {
-                    "$ref": "#/definitions/schemas.AmountSchema"
+                    "$ref": "#/definitions/schemas.AmountWithPreviousPeriodDiffSchema"
                 },
                 "outcomeTransactions": {
                     "type": "integer",

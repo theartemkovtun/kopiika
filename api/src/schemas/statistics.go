@@ -73,6 +73,17 @@ type AccountTransactionCountSchema struct {
 	TotalTransactions int64 `json:"totalTransactions" example:"12"`
 }
 
+// AmountWithPreviousPeriodDiffSchema is a monetary figure alongside how much
+// it moved against the comparable period immediately before the requested
+// range — see previousPeriodRange for what "comparable" means for a given
+// range.
+type AmountWithPreviousPeriodDiffSchema struct {
+	AmountSchema
+	// PreviousPeriodDiff is this figure minus the same figure over the
+	// comparable previous period, in the same currency. Positive means it grew.
+	PreviousPeriodDiff decimal.Decimal `json:"previousPeriodDiff" swaggertype:"string" example:"120.50"`
+}
+
 // TransactionsStatisticsSchema is the statistics response.
 //
 // Every monetary figure is in the user's own currency, and every transaction
@@ -82,9 +93,9 @@ type AccountTransactionCountSchema struct {
 // request asks for the full statistics; otherwise they hold the zero values
 // Python answers with, which is what keeps the response shape constant.
 type TransactionsStatisticsSchema struct {
-	Income     AmountSchema `json:"income"`
-	Outcome    AmountSchema `json:"outcome"`
-	Difference AmountSchema `json:"difference"`
+	Income     AmountWithPreviousPeriodDiffSchema `json:"income"`
+	Outcome    AmountWithPreviousPeriodDiffSchema `json:"outcome"`
+	Difference AmountWithPreviousPeriodDiffSchema `json:"difference"`
 	// RangeStatistics covers every day in the range, oldest first.
 	RangeStatistics []DateStatisticsSchema `json:"rangeStatistics"`
 	// CategoryOutcomeStatistics is spending per category, largest first.

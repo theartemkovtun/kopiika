@@ -112,14 +112,41 @@ func GetTransactionsStatistics(
 		)
 	}
 
+	now := time.Now().UTC()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	previousFromDate, previousToDate := previousPeriodRange(fromDate, toDate, today)
+
+	previousStatistics, err := queries.TransactionsStatistics(core.DB, userId, previousFromDate, previousToDate)
+	if err != nil {
+		return schemas.TransactionsStatisticsSchema{}, err
+	}
+	if previousStatistics.Unconvertible > 0 {
+		return schemas.TransactionsStatisticsSchema{}, fmt.Errorf(
+			"%w: %d transactions in the comparable previous period have no rate into %s",
+			ErrRateUnavailable, previousStatistics.Unconvertible, currency,
+		)
+	}
+
 	amount := func(value decimal.Decimal) schemas.AmountSchema {
 		return schemas.AmountSchema{Value: value, Currency: currency}
 	}
 
+	// withPreviousPeriodDiff pairs a figure with itself minus the same figure
+	// over previousStatistics's range.
+	withPreviousPeriodDiff := func(value, previousValue decimal.Decimal) schemas.AmountWithPreviousPeriodDiffSchema {
+		return schemas.AmountWithPreviousPeriodDiffSchema{
+			AmountSchema:       amount(value),
+			PreviousPeriodDiff: value.Sub(previousValue),
+		}
+	}
+
+	difference := statistics.Income.Sub(statistics.Outcome)
+	previousDifference := previousStatistics.Income.Sub(previousStatistics.Outcome)
+
 	response := schemas.TransactionsStatisticsSchema{
-		Income:     amount(statistics.Income),
-		Outcome:    amount(statistics.Outcome),
-		Difference: amount(statistics.Income.Sub(statistics.Outcome)),
+		Income:     withPreviousPeriodDiff(statistics.Income, previousStatistics.Income),
+		Outcome:    withPreviousPeriodDiff(statistics.Outcome, previousStatistics.Outcome),
+		Difference: withPreviousPeriodDiff(difference, previousDifference),
 
 		RangeStatistics:           make([]schemas.DateStatisticsSchema, 0, len(statistics.RangeStatistics)),
 		CategoryOutcomeStatistics: make([]schemas.CategoryStatisticsSchema, 0, len(statistics.CategoryOutcomes)),

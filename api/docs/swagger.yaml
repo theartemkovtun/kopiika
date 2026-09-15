@@ -100,6 +100,21 @@ definitions:
         example: "1250.50"
         type: string
     type: object
+  schemas.AmountWithPreviousPeriodDiffSchema:
+    properties:
+      currency:
+        example: uah
+        type: string
+      previousPeriodDiff:
+        description: |-
+          PreviousPeriodDiff is this figure minus the same figure over the
+          comparable previous period, in the same currency. Positive means it grew.
+        example: "120.50"
+        type: string
+      value:
+        example: "1250.50"
+        type: string
+    type: object
   schemas.CategorySchema:
     properties:
       hexColor:
@@ -405,9 +420,9 @@ definitions:
           $ref: '#/definitions/schemas.CategoryTransactionCountSchema'
         type: array
       difference:
-        $ref: '#/definitions/schemas.AmountSchema'
+        $ref: '#/definitions/schemas.AmountWithPreviousPeriodDiffSchema'
       income:
-        $ref: '#/definitions/schemas.AmountSchema'
+        $ref: '#/definitions/schemas.AmountWithPreviousPeriodDiffSchema'
       incomeTransactions:
         example: 8
         type: integer
@@ -425,7 +440,7 @@ definitions:
       minOutcome:
         $ref: '#/definitions/schemas.TransactionSchema'
       outcome:
-        $ref: '#/definitions/schemas.AmountSchema'
+        $ref: '#/definitions/schemas.AmountWithPreviousPeriodDiffSchema'
       outcomeTransactions:
         example: 34
         type: integer
