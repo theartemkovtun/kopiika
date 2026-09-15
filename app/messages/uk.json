@@ -63,7 +63,9 @@
         "vsDate": "vs {date}",
         "vsPreviousMonth": "vs попередній місяць",
         "vsPreviousYear": "vs попередній рік",
-        "vsTodayPreviousYear": "vs сьогодні попереднього року"
+        "vsTodayPreviousYear": "vs сьогодні попереднього року",
+        "yearToDate": "1 січня → {date}",
+        "fullYear": "Увесь рік"
     },
     "ledger": {
         "type": "Тип",

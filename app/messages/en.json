@@ -63,7 +63,9 @@
         "vsDate": "vs {date}",
         "vsPreviousMonth": "vs previous month",
         "vsPreviousYear": "vs previous year",
-        "vsTodayPreviousYear": "vs today of previous year"
+        "vsTodayPreviousYear": "vs today of previous year",
+        "yearToDate": "Jan 1st → {date}",
+        "fullYear": "Full year"
     },
     "ledger": {
         "type": "Type",

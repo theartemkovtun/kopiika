@@ -1,6 +1,6 @@
 "use client";
 
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { use, useEffect } from "react";
 
 import { AccountGate } from "@/components/layout/account-gate";
@@ -69,6 +69,8 @@ export default function OverviewPage({
     searchParams: Promise<{ month?: string; year?: string }>;
 }) {
     const calendar = useTranslations("calendar");
+    const t = useTranslations("overview");
+    const locale = useLocale();
     const { month, year, yearView, isCurrentMonth, today, range } = usePeriod();
 
     const { error, refetch } = useStatistics(range);
@@ -76,6 +78,7 @@ export default function OverviewPage({
     useAccountsBalance();
 
     const months = calendar.raw("months") as string[];
+    const monthsShort = calendar.raw("monthsShort") as string[];
 
     // The server render has no `window`, so the context above falls back to
     // today; `searchParams` is known there too, so that's what the title
@@ -112,6 +115,22 @@ export default function OverviewPage({
         );
     }, [isCurrentMonth, month, year, yearView]);
 
+    // The sublabel under the title. A month names the year it falls in; a
+    // year names the span it covers — the days read so far when it is the
+    // one still running, or the whole year once it is behind us. This reads
+    // off `calendar`/`useLocale` rather than `useDateFormat`, which needs
+    // `usePreferences` — unavailable here, above the account gate.
+    const subtitle = displayed.yearView
+        ? displayed.year === today.year
+            ? t("yearToDate", {
+                  date:
+                      locale === "uk"
+                          ? `${String(today.day).padStart(2, "0")}.${String(today.month + 1).padStart(2, "0")}`
+                          : `${monthsShort[today.month]} ${today.day}`,
+              })
+            : t("fullYear")
+        : displayed.year;
+
     return (
         <div className="pt-8 pb-16 md:pt-10 md:pb-[72px]">
             <HidePageScrollbar />
@@ -122,7 +141,7 @@ export default function OverviewPage({
                         ? displayed.year
                         : months[displayed.month]
                 }
-                subtitle={displayed.yearView ? undefined : displayed.year}
+                subtitle={subtitle}
             />
             <PeriodBar className="mt-7" />
 
