@@ -87,8 +87,9 @@ export function CategoryBreakdown() {
                                     nameKey="name"
                                     innerRadius="38%"
                                     outerRadius="92%"
-                                    paddingAngle={2}
-                                    stroke="none"
+                                    paddingAngle={0}
+                                    stroke="var(--bg)"
+                                    strokeWidth={3}
                                     isAnimationActive={false}
                                 >
                                     {slices.map((slice) => (
