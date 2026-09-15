@@ -18,12 +18,9 @@ import { MINUS, toNumber } from "@/lib/money";
  * carry colour, and only the two that have a direction — income green,
  * spending red, kept whichever it turned out to be.
  *
- * The design also puts a comparison note under each figure — "−₴4,000 vs Aug
- * 12". It is **wired but not drawn**: the statistics endpoint cannot answer it
- * in the same call, so it costs a second read of the previous period on every
- * page view, which is a request per period for one line. The two places that
- * hold it off are the disabled read below and the `{false &&` block in
- * `Figure`; turning it on is those two, plus the spacing note there.
+ * A comparison note sits under each figure — "−₴4,000 vs Aug 12" — using the
+ * `previousPeriodDiff` the statistics endpoint already computed against the
+ * comparable previous period, so drawing it costs nothing beyond the one read.
  */
 export function OverviewSummary() {
     const t = useTranslations("overview");
@@ -34,11 +31,6 @@ export function OverviewSummary() {
     const { rowLabel } = useDateFormat();
 
     const { data } = useStatistics(range);
-    // The previous period, for the note. A null range leaves the query
-    // disabled — the hook's own `enabled` is exactly this condition — so
-    // nothing is requested; `comparison.range` is what goes here to turn the
-    // note back on.
-    const { data: before } = useStatistics(null);
 
     const income = toNumber(data?.income.value);
     const outcome = toNumber(data?.outcome.value);
@@ -56,14 +48,13 @@ export function OverviewSummary() {
               ? t("vsDate", { date: rowLabel(comparison.throughDate) })
               : t("vsPreviousMonth");
 
-    // Null until both reads have landed: a difference against a figure that is
-    // not there yet would be the selection itself, drawn as a change. The sign
-    // is the *change*, not the direction of the money — `+₴500` under Spent
-    // means five hundred more went out than by the same point before.
-    const change = (now: number, then: number) =>
-        data && before
-            ? `${formatValue(now - then, undefined, { signed: true })} ${against}`
-            : null;
+    // Null while the read is in flight. The sign is the *change*, not the
+    // direction of the money — `+₴500` under Spent means five hundred more
+    // went out than by the same point before.
+    const change = (diff: string | undefined) =>
+        diff === undefined
+            ? null
+            : `${formatValue(toNumber(diff), undefined, { signed: true })} ${against}`;
 
     return (
         <Band>
@@ -71,13 +62,13 @@ export function OverviewSummary() {
                 label={tCommon("income")}
                 value={data ? `+${formatValue(income)}` : null}
                 tone="text-green"
-                note={change(income, toNumber(before?.income.value))}
+                note={change(data?.income.previousPeriodDiff)}
             />
             <Figure
                 label={tCommon("spent")}
                 value={data ? `${MINUS}${formatValue(outcome)}` : null}
                 tone="text-red"
-                note={change(outcome, toNumber(before?.outcome.value))}
+                note={change(data?.outcome.previousPeriodDiff)}
                 divided
             />
             <Figure
@@ -86,7 +77,7 @@ export function OverviewSummary() {
                     data ? formatValue(kept, undefined, { signed: true }) : null
                 }
                 tone={kept >= 0 ? "text-green" : "text-red"}
-                note={change(kept, toNumber(before?.difference.value))}
+                note={change(data?.difference.previousPeriodDiff)}
                 divided
             />
         </Band>
@@ -140,7 +131,7 @@ function Figure({
     /** Null while the read is in flight. */
     value: string | null;
     tone?: string;
-    /** The comparison note — see `OverviewSummary`; not currently drawn. */
+    /** The comparison note — see `OverviewSummary`. Null while in flight. */
     note: string | null;
     /** Carries the rule that separates it from the figure before it. */
     divided?: boolean;
@@ -148,7 +139,7 @@ function Figure({
     return (
         <div
             className={cn(
-                "pt-[22px] pb-[22px]",
+                "pt-[22px]",
                 // Stacked on a phone the separator is a light hairline above
                 // each figure; side by side it is the structural rule between
                 // the columns, and the padding that rule needs appears with it.
@@ -161,7 +152,7 @@ function Figure({
             </div>
             <div
                 className={cn(
-                    "mt-[10px] text-[clamp(19px,2.3vw,34px)] leading-none whitespace-nowrap",
+                    "mt-[10px] mb-[6px] text-[clamp(19px,2.3vw,34px)] leading-none whitespace-nowrap",
                     tone,
                 )}
             >
@@ -171,15 +162,16 @@ function Figure({
                     value
                 )}
             </div>
-            {/* Held off; see `OverviewSummary`. Two lines' worth of height, so
-                that a note which has not landed cannot shorten the band. With
-                it drawn this line is the band's bottom padding too: drop the
-                `pb-[22px]` above and give the figure a `mb-[6px]`. */}
-            {false && (
-                <div className="min-h-[36px] text-[13px] text-mute text-pretty">
-                    {note}
-                </div>
-            )}
+            {/* Two lines' worth of height, so that a note which has not
+                landed cannot shorten the band; this is also the band's
+                bottom padding. */}
+            <div className="min-h-[36px] text-[13px] text-mute text-pretty">
+                {note === null ? (
+                    <Skeleton className="h-[1em] w-[140px] bg-rule2" />
+                ) : (
+                    note
+                )}
+            </div>
         </div>
     );
 }

@@ -201,6 +201,14 @@ export type DateStatistics = {
     outcome: Amount;
 };
 
+/**
+ * A monetary figure alongside how much it moved against the comparable
+ * period immediately before the requested range. Positive means it grew.
+ */
+export type AmountWithPreviousPeriodDiff = Amount & {
+    previousPeriodDiff: string;
+};
+
 export type CategoryStatistics = Category & {
     localizedAmount: Amount;
 };
@@ -223,9 +231,9 @@ export type AccountTransactionCount = AccountBase & {
  * what keeps the response shape constant.
  */
 export type TransactionsStatistics = {
-    income: Amount;
-    outcome: Amount;
-    difference: Amount;
+    income: AmountWithPreviousPeriodDiff;
+    outcome: AmountWithPreviousPeriodDiff;
+    difference: AmountWithPreviousPeriodDiff;
     /** Every day in the range, oldest first. */
     rangeStatistics: DateStatistics[];
     /** Largest first. Uncategorised spending is left out, not pooled. */

@@ -18,20 +18,16 @@ import type { DateRange } from "@/contexts/period-context";
  * request: the range *is* the key, so the second and third are answered from
  * the cache rather than from the network.
  */
-export function useStatistics(range: DateRange | null) {
-    // A null range is the year view declining a comparison. The key still has
-    // to be a value, so it is the empty range — which is never fetched,
-    // because the query is disabled on exactly that condition.
+export function useStatistics(range: DateRange) {
     const query: StatisticsQuery = {
-        fromDate: range?.fromDate ?? "",
-        toDate: range?.toDate ?? "",
+        fromDate: range.fromDate,
+        toDate: range.toDate,
         full: false,
     };
 
     return useQuery({
         queryKey: queryKeys.transactions.statistics(query),
         queryFn: () => transactions.statistics(query),
-        enabled: range !== null,
         // Walking the month strip keeps the figures, the chart and the donut
         // on the period just left until the new one lands, rather than
         // dropping the whole page to its loading state on every click.
