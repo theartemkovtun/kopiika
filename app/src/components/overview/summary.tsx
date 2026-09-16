@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
+import { useState } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePeriod } from "@/contexts/period-context";
@@ -30,22 +31,33 @@ export function OverviewSummary() {
     const { formatValue } = usePreferences();
     const { rowLabel } = useDateFormat();
 
-    const { data } = useStatistics(range);
+    const { data, isPlaceholderData } = useStatistics(range);
 
-    const income = toNumber(data?.income.value);
-    const outcome = toNumber(data?.outcome.value);
-    const kept = toNumber(data?.difference.value);
+    // `comparison` switches the moment a month is picked, but `data` keeps
+    // showing the outgoing period's figures until the new read lands (see
+    // `useStatistics`). Reading `comparison` straight would relabel the note
+    // ("vs Aug 15" → "vs previous month") a beat before the number under it
+    // catches up — the blink this state avoids by holding the wording back
+    // until the figures it describes actually arrive together.
+    const [shown, setShown] = useState({ data, comparison });
+    if (data !== shown.data && !isPlaceholderData) {
+        setShown({ data, comparison });
+    }
+
+    const income = toNumber(shown.data?.income.value);
+    const outcome = toNumber(shown.data?.outcome.value);
+    const kept = toNumber(shown.data?.difference.value);
 
     // How the note names the span it read. A month names the day it was cut
     // at when there is one to name; a year says so in words, because "vs Sep
     // 14" over a figure covering nine months would read as a single day.
     const against =
-        comparison.scope === "year"
-            ? comparison.throughDate
+        shown.comparison.scope === "year"
+            ? shown.comparison.throughDate
                 ? t("vsTodayPreviousYear")
                 : t("vsPreviousYear")
-            : comparison.throughDate
-              ? t("vsDate", { date: rowLabel(comparison.throughDate) })
+            : shown.comparison.throughDate
+              ? t("vsDate", { date: rowLabel(shown.comparison.throughDate) })
               : t("vsPreviousMonth");
 
     // Null while the read is in flight. The sign is the *change*, not the
@@ -60,24 +72,26 @@ export function OverviewSummary() {
         <Band>
             <Figure
                 label={tCommon("income")}
-                value={data ? `+${formatValue(income)}` : null}
+                value={shown.data ? `+${formatValue(income)}` : null}
                 tone="text-green"
-                note={change(data?.income.previousPeriodDiff)}
+                note={change(shown.data?.income.previousPeriodDiff)}
             />
             <Figure
                 label={tCommon("spent")}
-                value={data ? `${MINUS}${formatValue(outcome)}` : null}
+                value={shown.data ? `${MINUS}${formatValue(outcome)}` : null}
                 tone="text-red"
-                note={change(data?.outcome.previousPeriodDiff)}
+                note={change(shown.data?.outcome.previousPeriodDiff)}
                 divided
             />
             <Figure
                 label={isCurrentMonth ? t("keptSoFar") : t("kept")}
                 value={
-                    data ? formatValue(kept, undefined, { signed: true }) : null
+                    shown.data
+                        ? formatValue(kept, undefined, { signed: true })
+                        : null
                 }
                 tone={kept >= 0 ? "text-green" : "text-red"}
-                note={change(data?.difference.previousPeriodDiff)}
+                note={change(shown.data?.difference.previousPeriodDiff)}
                 divided
             />
         </Band>
