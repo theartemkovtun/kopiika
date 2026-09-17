@@ -26,7 +26,7 @@ const (
 func InitDB() error {
 	var err error
 	DB, err = gorm.Open(postgres.Open(Config.DatabaseUrl), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
