@@ -202,3 +202,25 @@ html:has([data-page-scrollbar="hidden"]),
 html:has([data-page-scrollbar="hidden"]) body {
     @apply no-scrollbar;
 }
+
+/* The theme toggle's reveal.
+
+   The default cross-fade between the two root snapshots would sit on top of
+   the clip-path wipe and read as a smear, so it is switched off and the new
+   snapshot is wiped in by hand (see `animated-theme-toggler.tsx`). The
+   clip-path is pinned here as well as in JS: between the snapshot and the
+   `ready` callback Firefox would otherwise paint one unclipped frame of the
+   incoming theme. */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
+}
+
+[data-theme-vt="active"]::view-transition-group(root) {
+    animation-duration: var(--theme-vt-duration);
+}
+
+[data-theme-vt="active"]::view-transition-new(root) {
+    clip-path: var(--theme-vt-clip-from);
+}
