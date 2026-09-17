@@ -113,16 +113,20 @@ src/
     (auth)/       signed-out shell — login, signup, totp, password reset
     (main)/       signed-in shell — overview, transactions, accounts,
                   reports, new entry, settings
+    external-auth/ where the Google hand-off lands: no shell, a spinner
   components/
     accounts/     the accounts screen: balances, the new-account form
+    auth/         the signed-out screens: field, code cells, footer
     entry/        the new-entry screen: calendar, day list, form
     layout/       sidebar, page header, period strip, mobile drawer
     ledger/       the transactions screen: rows, filter rail, detail dialog
     ui/           shadcn primitives, restyled, plus the ruled form row
   contexts/       user, preferences, period
-  hooks/          react-query hooks over src/api, one file per resource
+  hooks/          react-query hooks over src/api, one file per resource,
+                  plus the two the signed-out screens need
   i18n/           next-intl routing, navigation helpers, request config
-  lib/            accounts, categories, dates, fonts, locales, money, nav
+  lib/            accounts, auth, categories, dates, fonts, locales, money,
+                  nav
   middlewares/    locale → auth, composed in src/middleware.ts
   providers/      query, theme, amplify
 messages/         en.json, uk.json
@@ -142,22 +146,55 @@ the locale cookie survives the auth redirect. An unauthenticated visit to
 
 ### Signing in
 
-One button. Google is the only provider on the user pool, so `/login` has no
-form: it calls Amplify's `signInWithRedirect({ provider: "Google" })`, which
+Two ways in, both Cognito through Amplify: an email and a password on `/login`,
+and Google beside them.
+
+**The form.** `signIn` answers one of three things, and only one of them is a
+session. `CONFIRM_SIGN_UP` is an account that was never confirmed, which is
+`/totp` rather than an error; `RESET_PASSWORD` is a pool that has forced a
+change, which is `/password/reset`. Signing up posts `name` and `email` as
+user-pool attributes — the Go API reads the profile off the token's pool, so
+what is typed there is what the sidebar greets them with — and arms Amplify's
+`autoSignIn`, which `/totp` redeems once the code lands. That is why no password
+is ever carried between screens: the only thing handed to `/totp` is the address
+(`@/lib/auth/pending`), and the one path that cannot auto-sign-in — arriving at
+`/totp` from the sign-in form — confirms the address and asks for the password
+again.
+
+**"Remember me"** is a question about cookie lifetime and nothing else, because
+the tokens live in cookies. Checked writes dated ones, unchecked writes session
+ones, and the choice is applied to the token provider's storage _before_ the
+sign-in call and again on every load — a token refresh under the stock storage
+would quietly promote a session cookie to a dated one. See
+`@/lib/amplify/remember`.
+
+**Google** calls Amplify's `signInWithRedirect({ provider: "Google" })`, which
 leaves for Cognito's hosted UI and comes back to `/external-auth` with a code.
 That page imports `aws-amplify/auth/enable-oauth-listener` — the import _is_ the
 exchange — then awaits `fetchAuthSession`, which blocks while an OAuth flow is
 in flight, and forwards on the answer: Overview with tokens, `/login` without.
 
-Two things have to line up outside the code. Every URL in
+It sits outside `(auth)` rather than in it, because it is not one of those
+screens: no wordmark, no language strip, nothing to read. Just a turning ring on
+an empty ground, built out of the same hairline as the icons — the one spinner
+in the app, since every other wait here is a skeleton drawn in rules.
+
+Three things have to line up outside the code. The app client needs a
+username-and-password flow enabled (`ALLOW_USER_SRP_AUTH`) and self sign-up
+allowed on the pool, or the form's first call is refused; every URL in
 `NEXT_PUBLIC_COGNITO_OAUTH_REDIRECT_SIGN_IN` must be registered as a callback
-URL on the app client, or Cognito refuses the hand-off; and the tokens are kept
-in cookies (`Amplify.configure(..., { ssr: true })`), which is the only reason
-middleware can see the session at all.
+URL on that client, or Cognito refuses the Google hand-off; and the tokens are
+kept in cookies (`Amplify.configure(..., { ssr: true })`), which is the only
+reason middleware can see the session at all.
 
 The locale segment is not part of the callback: Cognito can only return to a
 registered URL, so a Ukrainian visitor lands on `/external-auth` and next-intl's
 cookie carries the locale back.
+
+Nothing on these screens throws a toast except the two sentences that have to
+outlive the screen that earned them — an address confirmed on the way back to
+the form, and a password saved. Everything else is the message line above the
+submit button, green or red, which is where the design puts it.
 
 ### Contexts
 
