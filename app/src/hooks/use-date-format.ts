@@ -58,13 +58,14 @@ export function useDateFormat() {
 
             /**
              * The date cell in a ledger row: as short as it can be, because it
-             * sits in a 72px column. Ukrainian writes it numerically.
+             * sits in a 72px column. Ukrainian leads with the day, as it does
+             * everywhere else.
              */
             rowLabel(date: string): string {
                 const { year, month, day } = fromIsoDate(date);
                 const written =
                     locale === "uk"
-                        ? `${String(day).padStart(2, "0")}.${String(month + 1).padStart(2, "0")}`
+                        ? `${day} ${monthsShort[month]}`
                         : `${monthsShort[month]} ${day}`;
 
                 return year === today.year
