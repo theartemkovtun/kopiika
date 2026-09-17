@@ -8,9 +8,18 @@ type CreateCategorySchema struct {
 	HexColor string `json:"hexColor" binding:"required,max=64" example:"#43A047"`
 }
 
+// UpdateCategorySchema is the partial update payload: only the fields present
+// are changed.
+type UpdateCategorySchema struct {
+	Name     *string `json:"name" binding:"omitempty,max=64" example:"Groceries"`
+	Icon     *string `json:"icon" binding:"omitempty,max=64" example:"shopping-cart"`
+	HexColor *string `json:"hexColor" binding:"omitempty,max=64" example:"#43A047"`
+}
+
 type CategorySchema struct {
-	Id       int    `json:"id" example:"12"`
-	Name     string `json:"name" example:"Groceries"`
-	Icon     string `json:"icon" example:"shopping-cart"`
-	HexColor string `json:"hexColor" example:"#43A047"`
+	Id           int    `json:"id" example:"12"`
+	Name         string `json:"name" example:"Groceries"`
+	Icon         string `json:"icon" example:"shopping-cart"`
+	HexColor     string `json:"hexColor" example:"#43A047"`
+	Transactions int    `json:"transactions" example:"3"`
 }

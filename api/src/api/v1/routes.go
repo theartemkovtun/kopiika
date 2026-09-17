@@ -31,6 +31,7 @@ func RegisterV1Routes(router *gin.Engine) {
 		{
 			categoryRoutes.POST("", middleware.RequireAuth(), controllers.CreateCategory)
 			categoryRoutes.GET("", middleware.RequireAuth(), controllers.ListCategories)
+			categoryRoutes.PUT("/:categoryId", middleware.RequireAuth(), controllers.UpdateCategory)
 			categoryRoutes.DELETE("/:categoryId", middleware.RequireAuth(), controllers.DeleteCategory)
 		}
 

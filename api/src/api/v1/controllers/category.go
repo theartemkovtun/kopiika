@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -9,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 // CreateCategory handles creating a new category
@@ -69,6 +71,57 @@ func ListCategories(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, categories)
+}
+
+// UpdateCategory handles partially updating a category
+// @Summary Update category
+// @Description Update one of the authenticated user's own categories. Only the fields present in the payload are changed; global default categories are never updatable
+// @Tags categories
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param categoryId path int true "Category id"
+// @Param payload body schemas.UpdateCategorySchema true "Fields to update"
+// @Success 200 {object} schemas.CategorySchema
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /v1/categories/{categoryId} [put]
+func UpdateCategory(c *gin.Context) {
+	userId, _ := c.Get("user_id")
+
+	categoryId, err := strconv.Atoi(c.Param("categoryId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid category id",
+		})
+		return
+	}
+
+	var payload schemas.UpdateCategorySchema
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request body",
+		})
+		return
+	}
+
+	category, err := services.UpdateCategory(userId.(uuid.UUID), categoryId, payload)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Category not found",
+		})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to update category",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, category)
 }
 
 // DeleteCategory handles soft deleting a category

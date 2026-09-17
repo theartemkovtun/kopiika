@@ -561,6 +561,86 @@ const docTemplate = `{
             }
         },
         "/v1/categories/{categoryId}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Update one of the authenticated user's own categories. Only the fields present in the payload are changed; global default categories are never updatable",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Update category",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Category id",
+                        "name": "categoryId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fields to update",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.UpdateCategorySchema"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.CategorySchema"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -1590,6 +1670,10 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "Groceries"
+                },
+                "transactions": {
+                    "type": "integer",
+                    "example": 3
                 }
             }
         },
@@ -1614,6 +1698,10 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "Groceries"
+                },
+                "transactions": {
+                    "type": "integer",
+                    "example": 3
                 }
             }
         },
@@ -1639,6 +1727,10 @@ const docTemplate = `{
                 "totalTransactions": {
                     "type": "integer",
                     "example": 12
+                },
+                "transactions": {
+                    "type": "integer",
+                    "example": 3
                 }
             }
         },
@@ -2050,6 +2142,26 @@ const docTemplate = `{
                     "type": "string",
                     "maxLength": 64,
                     "example": "Monobank card"
+                }
+            }
+        },
+        "schemas.UpdateCategorySchema": {
+            "type": "object",
+            "properties": {
+                "hexColor": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "#43A047"
+                },
+                "icon": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "shopping-cart"
+                },
+                "name": {
+                    "type": "string",
+                    "maxLength": 64,
+                    "example": "Groceries"
                 }
             }
         },
