@@ -110,12 +110,33 @@ export type Category = {
     icon: string;
     /** Spelled `hexColor` here and `colorHex` on accounts — the API's shape. */
     hexColor: string;
+    /**
+     * How many of the user's own entries name this category.
+     *
+     * Only `GET /v1/categories` counts them. Every other response carrying a
+     * category — the entry form's configuration, the category on a
+     * transaction — serializes the field at its zero value, because the count
+     * is a join those endpoints have no reason to pay for. Read it from
+     * `categories.list` and nowhere else.
+     */
+    transactions: number;
 };
 
 export type CreateCategoryPayload = {
     name: string;
     icon: string;
     hexColor: string;
+};
+
+/**
+ * Partial, unlike the transaction update: only the fields present are written.
+ * The API matches on the owner, so the ten global defaults are never editable
+ * — a write against one answers 404 rather than changing it.
+ */
+export type UpdateCategoryPayload = {
+    name?: string;
+    icon?: string;
+    hexColor?: string;
 };
 
 // --- transactions ----------------------------------------------------------

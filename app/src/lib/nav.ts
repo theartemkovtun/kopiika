@@ -12,6 +12,7 @@ export const NAV_ITEMS = [
     { id: "accounts", href: "/accounts", exact: false },
     { id: "reports", href: "/reports", exact: false },
     { id: "add", href: "/add", exact: false },
+    { id: "categories", href: "/categories", exact: false },
 ] as const;
 
 export type NavId = (typeof NAV_ITEMS)[number]["id"];

@@ -9,7 +9,8 @@
         "accounts": "Accounts",
         "reports": "Reports",
         "add": "New entry",
-        "settings": "Settings"
+        "settings": "Settings",
+        "categories": "Categories"
     },
     "common": {
         "income": "Income",
@@ -134,6 +135,29 @@
         "errName": "Give the account a name.",
         "errOpening": "Opening balance must be zero or more."
     },
+    "categoryList": {
+        "title": "Categories",
+        "yoursTag": "Yours",
+        "addCategory": "New category",
+        "name": "Name",
+        "nameHint": "e.g. Pets",
+        "color": "Colour",
+        "errName": "Give the category a name.",
+        "errDupe": "That name is taken.",
+        "updateFailed": "The category could not be saved.",
+        "deleteAsk": "Do you really want to delete this category?",
+        "deleteKeepsEntries": "{count, plural, =1 {No transactions will be deleted. One entry will still point to this category.} other {No transactions will be deleted. # entries will still point to this category.}}",
+        "deleteFailed": "The category could not be deleted."
+    },
+    "newCategory": {
+        "title": "New category",
+        "back": "← Categories",
+        "name": "Name",
+        "nameHint": "e.g. Pets",
+        "color": "Colour",
+        "submit": "Add category",
+        "cancel": "Cancel"
+    },
     "entry": {
         "expense": "Expense",
         "income": "Income",
@@ -180,6 +204,7 @@
         "savings": "Savings",
         "charity": "Charity",
         "clothing": "Clothing",
+        "gifts": "Gifts",
         "other": "Other"
     },
     "auth": {

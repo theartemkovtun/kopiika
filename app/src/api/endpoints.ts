@@ -15,6 +15,7 @@ import type {
     TransactionsConfiguration,
     TransactionsStatistics,
     UpdateAccountPayload,
+    UpdateCategoryPayload,
     UpdateTransactionPayload,
     UpdateUserPayload,
     User,
@@ -64,6 +65,10 @@ export const categories = {
 
     create: (payload: CreateCategoryPayload) =>
         api.post<Category>("/v1/categories", payload),
+
+    /** Partial, and owner-scoped: a global default answers 404. */
+    update: (categoryId: number, payload: UpdateCategoryPayload) =>
+        api.put<Category>(`/v1/categories/${categoryId}`, payload),
 
     remove: (categoryId: number) => api.delete(`/v1/categories/${categoryId}`),
 };

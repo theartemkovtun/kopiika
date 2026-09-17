@@ -30,12 +30,18 @@ import { normalizeHexColor } from "@/lib/charts";
  * swatches gamut-mapped into sRGB hex, so what someone taps is exactly what is
  * written and exactly what `storedColor` reads back. A typed value goes
  * through the same test rather than being trusted — see `normalizeHexColor`.
+ *
+ * The preset row differs per record — accounts get six, categories the
+ * design's own five — so it is passed in; the full range behind the chip is
+ * the same sheet for both.
  */
 export function ColorField({
     value,
+    swatches = ACCOUNT_SWATCHES,
     onChange,
 }: {
     value: string;
+    swatches?: readonly string[];
     onChange: (color: string) => void;
 }) {
     const t = useTranslations("accounts");
@@ -46,12 +52,12 @@ export function ColorField({
     // out of the picker leaves the row as it was.
     const [draft, setDraft] = useState(value);
 
-    const isCustom = !isPreset(value);
+    const isCustom = !isPreset(value, swatches);
     const drafted = normalizeHexColor(draft);
 
     return (
         <span className="flex min-w-0 flex-1 flex-wrap items-center gap-[14px]">
-            {ACCOUNT_SWATCHES.map((swatch) => (
+            {swatches.map((swatch) => (
                 <Swatch
                     key={swatch}
                     color={swatch}
@@ -182,10 +188,8 @@ export function ColorField({
     );
 }
 
-function isPreset(color: string): boolean {
-    return (ACCOUNT_SWATCHES as readonly string[]).includes(
-        normalizeHexColor(color) ?? color,
-    );
+function isPreset(color: string, swatches: readonly string[]): boolean {
+    return swatches.includes(normalizeHexColor(color) ?? color);
 }
 
 /**
