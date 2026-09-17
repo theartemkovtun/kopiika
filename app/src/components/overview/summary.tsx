@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { cn } from "cn";
 import { useState } from "react";
 
+import { RollingNumber } from "@/components/ui/rolling-number";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePeriod } from "@/contexts/period-context";
 import { usePreferences } from "@/contexts/preferences-context";
@@ -72,13 +73,27 @@ export function OverviewSummary() {
         <Band>
             <Figure
                 label={tCommon("income")}
-                value={shown.data ? `+${formatValue(income)}` : null}
+                value={
+                    shown.data ? (
+                        <RollingNumber
+                            value={income}
+                            format={(value) => `+${formatValue(value)}`}
+                        />
+                    ) : null
+                }
                 tone="text-green"
                 note={change(shown.data?.income.previousPeriodDiff)}
             />
             <Figure
                 label={tCommon("spent")}
-                value={shown.data ? `${MINUS}${formatValue(outcome)}` : null}
+                value={
+                    shown.data ? (
+                        <RollingNumber
+                            value={outcome}
+                            format={(value) => `${MINUS}${formatValue(value)}`}
+                        />
+                    ) : null
+                }
                 tone="text-red"
                 note={change(shown.data?.outcome.previousPeriodDiff)}
                 divided
@@ -86,9 +101,14 @@ export function OverviewSummary() {
             <Figure
                 label={isCurrentMonth ? t("keptSoFar") : t("kept")}
                 value={
-                    shown.data
-                        ? formatValue(kept, undefined, { signed: true })
-                        : null
+                    shown.data ? (
+                        <RollingNumber
+                            value={kept}
+                            format={(value) =>
+                                formatValue(value, undefined, { signed: true })
+                            }
+                        />
+                    ) : null
                 }
                 tone={kept >= 0 ? "text-green" : "text-red"}
                 note={change(shown.data?.difference.previousPeriodDiff)}
@@ -142,8 +162,12 @@ function Figure({
     divided = false,
 }: {
     label: string;
-    /** Null while the read is in flight. */
-    value: string | null;
+    /**
+     * The figure itself — a `RollingNumber` on every live caller, since the
+     * formatting differs per figure and the sign is part of it. Null while the
+     * read is in flight.
+     */
+    value: React.ReactNode | null;
     tone?: string;
     /** The comparison note — see `OverviewSummary`. Null while in flight. */
     note: string | null;

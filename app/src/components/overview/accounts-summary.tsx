@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 
+import { RollingNumber } from "@/components/ui/rolling-number";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePreferences } from "@/contexts/preferences-context";
 import { useAccountsBalance } from "@/hooks/use-accounts";
@@ -37,7 +38,7 @@ export function AccountsSummary() {
     const tNav = useTranslations("nav");
     const tAccounts = useTranslations("accounts");
 
-    const { format } = usePreferences();
+    const { format, formatValue } = usePreferences();
     const { data } = useAccountsBalance();
 
     const accounts = (data?.accounts ?? []).map((account, index) => ({
@@ -45,6 +46,14 @@ export function AccountsSummary() {
         color: storedColor(account.colorHex, index),
         worth: toNumber(account.localizedAmount.value),
     }));
+
+    // The total is the only converted figure here, so it is the only one that
+    // is an estimate — and only when there is something to convert. With every
+    // account already in the display currency the sum is exact, and marking it
+    // approximate would be a lie about the arithmetic.
+    const converted = accounts.some(
+        (account) => account.amount.currency !== data?.total.currency,
+    );
 
     const credited = accounts.filter((account) => account.worth > 0);
     const pool = credited.reduce((sum, account) => sum + account.worth, 0);
@@ -91,7 +100,19 @@ export function AccountsSummary() {
                         without drawing a bar as tall as the leading. */}
                     <div className="mt-[6px] flex h-[1.5em] items-center text-[36px] tracking-[-0.02em]">
                         {data ? (
-                            format(data.total)
+                            <>
+                                {converted ? (
+                                    <span className="mr-[0.12em] text-ink">
+                                        ~
+                                    </span>
+                                ) : null}
+                                <RollingNumber
+                                    value={toNumber(data.total.value)}
+                                    format={(value) =>
+                                        formatValue(value, data.total.currency)
+                                    }
+                                />
+                            </>
                         ) : (
                             <Skeleton className="h-[1em] w-[250px] bg-rule2" />
                         )}

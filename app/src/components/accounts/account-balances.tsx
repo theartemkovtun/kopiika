@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 
+import { RollingNumber } from "@/components/ui/rolling-number";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePreferences } from "@/contexts/preferences-context";
 import { useAccountsBalance } from "@/hooks/use-accounts";
@@ -43,7 +44,7 @@ import { currencyLabel, toNumber } from "@/lib/money";
 export function AccountBalances() {
     const t = useTranslations("accounts");
 
-    const { format } = usePreferences();
+    const { format, formatValue } = usePreferences();
     const { data } = useAccountsBalance();
 
     // Which band the pointer is on, by account id rather than by index — the
@@ -60,6 +61,14 @@ export function AccountBalances() {
             worth: toNumber(account.localizedAmount.value),
         }))
         .sort((a, b) => b.worth - a.worth);
+
+    // The total is the only converted figure on the screen, so it is the only
+    // one that is an estimate — and only when there is something to convert.
+    // With every account already in the display currency the sum is exact, and
+    // marking it approximate would be a lie about the arithmetic.
+    const converted = accounts.some(
+        (account) => account.amount.currency !== data.total.currency,
+    );
 
     const pool = creditedTotal(accounts.map((account) => account.worth));
 
@@ -92,7 +101,15 @@ export function AccountBalances() {
                         {t("totalBalance")}
                     </div>
                     <div className="mt-4 text-[clamp(32px,4.2vw,52px)] leading-none tracking-[-0.03em]">
-                        {format(data.total)}
+                        {converted ? (
+                            <span className="mr-[0.12em] text-ink">~</span>
+                        ) : null}
+                        <RollingNumber
+                            value={toNumber(data.total.value)}
+                            format={(value) =>
+                                formatValue(value, data.total.currency)
+                            }
+                        />
                     </div>
                 </div>
 
