@@ -8,6 +8,10 @@ import { Link } from "@/i18n/navigation";
  * the emphasis colour: it is the one flourish the design allows itself, and it
  * is also the link back to the Overview.
  *
+ * The line height is below 1 because the script face carries its ascender and
+ * descender room inside the em: at the sizes the wordmark is set, a normal
+ * leading reads as a gap above and below it rather than as line spacing.
+ *
  * `asLink={false}` for the signed-out screens, where the Overview is not
  * reachable and the link would only bounce off the auth middleware and land
  * back where it started.
@@ -29,7 +33,7 @@ export function Wordmark({
     );
 
     const classes = cn(
-        "font-script leading-[1.1] text-ink transition-colors",
+        "font-script leading-[0.9] text-ink transition-colors",
         className,
     );
 

@@ -34,13 +34,13 @@ export function AppSidebar({ className }: { className?: string }) {
     return (
         <aside
             className={cn(
-                "sticky top-0 flex h-screen flex-col border-r border-rule px-7 pt-9 pb-[18px]",
+                "sticky top-0 flex h-screen flex-col border-r border-rule px-7 pt-6 pb-[18px]",
                 className,
             )}
         >
-            <Wordmark className="text-[42px]" />
+            <Wordmark className="text-[54px]" />
 
-            <SidebarNav className="mt-11" />
+            <SidebarNav className="mt-6" />
 
             <div className="mt-auto flex items-center justify-between border-t border-rule pt-[14px]">
                 <ThemeToggle />
