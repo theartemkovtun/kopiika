@@ -34,7 +34,7 @@ export function CategoryBreakdown() {
     const t = useTranslations("overview");
     const tCategories = useTranslations("categories");
 
-    const { range } = usePeriod();
+    const { range, yearView } = usePeriod();
     const { formatValue } = usePreferences();
     const { data } = useStatistics(range);
 
@@ -61,7 +61,16 @@ export function CategoryBreakdown() {
             {!data ? (
                 <ChartSkeleton />
             ) : slices.length === 0 ? (
-                <p className="text-[15px] text-mute">{t("nothingSpent")}</p>
+                <div className="flex min-w-0 flex-col gap-4">
+                    <Ring className="opacity-50" />
+                    {/* Where the legend would be, and in the same padding,
+                        so an empty period stands as tall as a full one and
+                        the chart row does not jump. The legend's rule is not
+                        drawn: there is nothing under it to separate. */}
+                    <p className="pt-[10px] pb-3 text-center text-[13px] text-mute opacity-60">
+                        {t(yearView ? "nothingSpentYear" : "nothingSpentMonth")}
+                    </p>
+                </div>
             ) : (
                 <div className="flex min-w-0 flex-col gap-4">
                     <div className="h-[196px]">
@@ -141,22 +150,44 @@ export function CategoryBreakdownFallback() {
     );
 }
 
-function ChartSkeleton() {
+/**
+ * The donut with nothing in it — the placeholder both the empty period and the
+ * loading state wear: faded for the period that holds nothing, pulsing for the
+ * one still on its way. One ring rather than two means the panel cannot change
+ * size between waiting for a period and finding it empty.
+ *
+ * It is the ring the pie would have drawn, laid down flat: one step off the
+ * page's own ground, and no rule around it, so it reads as the space a chart
+ * will occupy rather than as a chart of one thing.
+ *
+ * The geometry is the Pie's own, which is why the viewBox is 200 wide — that
+ * makes a unit one percent of the chart's radius, so the two circles are
+ * literally the `innerRadius`/`outerRadius` percentages above. recharts sizes
+ * a pie off the shorter side of its box and centres it; `meet` on a square
+ * viewBox does the same, so the ring lands exactly where a drawn one would, at
+ * any width. The inner circle is the page ground rather than a hole, which is
+ * how the donut's own middle is cut too — and it means either treatment can
+ * fade the whole drawing without the middle showing through: the page ground
+ * at half strength over the page ground is still the page ground.
+ *
+ * `animate-pulse` directly rather than `Skeleton`, which is a rectangle.
+ */
+function Ring({ className }: { className?: string }) {
     return (
-        <div className="flex min-w-0 flex-col gap-4">
-            <DonutSkeleton />
-            <LegendSkeleton />
+        <div className={cn("h-[196px]", className)} aria-hidden>
+            <svg viewBox="0 0 200 200" className="size-full">
+                <circle cx="100" cy="100" r="92" fill="var(--rule2)" />
+                <circle cx="100" cy="100" r="38" fill="var(--bg)" />
+            </svg>
         </div>
     );
 }
 
-function DonutSkeleton() {
+function ChartSkeleton() {
     return (
-        <div className="flex h-[196px] items-center justify-center" aria-hidden>
-            <div className="relative size-[176px]">
-                <Skeleton className="size-full rounded-full bg-rule2" />
-                <div className="absolute inset-[30%] rounded-full bg-bg" />
-            </div>
+        <div className="flex min-w-0 flex-col gap-4">
+            <Ring className="animate-pulse" />
+            <LegendSkeleton />
         </div>
     );
 }
