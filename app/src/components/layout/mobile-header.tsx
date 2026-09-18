@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { GearIcon, MenuIcon } from "@/components/icons";
+import { NewEntryButton } from "./new-entry-button";
 import { SidebarNav } from "./sidebar-nav";
 import { ThemeToggle } from "./theme-toggle";
 import { Wordmark } from "./wordmark";
@@ -24,6 +25,10 @@ import { Link, usePathname } from "@/i18n/navigation";
  *
  * The title and description are visually hidden rather than dropped — a drawer
  * still has to announce itself to a screen reader.
+ *
+ * New entry sits at the foot of the drawer as it does at the foot of the rail:
+ * it is no longer in the nav, so the drawer has to carry it itself or the
+ * phone loses the action entirely.
  */
 export function MobileHeader() {
     const t = useTranslations("nav");
@@ -74,6 +79,7 @@ export function MobileHeader() {
                             className="mt-9"
                             onNavigate={() => setOpen(false)}
                         />
+                        <NewEntryButton onNavigate={() => setOpen(false)} />
                     </SheetContent>
                 </Sheet>
             </div>

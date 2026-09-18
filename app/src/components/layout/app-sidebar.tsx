@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { cn } from "cn";
 
 import { GearIcon, LogoutIcon } from "@/components/icons";
+import { NewEntryButton } from "./new-entry-button";
 import { SidebarNav } from "./sidebar-nav";
 import { ThemeToggle } from "./theme-toggle";
 import { Wordmark } from "./wordmark";
@@ -15,9 +16,14 @@ import { Link, useRouter, usePathname } from "@/i18n/navigation";
  * The desktop rail: a fixed 208px column that does not scroll with the page.
  *
  * Settings is deliberately not in the numbered nav — it is chrome, so it sits
- * with the theme toggle and logout in the footer, below `mt-auto`. The three
- * are spread with `justify-between` rather than a fixed gap so logout lands
- * at the far right regardless of the rail's width.
+ * with the theme toggle and logout in the footer. The three are spread with
+ * `justify-between` rather than a fixed gap so logout lands at the far right
+ * regardless of the rail's width.
+ *
+ * New entry is not in the nav either, for the opposite reason: it is the one
+ * committing action here, so it is the one solid button, and it takes the
+ * `mt-auto` that used to push the footer down — the button and the footer
+ * ride the bottom of the column together.
  */
 export function AppSidebar({ className }: { className?: string }) {
     const t = useTranslations("nav");
@@ -42,7 +48,9 @@ export function AppSidebar({ className }: { className?: string }) {
 
             <SidebarNav className="mt-6" />
 
-            <div className="mt-auto flex items-center justify-between border-t border-rule pt-[14px]">
+            <NewEntryButton />
+
+            <div className="mt-[18px] flex items-center justify-between border-t border-rule pt-[14px]">
                 <ThemeToggle />
                 <Button
                     asChild
