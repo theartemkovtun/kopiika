@@ -63,11 +63,14 @@ export function CategoryBreakdown() {
             ) : slices.length === 0 ? (
                 <div className="flex min-w-0 flex-col gap-4">
                     <Ring className="opacity-50" />
-                    {/* Where the legend would be, and in the same padding,
-                        so an empty period stands as tall as a full one and
-                        the chart row does not jump. The legend's rule is not
-                        drawn: there is nothing under it to separate. */}
-                    <p className="pt-[10px] pb-3 text-center text-[13px] text-mute opacity-60">
+                    {/* Where the legend would be, and in the same padding and
+                        the same border, so an empty period stands as tall as a
+                        full one and the chart row does not jump. The rule is
+                        there but transparent: there is nothing under it to
+                        separate, and drawing nothing is not the same as
+                        leaving the border off, which takes a pixel off the
+                        panel and moves the rule under the whole band. */}
+                    <p className="border-t border-transparent pt-[10px] pb-3 text-center text-[13px] text-mute opacity-60">
                         {t(yearView ? "nothingSpentYear" : "nothingSpentMonth")}
                     </p>
                 </div>

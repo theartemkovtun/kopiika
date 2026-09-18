@@ -210,10 +210,13 @@ function Figure({
                     value
                 )}
             </div>
-            {/* Two lines' worth of height, so that a note which has not
-                landed cannot shorten the band; this is also the band's
-                bottom padding. */}
-            <div className="min-h-[36px] text-[13px] text-mute text-pretty">
+            {/* Two lines' worth of height — 13px text on the page's 1.5
+                line-height, so 39px, not the 36 this used to ask for — so that
+                a note which has not landed, or one that happens to fit on a
+                single line, cannot shorten the band. A band that shortens
+                moves every rule below it, the one under the charts included.
+                This is also the band's bottom padding. */}
+            <div className="min-h-[39px] text-[13px] text-mute text-pretty">
                 {note === null ? (
                     <Skeleton className="h-[1em] w-[140px] bg-rule2" />
                 ) : (
