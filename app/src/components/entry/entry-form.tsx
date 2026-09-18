@@ -8,6 +8,7 @@ import { ApiError } from "@/api/client";
 import type { Transaction, TransactionType } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { FormRow } from "@/components/ui/form-row";
+import { CurrencyFlag } from "@/components/ui/currency-flag";
 import { Input } from "@/components/ui/input";
 import {
     Select,
@@ -16,6 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { TypeSwitch } from "@/components/ui/type-switch";
 import { usePreferences } from "@/contexts/preferences-context";
 import {
     useCreateTransaction,
@@ -23,7 +25,7 @@ import {
 } from "@/hooks/use-transactions";
 import { categoryLabel } from "@/lib/categories";
 import { fromIsoDate, todayIso } from "@/lib/dates";
-import { CURRENCIES, parseAmountInput } from "@/lib/money";
+import { CURRENCIES, filterDecimalInput, parseAmountInput } from "@/lib/money";
 
 /**
  * The entry form.
@@ -36,7 +38,10 @@ import { CURRENCIES, parseAmountInput } from "@/lib/money";
  * loudly if ignored: an entry posted to an account has to be in that account's
  * currency, which is why the account list is filtered by the currency picked
  * above it; and the amount travels as a decimal string, so it is normalised as
- * text and never round-tripped through a float.
+ * text and never round-tripped through a float. The amount field also refuses
+ * anything but a figure as it is typed, so what is in it is always an amount —
+ * `errAmount` is left for the one case filtering cannot cover, an empty or
+ * zero field.
  *
  * The date is not a row here — the calendar beside the form is the date field —
  * so it is handed in, and Clear puts it back on today with the rest.
@@ -176,35 +181,34 @@ export function EntryForm({
             noValidate
             className={cn("flex flex-col", className)}
         >
+            {/* The switch is a box, not a line of text, so the label sits on
+                the row's centre line — there is no baseline to share, and the
+                nudge the two chips needed was measured against type that is
+                no longer there. */}
             <FormRow
                 label={t("type")}
-                className="items-start border-t border-t-rule"
-                labelClassName="pt-[6px]"
+                className="items-center border-t border-t-rule"
             >
-                <div className="flex gap-[10px]">
-                    <Button
-                        type="button"
-                        size="chip"
-                        variant={type === "outcome" ? "expense" : "outline"}
-                        aria-pressed={type === "outcome"}
-                        onClick={() => edit(setType)("outcome")}
-                    >
-                        {t("expense")}
-                    </Button>
-                    <Button
-                        type="button"
-                        size="chip"
-                        variant={type === "income" ? "income" : "outline"}
-                        aria-pressed={type === "income"}
-                        onClick={() => edit(setType)("income")}
-                    >
-                        {t("income")}
-                    </Button>
-                </div>
+                <TypeSwitch value={type} onChange={edit(setType)} />
             </FormRow>
 
+            <FormRow asLabel label={t("title")} required>
+                <Input
+                    inputSize="lg"
+                    autoComplete="off"
+                    required
+                    placeholder={t("titleHint")}
+                    value={title}
+                    onChange={(event) => edit(setTitle)(event.target.value)}
+                />
+            </FormRow>
+
+            {/* The currency stays in the amount's own row, at the
+                figure's right, under the row's own rule and no other line.
+                It is set small against the amount: a flag and a code are a
+                unit, not a second figure. */}
             <FormRow asLabel label={t("amount")} required>
-                <span className="flex min-w-0 flex-1 items-baseline gap-[10px]">
+                <span className="flex min-w-0 flex-1 items-baseline justify-between gap-6">
                     <Input
                         inputSize="amount"
                         inputMode="decimal"
@@ -213,16 +217,16 @@ export function EntryForm({
                         placeholder="0"
                         value={amount}
                         onChange={(event) =>
-                            edit(setAmount)(event.target.value)
+                            edit(setAmount)(
+                                filterDecimalInput(event.target.value),
+                            )
                         }
                     />
                     <Select value={currency} onValueChange={selectCurrency}>
                         <SelectTrigger
                             tone="mute"
-                            triggerSize="sm"
-                            underline="rule2"
                             aria-label={tCommon("currency")}
-                            className="w-[66px] shrink-0 grow-0 justify-end"
+                            className="w-auto shrink-0 grow-0 justify-end"
                         >
                             <SelectValue />
                         </SelectTrigger>
@@ -232,23 +236,18 @@ export function EntryForm({
                                     key={option.code}
                                     value={option.code}
                                 >
-                                    {option.label}
+                                    {/* Radix carries an item's own children
+                                        into the trigger, so the flag rides
+                                        along with the code it belongs to. */}
+                                    <span className="flex items-center gap-[8px]">
+                                        <CurrencyFlag code={option.code} />
+                                        {option.label}
+                                    </span>
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
                 </span>
-            </FormRow>
-
-            <FormRow asLabel label={t("description")} required>
-                <Input
-                    inputSize="lg"
-                    autoComplete="off"
-                    required
-                    placeholder={t("descHint")}
-                    value={title}
-                    onChange={(event) => edit(setTitle)(event.target.value)}
-                />
             </FormRow>
 
             {type === "outcome" ? (
@@ -258,7 +257,7 @@ export function EntryForm({
                         onValueChange={edit(setCategoryId)}
                     >
                         <SelectTrigger
-                            tone={categoryId === NONE ? "mute" : "ink"}
+                            tone={categoryId === NONE ? "faint" : "ink"}
                             aria-label={t("category")}
                         >
                             <SelectValue />
@@ -283,7 +282,7 @@ export function EntryForm({
             <FormRow label={t("account")} className="border-b-rule">
                 <Select value={accountId} onValueChange={edit(setAccountId)}>
                     <SelectTrigger
-                        tone={accountId === NONE ? "mute" : "ink"}
+                        tone={accountId === NONE ? "faint" : "ink"}
                         aria-label={t("account")}
                     >
                         <SelectValue />

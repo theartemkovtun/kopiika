@@ -164,8 +164,8 @@
         "income": "Income",
         "type": "Type",
         "amount": "Amount",
-        "description": "Description",
-        "descHint": "e.g. Groceries — Silpo",
+        "title": "Title",
+        "titleHint": "e.g. Groceries — Silpo",
         "category": "Category",
         "account": "Account",
         "date": "Date",
@@ -173,7 +173,7 @@
         "clear": "Clear",
         "ok": "Entry added.",
         "errAmount": "Enter an amount above zero.",
-        "errName": "Add a short description.",
+        "errName": "Add a short title.",
         "errCategory": "Pick a category."
     },
     "settings": {

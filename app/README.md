@@ -120,7 +120,8 @@ src/
     entry/        the new-entry screen: calendar, day list, form
     layout/       sidebar, page header, period strip, mobile drawer
     ledger/       the transactions screen: rows, filter rail, detail dialog
-    ui/           shadcn primitives, restyled, plus the ruled form row
+    ui/           shadcn primitives, restyled, plus the ruled form row,
+                  the currency flag and the expense/income switch
   contexts/       user, preferences, period
   hooks/          react-query hooks over src/api, one file per resource,
                   plus the two the signed-out screens need
@@ -130,6 +131,7 @@ src/
   middlewares/    locale → auth, composed in src/middleware.ts
   providers/      query, theme, amplify
 messages/         en.json, uk.json
+public/images/currencies/  a flag per currency code, the `flag-icons` set
 ```
 
 ### Routing
@@ -242,7 +244,10 @@ posted to an account has to be in that account's currency, which is why the
 account list is filtered by the currency picked above it and why changing that
 currency drops an account that no longer matches. And the amount is normalised
 as _text_ — a comma becomes a point, grouping spaces go — so that the decimal
-string reaching the wire never passes through a float.
+string reaching the wire never passes through a float. The amount field holds
+itself to the same shape as it is typed: `filterDecimalInput` drops anything
+that is not a figure, keeps one separator and two decimal places, so nothing
+but an amount ever gets into it.
 
 Creating an entry drops both the `transactions` and the `accounts` query trees:
 the ledger moved, and so did a balance.

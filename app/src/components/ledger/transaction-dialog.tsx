@@ -270,7 +270,7 @@ function DialogBody({
                             </span>
                         </DetailRow>
 
-                        <DetailRow asLabel label={t("description")} required>
+                        <DetailRow asLabel label={t("title")} required>
                             <Input
                                 inputSize="lg"
                                 autoComplete="off"
@@ -295,7 +295,9 @@ function DialogBody({
                                         aria-label={t("category")}
                                         className="text-base"
                                         tone={
-                                            categoryId === NONE ? "mute" : "ink"
+                                            categoryId === NONE
+                                                ? "faint"
+                                                : "ink"
                                         }
                                     >
                                         <SelectValue />
@@ -331,7 +333,7 @@ function DialogBody({
                                     triggerSize="sm"
                                     aria-label={t("account")}
                                     className="text-base"
-                                    tone={accountId === NONE ? "mute" : "ink"}
+                                    tone={accountId === NONE ? "faint" : "ink"}
                                 >
                                     <SelectValue />
                                 </SelectTrigger>

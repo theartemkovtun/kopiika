@@ -63,6 +63,30 @@ export function parseDecimalInput(input: string): string | null {
 }
 
 /**
+ * The same rule a keystroke at a time: what is in a figure field, cut back to
+ * the part of it that is still money.
+ *
+ * `parseDecimalInput` judges a finished value; this shapes an unfinished one,
+ * so it has to let a half-typed figure stand — `""`, `"0."`, `"."` are all on
+ * the way to an amount — while dropping what never could be one: a letter, a
+ * sign, an exponent, a second separator, a third decimal place.
+ *
+ * The separator is left as it was typed, comma or point, because the parse
+ * takes either and half the keyboards here say comma.
+ */
+export function filterDecimalInput(input: string): string {
+    const kept = input.replace(/[^\d.,]/g, "");
+
+    const at = kept.search(/[.,]/);
+    if (at === -1) return kept;
+
+    // Everything after the first separator is a decimal place, and there are
+    // two of those in every currency the app carries.
+    const fraction = kept.slice(at + 1).replace(/[.,]/g, "");
+    return kept.slice(0, at) + kept[at] + fraction.slice(0, 2);
+}
+
+/**
  * The same, for a field that also has to be above zero — an entry's amount,
  * where a zero is not an entry. An opening balance is the other case: nothing
  * in an account is a real answer, so it uses `parseDecimalInput` directly.

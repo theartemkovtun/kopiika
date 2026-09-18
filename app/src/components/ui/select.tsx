@@ -31,6 +31,9 @@ const triggerVariants = cva(
             tone: {
                 ink: "text-ink data-[placeholder]:text-mute",
                 mute: "text-mute",
+                /** An empty field — "No category" — at the placeholder's own
+                    weight, since that is what it is. */
+                faint: "text-rule",
             },
             triggerSize: {
                 sm: "text-[13px]",

@@ -57,7 +57,7 @@ export function AuthField({
                 {action ? <div className="ml-auto">{action}</div> : null}
             </div>
 
-            <Input id={id} className="py-px placeholder:text-rule" {...props} />
+            <Input id={id} className="py-px" {...props} />
 
             {meter}
         </div>
