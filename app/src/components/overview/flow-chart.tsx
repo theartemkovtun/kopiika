@@ -14,7 +14,7 @@ import {
 import { cn } from "cn";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { usePeriod } from "@/contexts/period-context";
+import { type Period, usePeriod } from "@/contexts/period-context";
 import { usePreferences } from "@/contexts/preferences-context";
 import { useStatistics } from "@/hooks/use-statistics";
 import { AXIS_TICK, TOOLTIP } from "@/lib/charts";
@@ -231,10 +231,18 @@ export function FlowChart() {
  * has usually already landed, and its own `!data` branch never gets drawn.
  * This fallback fills the same gap the summary's does — the one actually
  * visible while the account is in flight.
+ *
+ * The period comes in as a prop, for the reason `PeriodBar` takes it that way:
+ * this is the one panel the server actually renders, and on the server the
+ * context has no address bar to read and falls back to today's month. A reload
+ * on `?year=2024` would serve a month's worth of thin bars under "Daily flow",
+ * then swap both for the year's twelve the moment the context caught up —
+ * the whole panel flickering through a shape the page was never going to be.
+ * The page hands this the same period it hands the title and the strip.
  */
-export function FlowChartFallback() {
+export function FlowChartFallback({ period }: { period: Period }) {
     const t = useTranslations("overview");
-    const { yearView } = usePeriod();
+    const { yearView } = period;
 
     return (
         <section className="flex min-w-0 flex-col">

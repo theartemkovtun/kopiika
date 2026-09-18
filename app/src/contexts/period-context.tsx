@@ -98,6 +98,26 @@ export function lastSelectableMonth(
 }
 
 /**
+ * True when the period is the month we are actually living in — which is what
+ * decides whether a total is written as one still running ("Kept so far") or
+ * one that is closed ("Kept").
+ *
+ * Exported alongside `derivePeriodFromParams` and for the same reason: the
+ * page has to answer this on the server, about the period the address bar
+ * names, before the context has an address bar to read.
+ */
+export function isCurrentMonthPeriod(
+    period: Period,
+    today: { year: number; month: number },
+): boolean {
+    return (
+        !period.yearView &&
+        period.year === today.year &&
+        period.month === today.month
+    );
+}
+
+/**
  * True on the Overview route itself ("/" or "/<locale>") — the only place the
  * month strip lives, and so the only place a `year`/`month`/`view` triple in
  * the URL means anything. A query string left over from some other bookmarked
@@ -242,8 +262,10 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
     }, [today]);
 
     const value = useMemo<PeriodContextValue>(() => {
-        const isCurrentMonth =
-            !yearView && year === today.year && month === today.month;
+        const isCurrentMonth = isCurrentMonthPeriod(
+            { month, year, yearView },
+            today,
+        );
 
         const range: DateRange = yearView
             ? {

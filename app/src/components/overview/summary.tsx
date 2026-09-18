@@ -127,10 +127,20 @@ export function OverviewSummary() {
  * shows while the statistics are being read. The page therefore opens at its
  * full height, and the figures arrive into a band that is already drawn.
  */
-export function OverviewSummaryFallback() {
+export function OverviewSummaryFallback({
+    isCurrentMonth,
+}: {
+    /**
+     * Passed in rather than read off the context, for the reason
+     * `FlowChartFallback` takes its period that way: this is a panel the
+     * server renders, and there the context knows only today. A reload on a
+     * period that is not this month would write "Kept so far" into the HTML
+     * and correct it to "Kept" on hydration.
+     */
+    isCurrentMonth: boolean;
+}) {
     const t = useTranslations("overview");
     const tCommon = useTranslations("common");
-    const { isCurrentMonth } = usePeriod();
 
     return (
         <Band>

@@ -26,7 +26,11 @@ import {
     OverviewSummary,
     OverviewSummaryFallback,
 } from "@/components/overview/summary";
-import { derivePeriodFromParams, usePeriod } from "@/contexts/period-context";
+import {
+    derivePeriodFromParams,
+    isCurrentMonthPeriod,
+    usePeriod,
+} from "@/contexts/period-context";
 import { useAccountsBalance } from "@/hooks/use-accounts";
 import { useStatistics } from "@/hooks/use-statistics";
 import { useLatestTransactions } from "@/hooks/use-transactions";
@@ -151,10 +155,15 @@ export default function OverviewPage({
             <AccountGate
                 fallback={
                     <>
-                        <OverviewSummaryFallback />
+                        <OverviewSummaryFallback
+                            isCurrentMonth={isCurrentMonthPeriod(
+                                displayed,
+                                today,
+                            )}
+                        />
                         <ChartGrid>
                             <CategoryBreakdownFallback />
-                            <FlowChartFallback />
+                            <FlowChartFallback period={displayed} />
                         </ChartGrid>
                         <div className="mt-11 grid gap-14 [grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))]">
                             <RecentEntriesFallback />
