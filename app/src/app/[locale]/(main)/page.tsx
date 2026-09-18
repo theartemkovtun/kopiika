@@ -81,12 +81,15 @@ export default function OverviewPage({
     const monthsShort = calendar.raw("monthsShort") as string[];
 
     // The server render has no `window`, so the context above falls back to
-    // today; `searchParams` is known there too, so that's what the title
-    // reads on the server. Every client render — starting with the very
-    // first, since the context re-derives its own state from the real
+    // today; `searchParams` is known there too, so that's what the title and
+    // the month strip read on the server. Every client render — starting with
+    // the very first, since the context re-derives its own state from the real
     // `window.location` as soon as it mounts — reads the context instead,
     // because `searchParams` stays frozen at whatever the URL was on load
     // and would otherwise ignore every later click on the month strip.
+    //
+    // Both take the same value: a title on one month and the strip's mark on
+    // another is the mismatch that shows if only one of them is handed it.
     const displayed =
         typeof window === "undefined"
             ? derivePeriodFromParams(use(searchParams), today)
@@ -143,7 +146,7 @@ export default function OverviewPage({
                 }
                 subtitle={subtitle}
             />
-            <PeriodBar className="mt-7" />
+            <PeriodBar period={displayed} className="mt-7" />
 
             <AccountGate
                 fallback={

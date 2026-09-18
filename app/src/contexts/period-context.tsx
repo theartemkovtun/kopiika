@@ -86,6 +86,18 @@ type PeriodContextValue = Period & {
 const PeriodContext = createContext<PeriodContextValue | null>(null);
 
 /**
+ * The last month a given year can offer: December, except in the year we are
+ * living in, which stops at the month we are in — the strip shows the rest but
+ * will not select them.
+ */
+export function lastSelectableMonth(
+    year: number,
+    today: { year: number; month: number },
+): number {
+    return year === today.year ? today.month : 11;
+}
+
+/**
  * True on the Overview route itself ("/" or "/<locale>") — the only place the
  * month strip lives, and so the only place a `year`/`month`/`view` triple in
  * the URL means anything. A query string left over from some other bookmarked
@@ -136,7 +148,7 @@ export function derivePeriodFromParams(
         return { month: today.month, year, yearView: true };
     }
 
-    const maxMonth = year === today.year ? today.month : 11;
+    const maxMonth = lastSelectableMonth(year, today);
     const monthParam = Number(params.month) - 1;
     const month =
         Number.isInteger(monthParam) &&
@@ -188,19 +200,19 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
     );
 
     const { month, year, yearView } = period;
-    const maxMonth = year === today.year ? today.month : 11;
+    const maxMonth = lastSelectableMonth(year, today);
 
     const selectMonth = useCallback(
         (next: number) => {
             // The strip shows all twelve months; the ones ahead of today are
             // dimmed and inert rather than hidden, so the row never reflows.
             setPeriod((current) => {
-                const limit = current.year === today.year ? today.month : 11;
+                const limit = lastSelectableMonth(current.year, today);
                 if (next > limit) return current;
                 return { ...current, month: next, yearView: false };
             });
         },
-        [today.month, today.year],
+        [today],
     );
 
     const selectYear = useCallback(
@@ -220,14 +232,14 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
         setPeriod((current) => {
             if (current.year >= today.year) return current;
             const nextYearValue = current.year + 1;
-            const limit = nextYearValue === today.year ? today.month : 11;
+            const limit = lastSelectableMonth(nextYearValue, today);
             return {
                 ...current,
                 year: nextYearValue,
                 month: Math.min(current.month, limit),
             };
         });
-    }, [today.month, today.year]);
+    }, [today]);
 
     const value = useMemo<PeriodContextValue>(() => {
         const isCurrentMonth =
