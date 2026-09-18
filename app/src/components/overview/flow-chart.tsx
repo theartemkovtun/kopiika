@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
     Bar,
     BarChart,
@@ -107,25 +107,104 @@ export function FlowChart() {
         { id: "both", label: tCommon("both") },
     ];
 
+    // One line for the three of them, slid to whichever is picked — the same
+    // mark the month strip carries, for the same reason: three words in a row
+    // with one underlined is a ruler, and a ruler's mark moves. Measured off
+    // the buttons because they are as wide as their labels, which depend on
+    // the locale and on the font that has actually loaded; re-measured
+    // whenever any of that changes size. See `period-bar.tsx`, where this is
+    // written out at length.
+    const strip = useRef<HTMLSpanElement>(null);
+    const words = useRef<(HTMLButtonElement | null)[]>([]);
+    const [rule, setRule] = useState<{
+        left: number;
+        top: number;
+        width: number;
+    } | null>(null);
+
+    const selected = toggles.findIndex((toggle) => toggle.id === series);
+    const showToggles = Boolean(data) && anyFlow;
+
+    useLayoutEffect(() => {
+        const container = strip.current;
+        if (!container) return;
+
+        const measure = () => {
+            const word = words.current[selected];
+            if (!word) return;
+
+            // Where each button's own bottom border sits, so the mark lands on
+            // the line the unmeasured state already drew.
+            const next = {
+                left: word.offsetLeft,
+                top: word.offsetTop + word.offsetHeight - 1,
+                width: word.offsetWidth,
+            };
+
+            setRule((current) =>
+                current &&
+                current.left === next.left &&
+                current.top === next.top &&
+                current.width === next.width
+                    ? current
+                    : next,
+            );
+        };
+
+        measure();
+
+        const observer = new ResizeObserver(measure);
+        observer.observe(container);
+        for (const word of words.current) {
+            if (word) observer.observe(word);
+        }
+
+        return () => observer.disconnect();
+        // `showToggles`, because the row is not in the document until the
+        // period turns out to hold something, and there is nothing to measure
+        // until it is.
+    }, [selected, showToggles]);
+
     return (
         <section className="flex min-w-0 flex-col">
             <div className="mb-[18px] flex flex-wrap items-baseline gap-[18px]">
                 <h2 className="text-[26px] font-normal tracking-[-0.01em] italic">
                     {yearView ? t("monthlyFlow") : t("dailyFlow")}
                 </h2>
-                {data && anyFlow ? (
-                    <span className="ml-auto flex gap-4">
-                        {toggles.map((toggle) => (
+                {showToggles ? (
+                    <span ref={strip} className="relative ml-auto flex gap-4">
+                        {rule ? (
+                            <span
+                                aria-hidden
+                                style={{
+                                    width: rule.width,
+                                    transform: `translate(${rule.left}px, ${rule.top}px)`,
+                                }}
+                                // Born already in place — a browser starts no
+                                // transition on the style an element is
+                                // inserted with — so only later moves animate.
+                                className="absolute top-0 left-0 h-px bg-blue transition-[transform,width] duration-200 ease-out motion-reduce:transition-none"
+                            />
+                        ) : null}
+
+                        {toggles.map((toggle, index) => (
                             <button
                                 key={toggle.id}
+                                ref={(node) => {
+                                    words.current[index] = node;
+                                }}
                                 type="button"
                                 aria-pressed={series === toggle.id}
                                 onClick={() => setSeries(toggle.id)}
+                                // The transparent border is kept on every
+                                // button, picked one included: it is what
+                                // holds the row's height steady, and what the
+                                // sliding mark is laid over.
                                 className={cn(
-                                    "cursor-pointer border-b pb-[3px] text-xs transition-colors",
+                                    "cursor-pointer border-b border-transparent pb-[3px] text-xs transition-colors",
                                     series === toggle.id
-                                        ? "border-blue text-ink"
-                                        : "border-transparent text-mute hover:text-blue",
+                                        ? cn("text-ink", !rule && "border-blue")
+                                        : "text-mute hover:text-blue",
                                 )}
                             >
                                 {toggle.label}
