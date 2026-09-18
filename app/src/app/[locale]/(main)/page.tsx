@@ -190,7 +190,7 @@ export default function OverviewPage({
 
 function ChartGrid({ children }: { children: React.ReactNode }) {
     return (
-        <div className="grid grid-cols-1 gap-12 border-b border-rule py-[34px] lg:[grid-template-columns:minmax(280px,1fr)_minmax(320px,2fr)]">
+        <div className="grid grid-cols-1 gap-12 border-b border-rule py-[34px] lg:gap-[72px] lg:[grid-template-columns:minmax(280px,1fr)_minmax(320px,2fr)]">
             {children}
         </div>
     );

@@ -17,7 +17,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { usePeriod } from "@/contexts/period-context";
 import { usePreferences } from "@/contexts/preferences-context";
 import { useStatistics } from "@/hooks/use-statistics";
-import { AXIS_TICK, TOOLTIP, compactFigure } from "@/lib/charts";
+import { AXIS_TICK, TOOLTIP } from "@/lib/charts";
 import { daysInMonth, fromIsoDate } from "@/lib/dates";
 import { toNumber } from "@/lib/money";
 
@@ -27,13 +27,12 @@ import { toNumber } from "@/lib/money";
  * The ticks are given rather than left to recharts because they are what the
  * grid rules against — with no figure to scale by, recharts settles on a
  * single tick at zero and the grid comes out as one line. Five of them, evenly
- * spaced across the panel, is what a real scale draws. Only the baseline is
- * numbered: every figure above it would be one nobody's money reached.
+ * spaced across the panel, is what a real scale draws. What the numbers are
+ * does not matter: the axis writes none of them.
  */
 const EMPTY_SCALE = {
     domain: [0, 4],
     ticks: [0, 1, 2, 3, 4],
-    tickFormatter: (value: number) => (value === 0 ? "0" : ""),
 } as const;
 
 /** Which of the two series are drawn. Spending alone is the default. */
@@ -157,7 +156,11 @@ export function FlowChart() {
                             data={bars}
                             barGap={2}
                             barCategoryGap="12%"
-                            margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
+                            // No gutter on any side: with the Y axis
+                            // hidden there is nothing to hold one open, and
+                            // the grid runs the full width of the panel — the
+                            // width the skeleton's bars have always had.
+                            margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
                         >
                             <CartesianGrid
                                 vertical={false}
@@ -173,19 +176,15 @@ export function FlowChart() {
                                 // as fit.
                                 interval={yearView ? 0 : 3}
                             />
-                            <YAxis
-                                tick={AXIS_TICK}
-                                axisLine={false}
-                                tickLine={false}
-                                // The gutter keeps its width either way, so
-                                // the grid starts where the drawn chart's
-                                // does; an empty period simply has no figures
-                                // to write in it.
-                                width={44}
-                                {...(seriesFlow
-                                    ? { tickFormatter: compactFigure }
-                                    : EMPTY_SCALE)}
-                            />
+                            {/* Hidden rather than left out: it is the ladder
+                                the grid rules against and the scale the bars
+                                are drawn to — it simply writes no figures,
+                                and so claims no gutter. The bars are the
+                                figures; a column of axis labels beside them
+                                is a second reading of the same thing, and the
+                                tooltip says the one number anybody wants
+                                exactly. */}
+                            <YAxis hide {...(seriesFlow ? {} : EMPTY_SCALE)} />
                             {/* Nothing to read off an empty grid, and the
                                 cursor would light columns that hold nothing. */}
                             {seriesFlow ? (

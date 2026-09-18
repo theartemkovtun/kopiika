@@ -82,18 +82,6 @@ export const AXIS_TICK = {
 } as const;
 
 /**
- * A Y-axis figure, short enough for a 44px gutter: `12k`, `1.2k`, `840`.
- *
- * It is the axis only — never a figure someone might read as an amount — so
- * the rounding is free to be coarse.
- */
-export function compactFigure(value: number): string {
-    if (value >= 10_000) return `${Math.round(value / 1000)}k`;
-    if (value >= 1000) return `${Math.round(value / 100) / 10}k`;
-    return String(Math.round(value));
-}
-
-/**
  * The tooltip: a hairline box on the page ground, square and unshadowed. One
  * family throughout, with the figure held tabular so a hovered column does not
  * jitter as the digits under the pointer change width.
