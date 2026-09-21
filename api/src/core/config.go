@@ -13,11 +13,22 @@ type config struct {
 	CORSAllowedOrigins string
 	CognitoRegion      string
 	CognitoUserPoolID  string
+
+	OtelSDKDisabled          bool
+	OtelServiceName          string
+	OtelExporterOTLPEndpoint string
+	DeploymentEnvironment    string
 }
 
 // defaultPort is used when PORT is unset. Container platforms inject their own
 // value and expect the process to honour it.
 const defaultPort = "8080"
+
+const (
+	defaultOtelServiceName          = "kopiika-api"
+	defaultOtelExporterOTLPEndpoint = "http://localhost:4318"
+	defaultDeploymentEnvironment    = "development"
+)
 
 var Config = &config{}
 
@@ -34,6 +45,25 @@ func LoadConfig() error {
 	Config.CORSAllowedOrigins = os.Getenv("CORS_ALLOWED_ORIGINS")
 	Config.CognitoRegion = os.Getenv("COGNITO_REGION")
 	Config.CognitoUserPoolID = os.Getenv("COGNITO_USER_POOL_ID")
+
+	// OTEL_SDK_DISABLED is the OpenTelemetry spec's own name for the
+	// kill-switch; reused here rather than inventing a project-specific var.
+	Config.OtelSDKDisabled = os.Getenv("OTEL_SDK_DISABLED") == "true"
+
+	Config.OtelServiceName = os.Getenv("OTEL_SERVICE_NAME")
+	if Config.OtelServiceName == "" {
+		Config.OtelServiceName = defaultOtelServiceName
+	}
+
+	Config.OtelExporterOTLPEndpoint = os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+	if Config.OtelExporterOTLPEndpoint == "" {
+		Config.OtelExporterOTLPEndpoint = defaultOtelExporterOTLPEndpoint
+	}
+
+	Config.DeploymentEnvironment = os.Getenv("DEPLOYMENT_ENVIRONMENT")
+	if Config.DeploymentEnvironment == "" {
+		Config.DeploymentEnvironment = defaultDeploymentEnvironment
+	}
 
 	if Config.DatabaseUrl == "" {
 		return errors.New("DATABASE_URL environment variable is not set")

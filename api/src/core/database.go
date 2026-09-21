@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/uptrace/opentelemetry-go-extra/otelgorm"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -41,6 +42,12 @@ func InitDB() error {
 	sqlDB.SetMaxIdleConns(maxIdleConns)
 	sqlDB.SetConnMaxLifetime(connMaxLifetime)
 	sqlDB.SetConnMaxIdleTime(connMaxIdleTime)
+
+	// WithoutQueryVariables keeps bound parameter values (account/transaction
+	// amounts, etc.) out of span attributes.
+	if err := DB.Use(otelgorm.NewPlugin(otelgorm.WithoutQueryVariables())); err != nil {
+		return fmt.Errorf("failed to attach otelgorm plugin: %w", err)
+	}
 
 	return nil
 }

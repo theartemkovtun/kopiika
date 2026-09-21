@@ -14,8 +14,14 @@ package main
 // @description Enter your Bearer token in the format: Bearer {token}
 
 import (
+	"context"
 	"log"
+	"log/slog"
+	"net/http"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"kopiika-api-go/src/api/health"
@@ -28,23 +34,43 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
+// fatal logs a boot-time failure through the OTel-bridged logger, flushes
+// telemetry, and exits. Unlike log.Fatal, which calls os.Exit directly and
+// skips deferred cleanup, this ensures the failure itself is not silently
+// dropped from the telemetry pipeline.
+func fatal(ctx context.Context, shutdown func(context.Context) error, msg string, err error) {
+	slog.ErrorContext(ctx, msg, "error", err)
+	flushCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_ = shutdown(flushCtx)
+	os.Exit(1)
+}
+
 func main() {
+	ctx := context.Background()
 
 	if err := core.LoadConfig(); err != nil {
 		log.Fatal(err)
 	}
 
-	if err := core.InitDB(); err != nil {
+	shutdown, err := core.InitTelemetry(ctx)
+	if err != nil {
 		log.Fatal(err)
+	}
+
+	if err := core.InitDB(); err != nil {
+		fatal(ctx, shutdown, "failed to initialize database", err)
 	}
 
 	if err := core.InitCognito(); err != nil {
-		log.Fatal(err)
+		fatal(ctx, shutdown, "failed to initialize cognito", err)
 	}
 
 	engine := gin.Default()
+	engine.Use(otelgin.Middleware(core.Config.OtelServiceName))
 
 	allowedOrigins := []string{}
 	if core.Config.CORSAllowedOrigins != "" {
@@ -72,7 +98,29 @@ func main() {
 
 	routes.RegisterV1Routes(engine)
 
-	if err := engine.Run(":" + core.Config.Port); err != nil {
-		log.Fatal(err)
+	srv := &http.Server{
+		Addr:    ":" + core.Config.Port,
+		Handler: engine,
+	}
+
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			fatal(ctx, shutdown, "server failed", err)
+		}
+	}()
+
+	stopCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	<-stopCtx.Done()
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		slog.ErrorContext(shutdownCtx, "server shutdown failed", "error", err)
+	}
+
+	if err := shutdown(shutdownCtx); err != nil {
+		slog.ErrorContext(shutdownCtx, "telemetry shutdown failed", "error", err)
 	}
 }

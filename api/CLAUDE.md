@@ -67,7 +67,7 @@ Go REST API using Gin with GORM and PostgreSQL. Personal finance domain (kopiika
 - `src/schemas/` - request/response DTOs, kept separate from models
 - `src/queries/` - raw SQL for transactional or complex operations
 - `src/middleware/` - `RequireAuth` / `OptionalAuth`
-- `src/core/` - config, database and Cognito initialization
+- `src/core/` - config, database, Cognito and telemetry initialization
 - `cmd/atlas-loader/` - feeds the GORM schema to Atlas
 
 ### Authentication
@@ -94,6 +94,14 @@ creates the local row on first login, seeding name and picture from the user poo
   silently converting to zero
 - Pagination uses `page` (1-indexed) and `take`, returned in `schemas.PaginatedResponse[T]`
 - Config is validated at boot: a missing required env var is a fatal error
+- OpenTelemetry (traces, metrics, logs) is wired in `src/core/telemetry.go` and exported
+  via OTLP/HTTP (not gRPC — gRPC's long-lived HTTP/2 streams get silently dropped by some
+  firewalls/proxies; OTLP/HTTP is plain request/response and goes through the same paths
+  ordinary HTTPS does). It is opt-out (`OTEL_SDK_DISABLED=true`), and any exporter/setup
+  failure degrades to a no-op rather than failing boot — telemetry must never be why the
+  API won't start. `log/slog` is the app-wide logging façade; use `slog.InfoContext`/
+  `ErrorContext` (not the bare `slog.Info`/`Error`) so log records correlate with the
+  active span
 
 ## Environment Variables
 
@@ -103,6 +111,10 @@ DATABASE_URL=postgres://user:password@host:5432/dbname
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 COGNITO_REGION=us-east-1
 COGNITO_USER_POOL_ID=us-east-1_xxxxxxxxx
+OTEL_SDK_DISABLED=false                              # optional; disables all telemetry when true
+OTEL_SERVICE_NAME=kopiika-api                         # optional
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318     # optional; OTLP/HTTP collector endpoint
+DEPLOYMENT_ENVIRONMENT=development                    # optional; e.g. development/staging/production
 ```
 
 ## API Documentation
