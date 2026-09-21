@@ -72,7 +72,10 @@ type PeriodContextValue = Period & {
     previousYear: () => void;
     nextYear: () => void;
 
-    /** The selection as the inclusive day range the API takes. */
+    /**
+     * The selection as the inclusive day range the API takes, cut at today
+     * while the selected period is still running.
+     */
     range: DateRange;
     /**
      * What the selection is read against: the period before it — the previous
@@ -267,18 +270,28 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
             today,
         );
 
+        // A period that is still running is read only as far as today. The
+        // days ahead hold nothing to count, and asking for them makes the
+        // API answer for a span that has not happened yet — the same cut
+        // `comparison` below makes on the period it measures against.
+        const isCurrentYear = yearView && year === today.year;
+
         const range: DateRange = yearView
             ? {
                   fromDate: toIsoDate(year, 0, 1),
-                  toDate: toIsoDate(
-                      year,
-                      maxMonth,
-                      daysInMonth(year, maxMonth),
-                  ),
+                  toDate: isCurrentYear
+                      ? toIsoDate(year, today.month, today.day)
+                      : toIsoDate(
+                            year,
+                            maxMonth,
+                            daysInMonth(year, maxMonth),
+                        ),
               }
             : {
                   fromDate: toIsoDate(year, month, 1),
-                  toDate: toIsoDate(year, month, daysInMonth(year, month)),
+                  toDate: isCurrentMonth
+                      ? toIsoDate(year, month, today.day)
+                      : toIsoDate(year, month, daysInMonth(year, month)),
               };
 
         const comparison: Comparison = yearView
