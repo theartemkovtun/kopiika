@@ -61,6 +61,28 @@ func TestPreviousPeriodRange(t *testing.T) {
 			wantToDate:   "2026-08-15",
 		},
 		{
+			// A client that always requests the whole current month (rather
+			// than start-to-today) must still be compared against the same
+			// elapsed days of the previous month, not the previous month in
+			// full — the current side has no data past today regardless of
+			// what toDate says, so comparing it to a fully elapsed previous
+			// month understates how much moved.
+			name:         "whole current month requested before it has elapsed",
+			fromDate:     "2026-09-01",
+			toDate:       "2026-09-30",
+			today:        "2026-09-19",
+			wantFromDate: "2026-08-01",
+			wantToDate:   "2026-08-19",
+		},
+		{
+			name:         "whole current year requested before it has elapsed",
+			fromDate:     "2026-01-01",
+			toDate:       "2026-12-31",
+			today:        "2026-09-19",
+			wantFromDate: "2025-01-01",
+			wantToDate:   "2025-09-19",
+		},
+		{
 			name:         "current month to date, day clamped in shorter previous month",
 			fromDate:     "2026-03-01",
 			toDate:       "2026-03-30",

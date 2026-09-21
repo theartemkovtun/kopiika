@@ -64,34 +64,41 @@ func addYearsClamped(t time.Time, years int) time.Time {
 // previousPeriodRange is the comparable period immediately before
 // [fromDate, toDate], for the previousPeriodDiff figures.
 //
-// A range that is exactly a calendar month or a calendar year compares
-// against the same span of the previous month or year, with month/year
-// length differences clamped rather than overflowed (e.g. Mar 31 lands on
-// Feb 28, not Mar 3). A range that runs from the start of the current month
-// or year up to today compares against the same start-to-date span one
-// month or year back. Anything else compares against the immediately
-// preceding block of the same number of days, ending the day before
-// fromDate.
+// A range that is exactly a calendar month or a calendar year, and has
+// already fully elapsed, compares against the same span of the previous
+// month or year, with month/year length differences clamped rather than
+// overflowed (e.g. Mar 31 lands on Feb 28, not Mar 3). A range that runs
+// from the start of the current month or year up to today or later
+// compares against the same start-to-date span one month or year back —
+// this also covers a whole-month/whole-year request for a month or year
+// that has not finished yet (e.g. fromDate/toDate spanning all of
+// September while today is only the 19th): there is no data past today
+// regardless of what toDate says, so the request is treated as a to-date
+// one rather than compared against a previous period that is fully
+// elapsed while the current one is not. Anything else compares against the
+// immediately preceding block of the same number of days, ending the day
+// before fromDate.
 //
-// The two whole-period cases are checked first: on the last day of a month
-// (or year), a to-date range and a whole-period range describe the same
-// days, and the whole-period comparison is the one that lines up length for
-// length with the previous period — the to-date comparison would clamp to a
-// shorter previous month/year and quietly compare a shorter span.
+// The two whole-period cases are checked first and require the period to
+// have elapsed: on the last day of a month (or year), a to-date range and a
+// whole-period range describe the same days, and the whole-period
+// comparison is the one that lines up length for length with the previous
+// period — the to-date comparison would clamp to a shorter previous
+// month/year and quietly compare a shorter span.
 func previousPeriodRange(fromDate, toDate, today time.Time) (time.Time, time.Time) {
 	switch {
-	case fromDate.Equal(startOfYear(fromDate)) && toDate.Equal(endOfYear(fromDate)):
+	case fromDate.Equal(startOfYear(fromDate)) && toDate.Equal(endOfYear(fromDate)) && !toDate.After(today):
 		return addYearsClamped(fromDate, -1), addYearsClamped(toDate, -1)
 
-	case fromDate.Equal(startOfMonth(fromDate)) && toDate.Equal(endOfMonth(fromDate)):
+	case fromDate.Equal(startOfMonth(fromDate)) && toDate.Equal(endOfMonth(fromDate)) && !toDate.After(today):
 		previousStart := addMonthsClamped(fromDate, -1)
 		return previousStart, endOfMonth(previousStart)
 
-	case fromDate.Equal(startOfYear(today)) && toDate.Equal(today):
-		return addYearsClamped(fromDate, -1), addYearsClamped(toDate, -1)
+	case fromDate.Equal(startOfYear(today)) && !toDate.Before(today):
+		return addYearsClamped(fromDate, -1), addYearsClamped(today, -1)
 
-	case fromDate.Equal(startOfMonth(today)) && toDate.Equal(today):
-		return addMonthsClamped(fromDate, -1), addMonthsClamped(toDate, -1)
+	case fromDate.Equal(startOfMonth(today)) && !toDate.Before(today):
+		return addMonthsClamped(fromDate, -1), addMonthsClamped(today, -1)
 
 	default:
 		length := toDate.Sub(fromDate)
