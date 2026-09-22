@@ -1,4 +1,4 @@
-name: API
+name: api-linter-check
 
 on:
   pull_request:
@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   lint:
+    name: Go Linter
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
