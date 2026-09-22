@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"kopiika-api-go/src/models"
-	"kopiika-api-go/src/schemas"
-
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
+
+	"kopiika-api-go/src/models"
+	"kopiika-api-go/src/schemas"
 )
 
 // transactionFilters builds the WHERE fragment that narrows a listing to one

@@ -6,12 +6,12 @@ import (
 	"sort"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
+
 	"kopiika-api-go/src/core"
 	"kopiika-api-go/src/queries"
 	"kopiika-api-go/src/schemas"
-
-	"github.com/google/uuid"
-	"github.com/shopspring/decimal"
 )
 
 // maxStatisticsRangeDays caps how long a range may be.

@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	"kopiika-api-go/src/core"
-
 	"github.com/gin-gonic/gin"
+
+	"kopiika-api-go/src/core"
 )
 
 // RequireAuth rejects the request unless it carries a valid Cognito bearer token.

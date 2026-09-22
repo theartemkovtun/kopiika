@@ -106,6 +106,18 @@ docker build -t kopiika-api .
 a clean clone would not compile otherwise. Regenerate it in the same commit as any
 annotation change.
 
+## Checks
+
+```bash
+cd api
+make fmt && make lint && go build ./...
+```
+
+Formatting and linting both run through golangci-lint v2 (`brew install golangci-lint`),
+configured in `.golangci.yml`: gofumpt + gci for formatting (imports grouped stdlib,
+third-party, `kopiika-api-go`), and the standard linters plus a few extras for linting.
+`make fmt-check` reports formatting drift without rewriting files.
+
 ## Database Migrations (Atlas)
 
 All commands require a `.env` file with `DATABASE_URL` set, and a running Docker

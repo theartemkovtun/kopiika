@@ -17,8 +17,10 @@ import (
 	"github.com/google/uuid"
 )
 
-var jwks keyfunc.Keyfunc
-var cognitoClient *cognitoidentityprovider.Client
+var (
+	jwks          keyfunc.Keyfunc
+	cognitoClient *cognitoidentityprovider.Client
+)
 
 // InitCognito initializes the JWKS for Cognito token validation and the Cognito SDK client
 func InitCognito() error {

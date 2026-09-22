@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"kopiika-api-go/src/models"
-
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
+
+	"kopiika-api-go/src/models"
 )
 
 // StatisticsTransaction is one transaction as the statistics query returns it:

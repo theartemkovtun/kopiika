@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"time"
 
-	"kopiika-api-go/src/schemas"
-	"kopiika-api-go/src/services"
-
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"kopiika-api-go/src/schemas"
+	"kopiika-api-go/src/services"
 )
 
 // defaultLatestLimit is how many transactions /latest returns when the client

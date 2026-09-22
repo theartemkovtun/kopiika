@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
+
 	"kopiika-api-go/src/core"
 	"kopiika-api-go/src/models"
 	"kopiika-api-go/src/queries"
 	"kopiika-api-go/src/schemas"
-
-	"github.com/google/uuid"
-	"github.com/shopspring/decimal"
-	"gorm.io/gorm"
 )
 
 // ErrInvalidTransactionDate is returned when the year, month and day do not

@@ -4,13 +4,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/shopspring/decimal"
+
 	"kopiika-api-go/src/core"
 	"kopiika-api-go/src/models"
 	"kopiika-api-go/src/queries"
 	"kopiika-api-go/src/schemas"
-
-	"github.com/google/uuid"
-	"github.com/shopspring/decimal"
 )
 
 // dateLayout is the wire format for a date, shared with the response schemas.
