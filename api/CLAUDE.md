@@ -113,7 +113,8 @@ COGNITO_REGION=us-east-1
 COGNITO_USER_POOL_ID=us-east-1_xxxxxxxxx
 OTEL_SDK_DISABLED=false                              # optional; disables all telemetry when true
 OTEL_SERVICE_NAME=kopiika-api                         # optional
-OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318     # optional; OTLP/HTTP collector endpoint
+OTEL_EXPORTER_OTLP_ENDPOINT=https://ingest.<region>.signoz.cloud:443  # optional; SigNoz OTLP/HTTP endpoint
+OTEL_EXPORTER_OTLP_HEADERS=signoz-ingestion-key=<key>                 # optional; read by the exporters directly
 DEPLOYMENT_ENVIRONMENT=development                    # optional; e.g. development/staging/production
 ```
 

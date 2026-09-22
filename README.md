@@ -13,7 +13,9 @@ pool's JWKS. If the pool differs between the two, every request is a 401.
 
 ## Running it locally
 
-**API** — PostgreSQL and an OpenTelemetry collector come with the compose file.
+**API** — PostgreSQL comes with the compose file. Telemetry goes straight to
+SigNoz: set `OTEL_EXPORTER_OTLP_ENDPOINT` and `OTEL_EXPORTER_OTLP_HEADERS` in
+`.env`, or `OTEL_SDK_DISABLED=true` to run without it.
 
 ```bash
 cd api
