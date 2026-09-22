@@ -33,7 +33,8 @@ const (
 var Config = &config{}
 
 func LoadConfig() error {
-	godotenv.Load()
+	// .env is a local-dev convenience; deployed environments inject the vars directly
+	_ = godotenv.Load()
 
 	Config.Port = os.Getenv("PORT")
 	if Config.Port == "" {
