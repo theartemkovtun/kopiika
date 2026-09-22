@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   lint:
-    name: "API: Linter"
+    name: Go Linter
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
