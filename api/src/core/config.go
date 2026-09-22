@@ -33,7 +33,6 @@ const (
 var Config = &config{}
 
 func LoadConfig() error {
-
 	godotenv.Load()
 
 	Config.Port = os.Getenv("PORT")

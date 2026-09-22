@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"net/http"
 
-	"kopiika-api-go/src/schemas"
-	"kopiika-api-go/src/services"
-
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+
+	"kopiika-api-go/src/schemas"
+	"kopiika-api-go/src/services"
 )
 
 // GetCurrentUser handles retrieving the current user

@@ -1,0 +1,37 @@
+version: "2"
+
+run:
+  go: "1.25"
+
+linters:
+  default: standard # errcheck, govet, ineffassign, staticcheck, unused
+  enable:
+    - bodyclose
+    - errorlint
+    - gocritic
+    - misspell
+    - noctx
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - unconvert
+    - sloglint # enforces slog.*Context usage, see AGENTS.md
+  settings:
+    sloglint:
+      context: scope
+  exclusions:
+    generated: lax # skips swag-generated docs/docs.go
+
+formatters:
+  enable:
+    - gofumpt
+    - gci
+  settings:
+    gci:
+      # stdlib, third-party, this module, then blank (side-effect) imports
+      sections:
+        - standard
+        - default
+        - localmodule
+        - blank
+      custom-order: true

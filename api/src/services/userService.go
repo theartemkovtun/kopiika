@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/uuid"
+
 	"kopiika-api-go/src/core"
 	"kopiika-api-go/src/models"
 	"kopiika-api-go/src/schemas"
-
-	"github.com/google/uuid"
 )
 
 const (

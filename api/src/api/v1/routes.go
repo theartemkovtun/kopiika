@@ -1,10 +1,10 @@
 package routes
 
 import (
+	"github.com/gin-gonic/gin"
+
 	"kopiika-api-go/src/api/v1/controllers"
 	"kopiika-api-go/src/middleware"
-
-	"github.com/gin-gonic/gin"
 )
 
 func RegisterV1Routes(router *gin.Engine) {

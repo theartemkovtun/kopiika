@@ -3,10 +3,10 @@ package queries
 import (
 	"encoding/json"
 
-	"kopiika-api-go/src/models"
-
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+
+	"kopiika-api-go/src/models"
 )
 
 // transactionsConfigurationSQL is the categories a user may label with and the

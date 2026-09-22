@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gin-gonic/gin"
+
 	"kopiika-api-go/src/core"
 	"kopiika-api-go/src/schemas"
-
-	"github.com/gin-gonic/gin"
 )
 
 // pingTimeout bounds the readiness probe so a hung database cannot hold the

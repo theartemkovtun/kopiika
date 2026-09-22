@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"sort"
 
-	"kopiika-api-go/src/core"
-	"kopiika-api-go/src/models"
-	"kopiika-api-go/src/schemas"
-
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
+
+	"kopiika-api-go/src/core"
+	"kopiika-api-go/src/models"
+	"kopiika-api-go/src/schemas"
 )
 
 // ErrNegativeAccountValue is returned when an account would be opened with a

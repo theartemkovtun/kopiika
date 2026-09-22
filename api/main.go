@@ -24,17 +24,16 @@ import (
 	"syscall"
 	"time"
 
-	"kopiika-api-go/src/api/health"
-	routes "kopiika-api-go/src/api/v1"
-	"kopiika-api-go/src/core"
-
-	_ "kopiika-api-go/docs"
-
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+
+	_ "kopiika-api-go/docs"
+	"kopiika-api-go/src/api/health"
+	routes "kopiika-api-go/src/api/v1"
+	"kopiika-api-go/src/core"
 )
 
 // fatal logs a boot-time failure through the OTel-bridged logger, flushes

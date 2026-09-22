@@ -5,9 +5,9 @@ import (
 	"io"
 	"os"
 
-	"kopiika-api-go/src/models"
-
 	"ariga.io/atlas-provider-gorm/gormschema"
+
+	"kopiika-api-go/src/models"
 )
 
 func main() {

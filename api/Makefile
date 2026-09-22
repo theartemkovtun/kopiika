@@ -1,4 +1,4 @@
-.PHONY: run build swagger migrate-diff migrate-new migrate-apply migrate-rehash migrate-status migrate-validate
+.PHONY: run build swagger migrate-diff migrate-new migrate-apply migrate-rehash migrate-status migrate-validate lint fmt fmt-check
 
 run:
 	go run .
@@ -32,3 +32,12 @@ migrate-status:
 migrate-validate:
 	export $$(cat .env | grep -v '^#' | xargs) && \
 	atlas migrate validate --env dev --var DATABASE_URL=$$DATABASE_URL
+
+lint:
+	golangci-lint run ./...
+
+fmt:
+	golangci-lint fmt ./...
+
+fmt-check:
+	golangci-lint fmt --diff ./...
