@@ -48,3 +48,7 @@ This repository was assembled from two separate ones, `kopiika-api-go` and
 `kopiika-app-2`, with their histories rewritten into `api/` and `app/` and
 joined in a single merge commit. `git log` and `git blame` on any file reach
 back to its original commits.
+
+## License
+
+[MIT](LICENSE)
