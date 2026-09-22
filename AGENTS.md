@@ -1,10 +1,84 @@
-# CLAUDE.md
+<!-- BEGIN:nextjs-agent-rules -->
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `app/node_modules/next/dist/docs/` (in this monorepo the `next` package is only visible from `app/`) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `app/node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
+
+# Kopiika
+
+A personal budget tracker: a Go API in `api/` and the Next.js app in `app/`
+that runs on it. Read `README.md` first for how the two fit together and how
+to run them; `app/README.md` carries the design vocabulary and the layout map.
+
+Both sides authenticate against the same AWS Cognito user pool. Currency codes
+are **lower case** (`uah`, `usd`) on both sides of the wire, and amounts travel
+as decimal **strings**.
+
+---
+
+# App (`app/`)
+
+A budget tracker on a print-inspired ledger design, talking to the API.
+Paths in this section are relative to `app/`.
+
+## Conventions that are easy to break
+
+- **Navigation**: import `Link`, `useRouter`, `usePathname` from
+  `@/i18n/navigation`, never from `next/link` / `next/navigation`. The locale
+  prefix is "as-needed", and these helpers are what add or omit it.
+- **Money**: every amount from the API is a decimal **string**, and every
+  currency code is **lower case**. Parse with `toNumber` from `@/lib/money`;
+  format with the bound formatters on `usePreferences()`, not by calling
+  `@/lib/money` directly, so locale and the cents setting are respected.
+- **Design tokens**: use `bg-bg`, `text-ink`, `text-mute`, `border-rule`,
+  `border-rule2`, `text-blue`, `text-green`, `text-red`, `bg-ch1`..`bg-ch6`.
+  They are defined in `src/app/globals.css` and mirror the design's own names.
+  The shadcn names alias the same values; either works, but match the file
+  you are editing.
+- **No radius, no shadow**: the radius scale is `0` on purpose, so a stock
+  shadcn component is already square — do not add `rounded-*`. The only shadow
+  in the design is on a dropdown panel.
+- **Emphasis** is a rule or a fill, never a colour shift: an active item takes
+  `text-blue` plus a heavier border, not a brighter hue.
+- **Adding a shadcn component**: `bunx shadcn@latest add <name>` writes
+  `import { cn } from "cn"` — that is correct here, `cn` is shadcn's own
+  package and the single import path for it. Then restyle to the design;
+  the stock focus rings and `shadow-xs` do not belong.
+
+## Layer boundaries
+
+`src/api/` holds wire types and endpoint functions and nothing else — no
+react-query, no formatting. Hooks and components own caching, via the key
+factory in `src/api/endpoints.ts`. Contexts do not fetch beyond their own
+resource.
+
+## Checks
+
+```bash
+cd app
+bun run typecheck && bun run lint && bun run build
+```
+
+ESLint is pinned to 9: `eslint-plugin-react`, pulled in by
+`eslint-config-next`, still calls `context.getFilename()`, which ESLint 10
+removed.
+
+---
+
+# API (`api/`)
+
+Go REST API using Gin with GORM and PostgreSQL. Paths and commands in this
+section are relative to `api/`.
 
 ## Build & Run Commands
 
 ```bash
+cd api
+
 # Run the application (requires .env with DATABASE_URL, COGNITO_REGION, COGNITO_USER_POOL_ID)
 go run .
 
@@ -55,8 +129,6 @@ replayed migration state, does not see it in the desired state, and emits a
 re-run `make migrate-diff` on a no-op and confirm it reports no changes.
 
 ## Architecture
-
-Go REST API using Gin with GORM and PostgreSQL. Personal finance domain (kopiika).
 
 ### Layer Structure
 

@@ -41,8 +41,9 @@ bun dev                           # http://localhost:3000
 
 - [`app/README.md`](app/README.md) — the design tokens, layout, routing, sign-in
   flow, and how each screen maps onto the API.
-- [`api/CLAUDE.md`](api/CLAUDE.md) — build and migration commands, the layer
-  structure, and authentication.
+- [`AGENTS.md`](AGENTS.md) — conventions for both sides: the app's design and
+  layer rules, the API's build and migration commands, layer structure, and
+  authentication. `CLAUDE.md` imports it.
 
 ## History
 
