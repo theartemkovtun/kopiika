@@ -18,6 +18,13 @@ Both sides authenticate against the same AWS Cognito user pool. Currency codes
 are **lower case** (`uah`, `usd`) on both sides of the wire, and amounts travel
 as decimal **strings**.
 
+## Pull requests
+
+When opening a PR, write its description from `pr-template.md` at the repo
+root: fill in **Why**, **What** and **Risks** as bullet points (no prose
+paragraphs), and drop the guidance comments.
+With `gh`, pass the filled-in text via `gh pr create --body-file <file>`.
+
 ---
 
 # App (`app/`)
