@@ -25,6 +25,10 @@ root: fill in **Why**, **What** and **Risks** as bullet points (no prose
 paragraphs), and drop the guidance comments.
 With `gh`, pass the filled-in text via `gh pr create --body-file <file>`.
 
+CI runs `golangci-lint run` in `api/` on every PR (the required `lint` check),
+which covers both linters and formatters. Run `make lint` in `api/` before
+pushing, and `make fmt` to fix formatting.
+
 ---
 
 # App (`app/`)

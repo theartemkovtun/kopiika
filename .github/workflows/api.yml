@@ -1,0 +1,34 @@
+name: API
+
+# No paths filter on purpose: `lint` is a required check on main, and a
+# workflow skipped by a paths filter never reports, blocking app-only PRs.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # golangci-lint v2 `run` also runs the formatters (gofumpt, gci) from
+  # api/.golangci.yml, so this one job covers both `make lint` and `make fmt-check`.
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.13
+          working-directory: api
