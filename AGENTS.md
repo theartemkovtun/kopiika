@@ -161,8 +161,9 @@ re-run `make migrate-diff` on a no-op and confirm it reports no changes.
 - `src/models/` - GORM entities, embedding `BaseModel` (uuid id, created_at, deleted_at)
 - `src/schemas/` - request/response DTOs, kept separate from models
 - `src/queries/` - raw SQL for transactional or complex operations
-- `src/tasks/` - background task definitions (type, payload, constructor) and `tasks.Enqueue`
-- `src/worker/` - the Asynq task handlers (`mux.go`), worker server and cron registry (`schedule.go`)
+- `src/tasks/` - background tasks, one file each (type, payload, constructor, handler), plus
+  `tasks.Enqueue` and the shared `NewTask` / `Decode` in `tasks.go`
+- `src/worker/` - handler wiring (`mux.go`), worker server and cron registry (`schedule.go`)
 - `src/middleware/` - `RequireAuth` / `OptionalAuth`
 - `src/core/` - config, database, Cognito and telemetry initialization
 - `cmd/atlas-loader/` - feeds the GORM schema to Atlas
@@ -190,11 +191,13 @@ creates the local row on first login, seeding name and picture from the user poo
   `services.CurrencyConverter`, which reports a missing rate rather than
   silently converting to zero
 - Background work runs on Asynq over Redis. Services enqueue with `tasks.Enqueue(ctx, t, opts...)`,
-  delaying with `asynq.ProcessIn` / `asynq.ProcessAt`. `src/tasks/` must not import `services`
-  (services import it); handlers live in `src/worker/`, stay thin like controllers, and call a
-  service. A new task needs a constructor in `src/tasks/` and a handler registered in
-  `worker.NewMux`; a cron job is an entry in `periodicTasks` in `src/worker/schedule.go`
-  (cron specs are UTC). `APP_ROLE` picks what the process runs (`all`, `api`, `worker`);
+  delaying with `asynq.ProcessIn` / `asynq.ProcessAt`. A new task is a file in `src/tasks/`
+  (see `system_ping.go`) with `TypeX`, `XPayload`, `NewXTask` and `XHandler(...)`.
+  `src/tasks/` must not import `services` (services import it), so a handler takes the
+  service function it calls as an argument, and `worker.NewMux` passes it in:
+  `mux.Handle(tasks.TypeX, tasks.XHandler(services.DoX))`. Handlers stay thin like
+  controllers. A cron job is also an entry in `periodicTasks` in `src/worker/schedule.go`
+  (cron specs are UTC; the payload is built once at boot). `APP_ROLE` picks what the process runs (`all`, `api`, `worker`);
   the scheduler enqueues every entry once per running instance, so only one instance may
   run with `all` or `worker`
 - Pagination uses `page` (1-indexed) and `take`, returned in `schemas.PaginatedResponse[T]`
