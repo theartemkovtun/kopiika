@@ -281,11 +281,7 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
                   fromDate: toIsoDate(year, 0, 1),
                   toDate: isCurrentYear
                       ? toIsoDate(year, today.month, today.day)
-                      : toIsoDate(
-                            year,
-                            maxMonth,
-                            daysInMonth(year, maxMonth),
-                        ),
+                      : toIsoDate(year, maxMonth, daysInMonth(year, maxMonth)),
               }
             : {
                   fromDate: toIsoDate(year, month, 1),
