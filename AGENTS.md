@@ -25,6 +25,10 @@ root: fill in **Why**, **What** and **Risks** as bullet points (no prose
 paragraphs), and drop the guidance comments.
 With `gh`, pass the filled-in text via `gh pr create --body-file <file>`.
 
+One PR does one job: it may change at most one of `.github/`, `api/` and
+`app/` (files at the repo root go with any of them). The `PR Scope` check
+fails a PR that touches more than one; split it instead.
+
 CI runs `golangci-lint run` in `api/` on every PR (the required `Go Linter` check),
 which covers both linters and formatters. Run `make lint` in `api/` before
 pushing, and `make fmt` to fix formatting.
