@@ -1,4 +1,4 @@
-h1:hTE+mZkTpNvYbv+nUOqO6gN0L+9OWMXLm/CnzTujgmI=
+h1:eJchM01oRf1hEofSwYAJuwPTXtEcviMqdX8gZgGRvew=
 20260911191314_init.sql h1:oX5H9PzKZl2WFzlevYTCQOodXEmwdeIC65Jz9HWZ6XE=
 20260911194055_accounts.sql h1:rWgiG9mLtEUNElFscjTTNepdpRrqeW2qMR4uH1yhfYo=
 20260912072851_currency_rates.sql h1:koxxgzG1OSfKJ+lj/JxJtl4yHH5eh/ZgtmCzZ9uizw0=
@@ -7,3 +7,4 @@ h1:hTE+mZkTpNvYbv+nUOqO6gN0L+9OWMXLm/CnzTujgmI=
 20260912081523_seed_default_categories.sql h1:W8aLw4GakRxTmYyBnKNp/tA4rQauGOv0Apl8ZAmwXuQ=
 20260912083904_transactions.sql h1:ldsMaMMcc++zaH8MJbQttTtI+ozPZF0iyWi82Tif9uM=
 20260914195100_currency_rates_lookup_index.sql h1:yhIScMxvG3VnuhN9YC9Cm74RqDFHs1nKrQvWXbtU5qg=
+20260923130415_currency_rates_upsert_key.sql h1:c+l0CH+qj7vpGHFRLcWA89CCVQ2Rz4mLDrKTDeAdkm0=

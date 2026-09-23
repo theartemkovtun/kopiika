@@ -13,9 +13,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hibiken/asynq"
 	"github.com/shopspring/decimal"
 
 	"kopiika-api-go/src/core"
+	"kopiika-api-go/src/schemas"
+	"kopiika-api-go/src/tasks"
 )
 
 // fetchedCurrencies are the currencies rates are recorded between: every
@@ -109,6 +112,56 @@ func FetchCurrencyRates(ctx context.Context, date time.Time) error {
 
 	slog.InfoContext(ctx, "currency rates stored", "date", day, "count", len(records))
 	return nil
+}
+
+// ErrCurrencyRatesDateInFuture is a fetch asked for a day that has not
+// started yet by the time it would run, so there are no rates to fetch.
+var ErrCurrencyRatesDateInFuture = errors.New("currency rates date is in the future")
+
+// ErrCurrencyRatesFetchQueued is a fetch asked for a day that already has one
+// waiting to run or being retried.
+var ErrCurrencyRatesFetchQueued = errors.New("currency rates fetch already queued")
+
+// EnqueueCurrencyRatesFetch queues FetchCurrencyRates for the given day, to
+// run at processAt or, when it is nil, as soon as a worker is free.
+//
+// The task id is derived from the day, so a second request for a day whose
+// fetch has not finished yet is refused rather than queued alongside it; once
+// it has finished, the day can be fetched again.
+func EnqueueCurrencyRatesFetch(ctx context.Context, date time.Time, processAt *time.Time) (schemas.CurrencyRatesFetchSchema, error) {
+	day := date.Format(dateLayout)
+
+	runAt := time.Now()
+	if processAt != nil {
+		runAt = *processAt
+	}
+	if day > runAt.UTC().Format(dateLayout) {
+		return schemas.CurrencyRatesFetchSchema{}, ErrCurrencyRatesDateInFuture
+	}
+
+	task, err := tasks.NewCurrencyFetchRatesTask(tasks.CurrencyFetchRatesPayload{Date: day})
+	if err != nil {
+		return schemas.CurrencyRatesFetchSchema{}, err
+	}
+
+	opts := append(tasks.CurrencyFetchRatesOptions(), asynq.TaskID(tasks.TypeCurrencyFetchRates+":"+day))
+	if processAt != nil {
+		opts = append(opts, asynq.ProcessAt(*processAt))
+	}
+
+	info, err := tasks.Enqueue(ctx, task, opts...)
+	if errors.Is(err, asynq.ErrTaskIDConflict) {
+		return schemas.CurrencyRatesFetchSchema{}, ErrCurrencyRatesFetchQueued
+	}
+	if err != nil {
+		return schemas.CurrencyRatesFetchSchema{}, err
+	}
+
+	return schemas.CurrencyRatesFetchSchema{
+		TaskID:    info.ID,
+		Date:      day,
+		ProcessAt: info.NextProcessAt.UTC(),
+	}, nil
 }
 
 // errRateLimited marks a 429 from RapidAPI, the one failure worth retrying

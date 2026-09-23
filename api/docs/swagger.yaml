@@ -283,6 +283,18 @@ definitions:
     - value
     - year
     type: object
+  schemas.CurrencyRatesFetchSchema:
+    properties:
+      date:
+        example: "2026-09-12"
+        type: string
+      processAt:
+        example: "2026-09-23T12:00:00Z"
+        type: string
+      taskId:
+        example: currency:fetch_rates:2026-09-12
+        type: string
+    type: object
   schemas.DateStatisticsSchema:
     properties:
       date:
@@ -302,6 +314,17 @@ definitions:
         items:
           $ref: '#/definitions/schemas.TransactionSchema'
         type: array
+    type: object
+  schemas.FetchCurrencyRatesSchema:
+    properties:
+      date:
+        example: "2026-09-12"
+        type: string
+      processAt:
+        example: "2026-09-23T12:00:00Z"
+        type: string
+    required:
+    - date
     type: object
   schemas.HealthSchema:
     properties:
@@ -1050,6 +1073,58 @@ paths:
       summary: Update category
       tags:
       - categories
+  /v1/currencies/rates/fetch:
+    post:
+      consumes:
+      - application/json
+      description: Queue a background fetch of the rates between every supported pair
+        of currencies on the given day, replacing any already stored for it. Use it
+        to backfill a day the daily fetch missed. The fetch runs at processAt, or
+        as soon as a worker is free without it. A day may not be later than the day
+        the fetch runs on, and only one fetch per day can be waiting at a time
+      parameters:
+      - description: Day to fetch, and optionally when
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.FetchCurrencyRatesSchema'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/schemas.CurrencyRatesFetchSchema'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Fetch currency rates for a day
+      tags:
+      - currencies
   /v1/transactions:
     get:
       consumes:

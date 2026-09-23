@@ -38,11 +38,7 @@ var periodicTasks = []periodicTask{
 			return tasks.NewCurrencyFetchRatesTask(tasks.CurrencyFetchRatesPayload{})
 		},
 		UniqueFor: 23 * time.Hour,
-		Opts: []asynq.Option{
-			asynq.Queue(tasks.QueueLow),
-			asynq.MaxRetry(8),
-			asynq.Timeout(5 * time.Minute),
-		},
+		Opts:      tasks.CurrencyFetchRatesOptions(),
 	},
 }
 
