@@ -35,8 +35,7 @@ export type TransitionVariant =
     | "rectangle"
     | "star";
 
-interface AnimatedThemeTogglerProps
-    extends React.ComponentPropsWithoutRef<"button"> {
+interface AnimatedThemeTogglerProps extends React.ComponentPropsWithoutRef<"button"> {
     duration?: number;
     variant?: TransitionVariant;
     /** Expand from the viewport centre instead of the button's. */

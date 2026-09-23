@@ -76,7 +76,9 @@ export function CategoryList() {
                         key={category.id}
                         className={cn(
                             "border-b",
-                            index === lastGlobal ? "border-rule" : "border-rule2",
+                            index === lastGlobal
+                                ? "border-rule"
+                                : "border-rule2",
                         )}
                     >
                         {editing === category.id ? (

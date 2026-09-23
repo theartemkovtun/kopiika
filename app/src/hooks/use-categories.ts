@@ -3,10 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { categories, queryKeys } from "@/api/endpoints";
-import type {
-    CreateCategoryPayload,
-    UpdateCategoryPayload,
-} from "@/api/types";
+import type { CreateCategoryPayload, UpdateCategoryPayload } from "@/api/types";
 
 /**
  * The category reads and writes the Categories screen needs.
