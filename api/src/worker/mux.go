@@ -1,35 +1,21 @@
 package worker
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
-	"log/slog"
-
 	"github.com/hibiken/asynq"
 
 	"kopiika-api-go/src/tasks"
 )
 
-// NewMux maps each task type to its handler. Handlers are thin, like
-// controllers: decode the payload, call a service, return its error. Return
-// an error wrapping asynq.SkipRetry when retrying cannot help, e.g. a payload
-// that does not decode.
+// NewMux maps each task type to its handler. Handlers are defined next to
+// their task in src/tasks; this is where services are passed into the ones
+// that need them, since src/tasks cannot import services:
+//
+//	mux.Handle(tasks.TypeBudgetRollover, tasks.BudgetRolloverHandler(services.RolloverBudgets))
 func NewMux() *asynq.ServeMux {
 	mux := asynq.NewServeMux()
 	mux.Use(telemetry)
 
-	mux.HandleFunc(tasks.TypeSystemPing, handleSystemPing)
+	mux.Handle(tasks.TypeSystemPing, tasks.SystemPingHandler())
 
 	return mux
-}
-
-func handleSystemPing(ctx context.Context, t *asynq.Task) error {
-	var payload tasks.SystemPingPayload
-	if err := json.Unmarshal(t.Payload(), &payload); err != nil {
-		return fmt.Errorf("invalid %s payload: %w: %w", t.Type(), err, asynq.SkipRetry)
-	}
-
-	slog.InfoContext(ctx, "pong", "message", payload.Message)
-	return nil
 }

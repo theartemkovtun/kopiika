@@ -1,6 +1,10 @@
-// Package tasks defines background tasks: their type names, payloads and
-// constructors. It is what services import to enqueue work, so it must not
-// import services itself; the handlers that run tasks live in src/worker.
+// Package tasks defines background tasks. Each task has its own file holding
+// its type name, payload, constructor and handler; this file holds what they
+// share: Enqueue, the queue names and the NewTask / Decode helpers.
+//
+// Services import this package to enqueue work, so it must not import
+// services itself. A handler that needs a service takes the service function
+// as an argument, and worker.NewMux passes it in.
 package tasks
 
 import (
@@ -43,10 +47,22 @@ func Enqueue(ctx context.Context, task *asynq.Task, opts ...asynq.Option) (*asyn
 	return info, nil
 }
 
-func newTask(taskType string, payload any) (*asynq.Task, error) {
+// NewTask builds a task with its payload encoded as JSON. Each task wraps it
+// in its own constructor.
+func NewTask(taskType string, payload any) (*asynq.Task, error) {
 	data, err := json.Marshal(payload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode %s payload: %w", taskType, err)
 	}
 	return asynq.NewTask(taskType, data), nil
+}
+
+// Decode reads a task's JSON payload. A payload that does not decode will not
+// decode on a retry either, so the error wraps asynq.SkipRetry.
+func Decode[T any](t *asynq.Task) (T, error) {
+	var payload T
+	if err := json.Unmarshal(t.Payload(), &payload); err != nil {
+		return payload, fmt.Errorf("invalid %s payload: %w: %w", t.Type(), err, asynq.SkipRetry)
+	}
+	return payload, nil
 }

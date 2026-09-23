@@ -25,7 +25,8 @@ type periodicTask struct {
 }
 
 // periodicTasks is the cron registry. Each entry's task type also needs a
-// handler in NewMux. For example:
+// handler in NewMux. New runs once at boot, so the payload must not carry
+// per-run values such as time.Now(); work those out in the handler. For example:
 //
 //	{
 //		Cronspec:  "0 3 * * *",
