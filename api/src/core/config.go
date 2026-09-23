@@ -16,6 +16,7 @@ type config struct {
 	CognitoRegion      string
 	CognitoUserPoolID  string
 	RedisUrl           string
+	RapidAPIKey        string
 
 	AppRole           AppRole
 	WorkerConcurrency int
@@ -71,6 +72,7 @@ func LoadConfig() error {
 	Config.CognitoRegion = os.Getenv("COGNITO_REGION")
 	Config.CognitoUserPoolID = os.Getenv("COGNITO_USER_POOL_ID")
 	Config.RedisUrl = os.Getenv("REDIS_URL")
+	Config.RapidAPIKey = os.Getenv("RAPID_API_KEY")
 
 	Config.AppRole = AppRole(os.Getenv("APP_ROLE"))
 	if Config.AppRole == "" {
@@ -125,6 +127,12 @@ func LoadConfig() error {
 	case AppRoleAll, AppRoleAPI, AppRoleWorker:
 	default:
 		return fmt.Errorf("APP_ROLE must be one of all, api, worker, got %q", Config.AppRole)
+	}
+
+	// Only the worker calls RapidAPI (the daily currency rates fetch), so an
+	// HTTP-only deployment does not need the key.
+	if Config.AppRole.RunsWorker() && Config.RapidAPIKey == "" {
+		return errors.New("RAPID_API_KEY environment variable is not set")
 	}
 
 	return nil

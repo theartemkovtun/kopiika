@@ -7,6 +7,7 @@ import (
 	"github.com/hibiken/asynq"
 
 	"kopiika-api-go/src/core"
+	"kopiika-api-go/src/tasks"
 )
 
 // periodicTask is one cron entry. Cronspec is a standard five-field
@@ -26,15 +27,24 @@ type periodicTask struct {
 
 // periodicTasks is the cron registry. Each entry's task type also needs a
 // handler in NewMux. New runs once at boot, so the payload must not carry
-// per-run values such as time.Now(); work those out in the handler. For example:
-//
-//	{
-//		Cronspec:  "0 3 * * *",
-//		New:       func() (*asynq.Task, error) { return tasks.NewSystemPingTask(tasks.SystemPingPayload{Message: "nightly"}) },
-//		UniqueFor: 23 * time.Hour,
-//		Opts:      []asynq.Option{asynq.Queue(tasks.QueueLow)},
-//	},
-var periodicTasks = []periodicTask{}
+// per-run values such as time.Now(); work those out in the handler.
+var periodicTasks = []periodicTask{
+	{
+		// Today's rates, fetched once the day has started in UTC. A day the
+		// retries do not recover can be backfilled by enqueuing the task with
+		// its Date; until then conversions fall back to the previous day's rate.
+		Cronspec: "0 4 * * *",
+		New: func() (*asynq.Task, error) {
+			return tasks.NewCurrencyFetchRatesTask(tasks.CurrencyFetchRatesPayload{})
+		},
+		UniqueFor: 23 * time.Hour,
+		Opts: []asynq.Option{
+			asynq.Queue(tasks.QueueLow),
+			asynq.MaxRetry(8),
+			asynq.Timeout(5 * time.Minute),
+		},
+	},
+}
 
 // syncInterval is how often the manager re-reads the registry. The registry
 // is static, so this only matters for recovering registrations in Redis.

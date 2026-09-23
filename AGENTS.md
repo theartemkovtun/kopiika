@@ -142,8 +142,9 @@ file's `gormschema.New("postgres").Load(...)` call or it will be silently missin
 from the diff.
 
 The one exception is the `currency` schema. `currency.currency_rates` and the
-`currency.add_currency_rates(json)` function it is written through belong to the
-separate `kopiika-currency-fetch` service; this API only reads the table. They are
+`currency.add_currency_rates(json)` function it is written through are not GORM
+models; the only writer is the daily `currency:fetch_rates` task
+(`services.FetchCurrencyRates`, 04:00 UTC), which calls the function. They are
 created by a hand-written migration and `models.CurrencyRate` is deliberately *not*
 registered in `cmd/atlas-loader`. For that to hold, the Atlas dev URL in `atlas.hcl`
 is scoped with `?search_path=public` — without it, Atlas sees the schema in the
@@ -192,7 +193,7 @@ creates the local row on first login, seeding name and picture from the user poo
   silently converting to zero
 - Background work runs on Asynq over Redis. Services enqueue with `tasks.Enqueue(ctx, t, opts...)`,
   delaying with `asynq.ProcessIn` / `asynq.ProcessAt`. A new task is a file in `src/tasks/`
-  (see `system_ping.go`) with `TypeX`, `XPayload`, `NewXTask` and `XHandler(...)`.
+  (see `currency_fetch_rates.go`) with `TypeX`, `XPayload`, `NewXTask` and `XHandler(...)`.
   `src/tasks/` must not import `services` (services import it), so a handler takes the
   service function it calls as an argument, and `worker.NewMux` passes it in:
   `mux.Handle(tasks.TypeX, tasks.XHandler(services.DoX))`. Handlers stay thin like
@@ -222,6 +223,7 @@ COGNITO_USER_POOL_ID=us-east-1_xxxxxxxxx
 REDIS_URL=redis://localhost:6379/0     # Asynq task queue; set maxmemory-policy=noeviction on the instance
 APP_ROLE=all                           # optional; all | api | worker
 WORKER_CONCURRENCY=10                  # optional; tasks processed in parallel per worker
+RAPID_API_KEY=<key>                    # RapidAPI currency-converter5; required when APP_ROLE is all or worker
 OTEL_SDK_DISABLED=false                              # optional; disables all telemetry when true
 OTEL_SERVICE_NAME=kopiika-api                         # optional
 OTEL_EXPORTER_OTLP_ENDPOINT=https://ingest.<region>.signoz.cloud:443  # optional; SigNoz OTLP/HTTP endpoint
