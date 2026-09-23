@@ -1,4 +1,4 @@
-import { Bad_Script, Google_Sans } from "next/font/google";
+import { Caveat, Google_Sans } from "next/font/google";
 
 /**
  * Two faces, which is all the design uses:
@@ -28,8 +28,8 @@ export const fontSans = Google_Sans({
     fallback: ["Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
 });
 
-export const fontScript = Bad_Script({
-    variable: "--font-bad-script",
+export const fontScript = Caveat({
+    variable: "--font-caveat",
     subsets: ["latin", "latin-ext", "cyrillic"],
     weight: "400",
     display: "swap",

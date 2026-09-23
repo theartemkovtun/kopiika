@@ -13,9 +13,12 @@ import { cn } from "cn";
  * `size` sets the type scale rather than a height, because the row's padding
  * already gives the control its height. Amounts run large; the rest run at
  * body size.
+ *
+ * A placeholder is set in the rule colour rather than in `mute`: it is a hint
+ * about an empty field, not a value, and at `mute` it reads as one.
  */
 const inputVariants = cva(
-    "w-full min-w-0 bg-transparent text-ink outline-none placeholder:text-mute disabled:pointer-events-none disabled:opacity-50",
+    "w-full min-w-0 bg-transparent text-ink outline-none placeholder:text-rule disabled:pointer-events-none disabled:opacity-50",
     {
         variants: {
             variant: {

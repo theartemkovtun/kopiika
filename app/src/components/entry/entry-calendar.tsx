@@ -84,7 +84,10 @@ export function EntryCalendar({
             className={cn("border-t border-rule pt-[14px]", className)}
             aria-label={tEntry("date")}
         >
-            <div className="flex items-center justify-end gap-1">
+            {/* The arrows sit at the grid's own edges rather than huddled at
+                its right: the strip is the head of the seven columns under it,
+                so it is as wide as they are. */}
+            <div className="flex items-center gap-1">
                 <MonthArrow
                     disabled={viewAt <= firstAt}
                     label={months[fromMonthOrdinal(viewAt - 1).month]}
@@ -94,7 +97,7 @@ export function EntryCalendar({
                 </MonthArrow>
                 <span
                     aria-live="polite"
-                    className="min-w-[116px] text-center text-xs tracking-[0.06em]"
+                    className="flex-1 text-center text-xs tracking-[0.06em]"
                 >
                     {months[view.month]} {view.year}
                 </span>
@@ -107,7 +110,7 @@ export function EntryCalendar({
                 </MonthArrow>
             </div>
 
-            <div className="mt-[14px] grid grid-cols-7 gap-[2px]">
+            <div className="mt-[22px] grid grid-cols-7 gap-[2px]">
                 {WEEKDAY_ORDER.map((index) => (
                     <div
                         key={index}

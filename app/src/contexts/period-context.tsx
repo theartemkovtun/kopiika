@@ -72,7 +72,10 @@ type PeriodContextValue = Period & {
     previousYear: () => void;
     nextYear: () => void;
 
-    /** The selection as the inclusive day range the API takes. */
+    /**
+     * The selection as the inclusive day range the API takes, cut at today
+     * while the selected period is still running.
+     */
     range: DateRange;
     /**
      * What the selection is read against: the period before it — the previous
@@ -84,6 +87,38 @@ type PeriodContextValue = Period & {
 };
 
 const PeriodContext = createContext<PeriodContextValue | null>(null);
+
+/**
+ * The last month a given year can offer: December, except in the year we are
+ * living in, which stops at the month we are in — the strip shows the rest but
+ * will not select them.
+ */
+export function lastSelectableMonth(
+    year: number,
+    today: { year: number; month: number },
+): number {
+    return year === today.year ? today.month : 11;
+}
+
+/**
+ * True when the period is the month we are actually living in — which is what
+ * decides whether a total is written as one still running ("Kept so far") or
+ * one that is closed ("Kept").
+ *
+ * Exported alongside `derivePeriodFromParams` and for the same reason: the
+ * page has to answer this on the server, about the period the address bar
+ * names, before the context has an address bar to read.
+ */
+export function isCurrentMonthPeriod(
+    period: Period,
+    today: { year: number; month: number },
+): boolean {
+    return (
+        !period.yearView &&
+        period.year === today.year &&
+        period.month === today.month
+    );
+}
 
 /**
  * True on the Overview route itself ("/" or "/<locale>") — the only place the
@@ -136,7 +171,7 @@ export function derivePeriodFromParams(
         return { month: today.month, year, yearView: true };
     }
 
-    const maxMonth = year === today.year ? today.month : 11;
+    const maxMonth = lastSelectableMonth(year, today);
     const monthParam = Number(params.month) - 1;
     const month =
         Number.isInteger(monthParam) &&
@@ -188,19 +223,19 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
     );
 
     const { month, year, yearView } = period;
-    const maxMonth = year === today.year ? today.month : 11;
+    const maxMonth = lastSelectableMonth(year, today);
 
     const selectMonth = useCallback(
         (next: number) => {
             // The strip shows all twelve months; the ones ahead of today are
             // dimmed and inert rather than hidden, so the row never reflows.
             setPeriod((current) => {
-                const limit = current.year === today.year ? today.month : 11;
+                const limit = lastSelectableMonth(current.year, today);
                 if (next > limit) return current;
                 return { ...current, month: next, yearView: false };
             });
         },
-        [today.month, today.year],
+        [today],
     );
 
     const selectYear = useCallback(
@@ -220,31 +255,39 @@ export function PeriodProvider({ children }: { children: React.ReactNode }) {
         setPeriod((current) => {
             if (current.year >= today.year) return current;
             const nextYearValue = current.year + 1;
-            const limit = nextYearValue === today.year ? today.month : 11;
+            const limit = lastSelectableMonth(nextYearValue, today);
             return {
                 ...current,
                 year: nextYearValue,
                 month: Math.min(current.month, limit),
             };
         });
-    }, [today.month, today.year]);
+    }, [today]);
 
     const value = useMemo<PeriodContextValue>(() => {
-        const isCurrentMonth =
-            !yearView && year === today.year && month === today.month;
+        const isCurrentMonth = isCurrentMonthPeriod(
+            { month, year, yearView },
+            today,
+        );
+
+        // A period that is still running is read only as far as today. The
+        // days ahead hold nothing to count, and asking for them makes the
+        // API answer for a span that has not happened yet — the same cut
+        // `comparison` below makes on the period it measures against.
+        const isCurrentYear = yearView && year === today.year;
 
         const range: DateRange = yearView
             ? {
                   fromDate: toIsoDate(year, 0, 1),
-                  toDate: toIsoDate(
-                      year,
-                      maxMonth,
-                      daysInMonth(year, maxMonth),
-                  ),
+                  toDate: isCurrentYear
+                      ? toIsoDate(year, today.month, today.day)
+                      : toIsoDate(year, maxMonth, daysInMonth(year, maxMonth)),
               }
             : {
                   fromDate: toIsoDate(year, month, 1),
-                  toDate: toIsoDate(year, month, daysInMonth(year, month)),
+                  toDate: isCurrentMonth
+                      ? toIsoDate(year, month, today.day)
+                      : toIsoDate(year, month, daysInMonth(year, month)),
               };
 
         const comparison: Comparison = yearView

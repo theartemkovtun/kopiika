@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
     Bar,
     BarChart,
@@ -14,12 +14,26 @@ import {
 import { cn } from "cn";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { usePeriod } from "@/contexts/period-context";
+import { type Period, usePeriod } from "@/contexts/period-context";
 import { usePreferences } from "@/contexts/preferences-context";
 import { useStatistics } from "@/hooks/use-statistics";
-import { AXIS_TICK, TOOLTIP, compactFigure } from "@/lib/charts";
-import { fromIsoDate } from "@/lib/dates";
+import { AXIS_TICK, TOOLTIP } from "@/lib/charts";
+import { daysInMonth, fromIsoDate } from "@/lib/dates";
 import { toNumber } from "@/lib/money";
+
+/**
+ * The scale of a chart with nothing in it.
+ *
+ * The ticks are given rather than left to recharts because they are what the
+ * grid rules against — with no figure to scale by, recharts settles on a
+ * single tick at zero and the grid comes out as one line. Five of them, evenly
+ * spaced across the panel, is what a real scale draws. What the numbers are
+ * does not matter: the axis writes none of them.
+ */
+const EMPTY_SCALE = {
+    domain: [0, 4],
+    ticks: [0, 1, 2, 3, 4],
+} as const;
 
 /** Which of the two series are drawn. Spending alone is the default. */
 type Series = "income" | "expense" | "both";
@@ -35,13 +49,17 @@ type Series = "income" | "expense" | "both";
  *
  * The year keeps all twelve bars even when the year is not over, so that
  * walking back through the years never changes the width of a bar.
+ *
+ * Both are built from the period rather than from the rows, so a month nobody
+ * spent in still draws its own grid — the same height, the same days along the
+ * bottom — instead of collapsing to nothing between two months that have data.
  */
 export function FlowChart() {
     const t = useTranslations("overview");
     const tCommon = useTranslations("common");
     const calendar = useTranslations("calendar");
 
-    const { range, yearView } = usePeriod();
+    const { range, year, month, yearView } = usePeriod();
     const { formatValue } = usePreferences();
     const { data } = useStatistics(range);
 
@@ -50,30 +68,38 @@ export function FlowChart() {
     const monthsShort = calendar.raw("monthsShort") as string[];
 
     const bars = useMemo(() => {
-        const days = data?.rangeStatistics ?? [];
+        const buckets = yearView
+            ? monthsShort.map((name) => ({ name, income: 0, outcome: 0 }))
+            : Array.from({ length: daysInMonth(year, month) }, (_, index) => ({
+                  name: String(index + 1),
+                  income: 0,
+                  outcome: 0,
+              }));
 
-        if (!yearView) {
-            return days.map((day) => ({
-                name: String(fromIsoDate(day.date).day),
-                income: toNumber(day.income.value),
-                outcome: toNumber(day.outcome.value),
-            }));
-        }
+        for (const day of data?.rangeStatistics ?? []) {
+            const date = fromIsoDate(day.date);
+            const bucket = buckets[yearView ? date.month : date.day - 1];
+            if (!bucket) continue;
 
-        const buckets = monthsShort.map((name) => ({
-            name,
-            income: 0,
-            outcome: 0,
-        }));
-
-        for (const day of days) {
-            const bucket = buckets[fromIsoDate(day.date).month];
             bucket.income += toNumber(day.income.value);
             bucket.outcome += toNumber(day.outcome.value);
         }
 
         return buckets;
-    }, [data, monthsShort, yearView]);
+    }, [data, month, monthsShort, year, yearView]);
+
+    // Two questions, because they have different answers: whether the period
+    // holds anything at all — which is what decides if there is a series worth
+    // choosing between — and whether the chosen series holds anything, which
+    // is what decides whether bars are drawn. A month with only income in it
+    // answers yes to the first and no to the second while Expenses is picked,
+    // and the toggles have to stay put for that to be fixable.
+    const anyFlow = bars.some((bar) => bar.income !== 0 || bar.outcome !== 0);
+    const seriesFlow = bars.some(
+        (bar) =>
+            (series !== "expense" && bar.income !== 0) ||
+            (series !== "income" && bar.outcome !== 0),
+    );
 
     const toggles: { id: Series; label: string }[] = [
         { id: "income", label: tCommon("income") },
@@ -81,25 +107,104 @@ export function FlowChart() {
         { id: "both", label: tCommon("both") },
     ];
 
+    // One line for the three of them, slid to whichever is picked — the same
+    // mark the month strip carries, for the same reason: three words in a row
+    // with one underlined is a ruler, and a ruler's mark moves. Measured off
+    // the buttons because they are as wide as their labels, which depend on
+    // the locale and on the font that has actually loaded; re-measured
+    // whenever any of that changes size. See `period-bar.tsx`, where this is
+    // written out at length.
+    const strip = useRef<HTMLSpanElement>(null);
+    const words = useRef<(HTMLButtonElement | null)[]>([]);
+    const [rule, setRule] = useState<{
+        left: number;
+        top: number;
+        width: number;
+    } | null>(null);
+
+    const selected = toggles.findIndex((toggle) => toggle.id === series);
+    const showToggles = Boolean(data) && anyFlow;
+
+    useLayoutEffect(() => {
+        const container = strip.current;
+        if (!container) return;
+
+        const measure = () => {
+            const word = words.current[selected];
+            if (!word) return;
+
+            // Where each button's own bottom border sits, so the mark lands on
+            // the line the unmeasured state already drew.
+            const next = {
+                left: word.offsetLeft,
+                top: word.offsetTop + word.offsetHeight - 1,
+                width: word.offsetWidth,
+            };
+
+            setRule((current) =>
+                current &&
+                current.left === next.left &&
+                current.top === next.top &&
+                current.width === next.width
+                    ? current
+                    : next,
+            );
+        };
+
+        measure();
+
+        const observer = new ResizeObserver(measure);
+        observer.observe(container);
+        for (const word of words.current) {
+            if (word) observer.observe(word);
+        }
+
+        return () => observer.disconnect();
+        // `showToggles`, because the row is not in the document until the
+        // period turns out to hold something, and there is nothing to measure
+        // until it is.
+    }, [selected, showToggles]);
+
     return (
         <section className="flex min-w-0 flex-col">
             <div className="mb-[18px] flex flex-wrap items-baseline gap-[18px]">
                 <h2 className="text-[26px] font-normal tracking-[-0.01em] italic">
                     {yearView ? t("monthlyFlow") : t("dailyFlow")}
                 </h2>
-                {data ? (
-                    <span className="ml-auto flex gap-4">
-                        {toggles.map((toggle) => (
+                {showToggles ? (
+                    <span ref={strip} className="relative ml-auto flex gap-4">
+                        {rule ? (
+                            <span
+                                aria-hidden
+                                style={{
+                                    width: rule.width,
+                                    transform: `translate(${rule.left}px, ${rule.top}px)`,
+                                }}
+                                // Born already in place — a browser starts no
+                                // transition on the style an element is
+                                // inserted with — so only later moves animate.
+                                className="absolute top-0 left-0 h-px bg-blue transition-[transform,width] duration-200 ease-out motion-reduce:transition-none"
+                            />
+                        ) : null}
+
+                        {toggles.map((toggle, index) => (
                             <button
                                 key={toggle.id}
+                                ref={(node) => {
+                                    words.current[index] = node;
+                                }}
                                 type="button"
                                 aria-pressed={series === toggle.id}
                                 onClick={() => setSeries(toggle.id)}
+                                // The transparent border is kept on every
+                                // button, picked one included: it is what
+                                // holds the row's height steady, and what the
+                                // sliding mark is laid over.
                                 className={cn(
-                                    "cursor-pointer border-b pb-[3px] text-xs transition-colors",
+                                    "cursor-pointer border-b border-transparent pb-[3px] text-xs transition-colors",
                                     series === toggle.id
-                                        ? "border-blue text-ink"
-                                        : "border-transparent text-mute hover:text-blue",
+                                        ? cn("text-ink", !rule && "border-blue")
+                                        : "text-mute hover:text-blue",
                                 )}
                             >
                                 {toggle.label}
@@ -124,13 +229,17 @@ export function FlowChart() {
                         // The dataset changes shape between a month and a
                         // year; remounting is cheaper than reasoning about
                         // what recharts keeps from the last one.
-                        key={`${yearView ? "y" : "m"}-${bars.length}-${series}`}
+                        key={`${yearView ? "y" : "m"}-${bars.length}-${series}-${seriesFlow}`}
                     >
                         <BarChart
                             data={bars}
                             barGap={2}
                             barCategoryGap="12%"
-                            margin={{ top: 4, right: 4, bottom: 0, left: 0 }}
+                            // No gutter on any side: with the Y axis
+                            // hidden there is nothing to hold one open, and
+                            // the grid runs the full width of the panel — the
+                            // width the skeleton's bars have always had.
+                            margin={{ top: 4, right: 0, bottom: 0, left: 0 }}
                         >
                             <CartesianGrid
                                 vertical={false}
@@ -146,19 +255,29 @@ export function FlowChart() {
                                 // as fit.
                                 interval={yearView ? 0 : 3}
                             />
-                            <YAxis
-                                tick={AXIS_TICK}
-                                axisLine={false}
-                                tickLine={false}
-                                width={44}
-                                tickFormatter={compactFigure}
-                            />
-                            <Tooltip
-                                {...TOOLTIP}
-                                formatter={(value) =>
-                                    formatValue(Number(value))
-                                }
-                            />
+                            {/* Hidden rather than left out: it is the ladder
+                                the grid rules against and the scale the bars
+                                are drawn to — it simply writes no figures,
+                                and so claims no gutter. The bars are the
+                                figures; a column of axis labels beside them
+                                is a second reading of the same thing, and the
+                                tooltip says the one number anybody wants
+                                exactly. */}
+                            <YAxis hide {...(seriesFlow ? {} : EMPTY_SCALE)} />
+                            {/* Nothing to read off an empty grid, and the
+                                cursor would light columns that hold nothing. */}
+                            {seriesFlow ? (
+                                <Tooltip
+                                    {...TOOLTIP}
+                                    formatter={(value) =>
+                                        formatValue(Number(value))
+                                    }
+                                />
+                            ) : null}
+                            {/* Left mounted through the empty state: a bar of
+                                zero draws nothing, and a chart that keeps its
+                                bars keeps the axes and the grid they hang off
+                                exactly as the drawn one has them. */}
                             {series !== "expense" ? (
                                 <Bar
                                     dataKey="income"
@@ -191,10 +310,18 @@ export function FlowChart() {
  * has usually already landed, and its own `!data` branch never gets drawn.
  * This fallback fills the same gap the summary's does — the one actually
  * visible while the account is in flight.
+ *
+ * The period comes in as a prop, for the reason `PeriodBar` takes it that way:
+ * this is the one panel the server actually renders, and on the server the
+ * context has no address bar to read and falls back to today's month. A reload
+ * on `?year=2024` would serve a month's worth of thin bars under "Daily flow",
+ * then swap both for the year's twelve the moment the context caught up —
+ * the whole panel flickering through a shape the page was never going to be.
+ * The page hands this the same period it hands the title and the strip.
  */
-export function FlowChartFallback() {
+export function FlowChartFallback({ period }: { period: Period }) {
     const t = useTranslations("overview");
-    const { yearView } = usePeriod();
+    const { yearView } = period;
 
     return (
         <section className="flex min-w-0 flex-col">

@@ -26,7 +26,11 @@ import {
     OverviewSummary,
     OverviewSummaryFallback,
 } from "@/components/overview/summary";
-import { derivePeriodFromParams, usePeriod } from "@/contexts/period-context";
+import {
+    derivePeriodFromParams,
+    isCurrentMonthPeriod,
+    usePeriod,
+} from "@/contexts/period-context";
 import { useAccountsBalance } from "@/hooks/use-accounts";
 import { useStatistics } from "@/hooks/use-statistics";
 import { useLatestTransactions } from "@/hooks/use-transactions";
@@ -81,12 +85,15 @@ export default function OverviewPage({
     const monthsShort = calendar.raw("monthsShort") as string[];
 
     // The server render has no `window`, so the context above falls back to
-    // today; `searchParams` is known there too, so that's what the title
-    // reads on the server. Every client render — starting with the very
-    // first, since the context re-derives its own state from the real
+    // today; `searchParams` is known there too, so that's what the title and
+    // the month strip read on the server. Every client render — starting with
+    // the very first, since the context re-derives its own state from the real
     // `window.location` as soon as it mounts — reads the context instead,
     // because `searchParams` stays frozen at whatever the URL was on load
     // and would otherwise ignore every later click on the month strip.
+    //
+    // Both take the same value: a title on one month and the strip's mark on
+    // another is the mismatch that shows if only one of them is handed it.
     const displayed =
         typeof window === "undefined"
             ? derivePeriodFromParams(use(searchParams), today)
@@ -143,15 +150,20 @@ export default function OverviewPage({
                 }
                 subtitle={subtitle}
             />
-            <PeriodBar className="mt-7" />
+            <PeriodBar period={displayed} className="mt-7" />
 
             <AccountGate
                 fallback={
                     <>
-                        <OverviewSummaryFallback />
+                        <OverviewSummaryFallback
+                            isCurrentMonth={isCurrentMonthPeriod(
+                                displayed,
+                                today,
+                            )}
+                        />
                         <ChartGrid>
                             <CategoryBreakdownFallback />
-                            <FlowChartFallback />
+                            <FlowChartFallback period={displayed} />
                         </ChartGrid>
                         <div className="mt-11 grid gap-14 [grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr))]">
                             <RecentEntriesFallback />
@@ -187,7 +199,7 @@ export default function OverviewPage({
 
 function ChartGrid({ children }: { children: React.ReactNode }) {
     return (
-        <div className="grid grid-cols-1 gap-12 border-b border-rule py-[34px] lg:[grid-template-columns:minmax(280px,1fr)_minmax(320px,2fr)]">
+        <div className="grid grid-cols-1 gap-12 border-b border-rule py-[34px] lg:gap-[72px] lg:[grid-template-columns:minmax(280px,1fr)_minmax(320px,2fr)]">
             {children}
         </div>
     );

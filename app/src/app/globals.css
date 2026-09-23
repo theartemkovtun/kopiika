@@ -130,7 +130,7 @@
        rather than pass silently. */
     --font-sans:
         var(--font-google-sans), "Helvetica Neue", Helvetica, Arial, sans-serif;
-    --font-script: var(--font-bad-script), "Brush Script MT", cursive;
+    --font-script: var(--font-caveat), "Brush Script MT", cursive;
 
     /* The sidebar column and the reading column, as the design measures them. */
     --spacing-sidebar: 208px;
