@@ -8,10 +8,11 @@ import (
 
 // CurrencyRate is one day's conversion factor from one currency to another.
 //
-// The table lives in the "currency" schema and is written by the
-// kopiika-currency-fetch service, not by this API — here it is read-only.
-// Because the writer owns the schema, the table is not managed by Atlas
-// diffing: see migrations/*_currency_rates.sql for the hand-written DDL.
+// The table lives in the "currency" schema and is written only through the
+// currency.add_currency_rates(json) function, which the daily
+// currency:fetch_rates task calls (services.FetchCurrencyRates). The schema is
+// not managed by Atlas diffing: see migrations/*_currency_rates.sql for the
+// hand-written DDL.
 //
 // Currency codes are stored lower case ("uah", "usd"), matching what the
 // fetcher writes and what the clients send.
