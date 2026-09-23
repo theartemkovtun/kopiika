@@ -57,7 +57,7 @@ const docTemplate = `{
         },
         "/health/ready": {
             "get": {
-                "description": "Reports whether the service can serve traffic, verifying the database connection. Returns 503 when a dependency is unavailable.",
+                "description": "Reports whether the service can serve traffic, verifying the database and the task queue's Redis connection. Returns 503 when a dependency is unavailable.",
                 "produces": [
                     "application/json"
                 ],
@@ -1958,6 +1958,10 @@ const docTemplate = `{
                 },
                 "error": {
                     "type": "string"
+                },
+                "queue": {
+                    "type": "string",
+                    "example": "ok"
                 },
                 "status": {
                     "type": "string",

@@ -26,6 +26,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/hibiken/asynq"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
@@ -34,7 +35,13 @@ import (
 	"kopiika-api-go/src/api/health"
 	routes "kopiika-api-go/src/api/v1"
 	"kopiika-api-go/src/core"
+	"kopiika-api-go/src/worker"
 )
+
+// shutdownBudget bounds the whole graceful shutdown: draining HTTP, letting
+// in-flight tasks finish (worker.shutdownTimeout) and flushing telemetry.
+// Render sends SIGKILL 30s after SIGTERM, so this stays under that.
+const shutdownBudget = 25 * time.Second
 
 // fatal logs a boot-time failure through the OTel-bridged logger, flushes
 // telemetry, and exits. Unlike log.Fatal, which calls os.Exit directly and
@@ -68,6 +75,77 @@ func main() {
 		fatal(ctx, shutdown, "failed to initialize cognito", err)
 	}
 
+	if err := core.InitQueue(); err != nil {
+		fatal(ctx, shutdown, "failed to initialize task queue", err)
+	}
+
+	role := core.Config.AppRole
+
+	var srv *http.Server
+	if role.ServesHTTP() {
+		srv = &http.Server{
+			Addr:    ":" + core.Config.Port,
+			Handler: newRouter(),
+		}
+
+		go func() {
+			if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				fatal(ctx, shutdown, "server failed", err)
+			}
+		}()
+	}
+
+	var workerSrv *asynq.Server
+	var scheduler *asynq.PeriodicTaskManager
+	if role.RunsWorker() {
+		workerSrv = worker.NewServer()
+		if err := workerSrv.Start(worker.NewMux()); err != nil {
+			fatal(ctx, shutdown, "failed to start task worker", err)
+		}
+
+		scheduler, err = worker.NewScheduler()
+		if err != nil {
+			fatal(ctx, shutdown, "failed to build task scheduler", err)
+		}
+		if err := scheduler.Start(); err != nil {
+			fatal(ctx, shutdown, "failed to start task scheduler", err)
+		}
+	}
+
+	slog.InfoContext(ctx, "started", "role", role)
+
+	stopCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+	<-stopCtx.Done()
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownBudget)
+	defer cancel()
+
+	// HTTP goes first so no request enqueues work while the worker drains.
+	if srv != nil {
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			slog.ErrorContext(shutdownCtx, "server shutdown failed", "error", err)
+		}
+	}
+
+	if scheduler != nil {
+		scheduler.Shutdown()
+	}
+
+	if workerSrv != nil {
+		workerSrv.Shutdown()
+	}
+
+	if err := core.CloseQueue(); err != nil {
+		slog.ErrorContext(shutdownCtx, "task queue close failed", "error", err)
+	}
+
+	if err := shutdown(shutdownCtx); err != nil {
+		slog.ErrorContext(shutdownCtx, "telemetry shutdown failed", "error", err)
+	}
+}
+
+func newRouter() *gin.Engine {
 	engine := gin.Default()
 	engine.Use(otelgin.Middleware(core.Config.OtelServiceName))
 
@@ -97,29 +175,5 @@ func main() {
 
 	routes.RegisterV1Routes(engine)
 
-	srv := &http.Server{
-		Addr:    ":" + core.Config.Port,
-		Handler: engine,
-	}
-
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fatal(ctx, shutdown, "server failed", err)
-		}
-	}()
-
-	stopCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-	<-stopCtx.Done()
-
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if err := srv.Shutdown(shutdownCtx); err != nil {
-		slog.ErrorContext(shutdownCtx, "server shutdown failed", "error", err)
-	}
-
-	if err := shutdown(shutdownCtx); err != nil {
-		slog.ErrorContext(shutdownCtx, "telemetry shutdown failed", "error", err)
-	}
+	return engine
 }

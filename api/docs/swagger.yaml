@@ -342,6 +342,9 @@ definitions:
         type: string
       error:
         type: string
+      queue:
+        example: ok
+        type: string
       status:
         example: ok
         type: string
@@ -625,7 +628,7 @@ paths:
   /health/ready:
     get:
       description: Reports whether the service can serve traffic, verifying the database
-        connection. Returns 503 when a dependency is unavailable.
+        and the task queue's Redis connection. Returns 503 when a dependency is unavailable.
       produces:
       - application/json
       responses:
