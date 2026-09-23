@@ -9,6 +9,8 @@ services:
       - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
       - COGNITO_REGION=${COGNITO_REGION}
       - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
+      - REDIS_URL=redis://redis:6379/0
+      - APP_ROLE=all
       - OTEL_SDK_DISABLED=${OTEL_SDK_DISABLED:-false}
       - OTEL_SERVICE_NAME=kopiika-api
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT}
@@ -16,6 +18,8 @@ services:
       - DEPLOYMENT_ENVIRONMENT=local
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health/live"]
@@ -44,8 +48,41 @@ services:
     networks:
       - kopiika-network
 
+  redis:
+    image: redis:7-alpine
+    # Queued tasks live only in Redis, so they must never be evicted, and
+    # append-only persistence keeps them across a restart.
+    command: ["redis-server", "--maxmemory-policy", "noeviction", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - kopiika-network
+
+  # Web UI for queues, scheduled/retrying tasks and cron entries:
+  # http://localhost:8081
+  asynqmon:
+    image: hibiken/asynqmon:latest
+    # published for amd64 only; runs emulated on Apple Silicon
+    platform: linux/amd64
+    command: ["--redis-url=redis://redis:6379/0"]
+    ports:
+      - "8081:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - kopiika-network
+
 volumes:
   postgres-data:
+  redis-data:
 
 networks:
   kopiika-network:

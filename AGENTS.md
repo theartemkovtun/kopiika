@@ -90,7 +90,7 @@ section are relative to `api/`.
 ```bash
 cd api
 
-# Run the application (requires .env with DATABASE_URL, COGNITO_REGION, COGNITO_USER_POOL_ID)
+# Run the application (requires .env with DATABASE_URL, COGNITO_REGION, COGNITO_USER_POOL_ID, REDIS_URL)
 go run .
 
 # Build the binary (regenerates swagger first)
@@ -99,7 +99,7 @@ make build
 # Regenerate Swagger documentation (required whenever API annotations change)
 make swagger          # swag init --parseInternal
 
-# Run with Docker Compose (includes PostgreSQL)
+# Run with Docker Compose (includes PostgreSQL, Redis and the asynqmon UI on :8081)
 docker compose up --build
 
 # Build the deployable image (multi-stage, static binary, non-root, ~49MB)
@@ -161,6 +161,8 @@ re-run `make migrate-diff` on a no-op and confirm it reports no changes.
 - `src/models/` - GORM entities, embedding `BaseModel` (uuid id, created_at, deleted_at)
 - `src/schemas/` - request/response DTOs, kept separate from models
 - `src/queries/` - raw SQL for transactional or complex operations
+- `src/tasks/` - background task definitions (type, payload, constructor) and `tasks.Enqueue`
+- `src/worker/` - the Asynq task handlers (`mux.go`), worker server and cron registry (`schedule.go`)
 - `src/middleware/` - `RequireAuth` / `OptionalAuth`
 - `src/core/` - config, database, Cognito and telemetry initialization
 - `cmd/atlas-loader/` - feeds the GORM schema to Atlas
@@ -187,6 +189,14 @@ creates the local row on first login, seeding name and picture from the user poo
 - Monetary amounts that cross currencies are localized through a
   `services.CurrencyConverter`, which reports a missing rate rather than
   silently converting to zero
+- Background work runs on Asynq over Redis. Services enqueue with `tasks.Enqueue(ctx, t, opts...)`,
+  delaying with `asynq.ProcessIn` / `asynq.ProcessAt`. `src/tasks/` must not import `services`
+  (services import it); handlers live in `src/worker/`, stay thin like controllers, and call a
+  service. A new task needs a constructor in `src/tasks/` and a handler registered in
+  `worker.NewMux`; a cron job is an entry in `periodicTasks` in `src/worker/schedule.go`
+  (cron specs are UTC). `APP_ROLE` picks what the process runs (`all`, `api`, `worker`);
+  the scheduler enqueues every entry once per running instance, so only one instance may
+  run with `all` or `worker`
 - Pagination uses `page` (1-indexed) and `take`, returned in `schemas.PaginatedResponse[T]`
 - Config is validated at boot: a missing required env var is a fatal error
 - OpenTelemetry (traces, metrics, logs) is wired in `src/core/telemetry.go` and exported
@@ -206,6 +216,9 @@ DATABASE_URL=postgres://user:password@host:5432/dbname
 CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 COGNITO_REGION=us-east-1
 COGNITO_USER_POOL_ID=us-east-1_xxxxxxxxx
+REDIS_URL=redis://localhost:6379/0     # Asynq task queue; set maxmemory-policy=noeviction on the instance
+APP_ROLE=all                           # optional; all | api | worker
+WORKER_CONCURRENCY=10                  # optional; tasks processed in parallel per worker
 OTEL_SDK_DISABLED=false                              # optional; disables all telemetry when true
 OTEL_SERVICE_NAME=kopiika-api                         # optional
 OTEL_EXPORTER_OTLP_ENDPOINT=https://ingest.<region>.signoz.cloud:443  # optional; SigNoz OTLP/HTTP endpoint

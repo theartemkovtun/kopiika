@@ -2,6 +2,7 @@ package health
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 	"kopiika-api-go/src/schemas"
 )
 
-// pingTimeout bounds the readiness probe so a hung database cannot hold the
+// pingTimeout bounds the readiness probe so a hung dependency cannot hold the
 // request open and stall the orchestrator's own health checking.
 const pingTimeout = 2 * time.Second
 
@@ -45,7 +46,7 @@ func Live(c *gin.Context) {
 
 // Ready handles the readiness probe
 // @Summary Readiness probe
-// @Description Reports whether the service can serve traffic, verifying the database connection. Returns 503 when a dependency is unavailable.
+// @Description Reports whether the service can serve traffic, verifying the database and the task queue's Redis connection. Returns 503 when a dependency is unavailable.
 // @Tags health
 // @Produce json
 // @Success 200 {object} schemas.ReadinessSchema
@@ -55,18 +56,26 @@ func Ready(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), pingTimeout)
 	defer cancel()
 
+	response := schemas.ReadinessSchema{Status: "ok", Database: "ok", Queue: "ok"}
+	var errs []error
+
 	if err := core.PingDB(ctx); err != nil {
-		message := err.Error()
-		c.JSON(http.StatusServiceUnavailable, schemas.ReadinessSchema{
-			Status:   "unavailable",
-			Database: "unavailable",
-			Error:    &message,
-		})
+		response.Database = "unavailable"
+		errs = append(errs, err)
+	}
+
+	if err := core.PingQueue(ctx); err != nil {
+		response.Queue = "unavailable"
+		errs = append(errs, err)
+	}
+
+	if len(errs) > 0 {
+		message := errors.Join(errs...).Error()
+		response.Status = "unavailable"
+		response.Error = &message
+		c.JSON(http.StatusServiceUnavailable, response)
 		return
 	}
 
-	c.JSON(http.StatusOK, schemas.ReadinessSchema{
-		Status:   "ok",
-		Database: "ok",
-	})
+	c.JSON(http.StatusOK, response)
 }
