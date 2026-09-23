@@ -51,5 +51,10 @@ func RegisterV1Routes(router *gin.Engine) {
 			transactionRoutes.GET("/:transactionId", middleware.RequireAuth(), controllers.GetTransaction)
 			transactionRoutes.DELETE("/:transactionId", middleware.RequireAuth(), controllers.DeleteTransaction)
 		}
+
+		currencyRoutes := v1.Group("/currencies")
+		{
+			currencyRoutes.POST("/rates/fetch", middleware.RequireAuth(), controllers.FetchCurrencyRates)
+		}
 	}
 }

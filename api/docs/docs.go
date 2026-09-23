@@ -701,6 +701,81 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/currencies/rates/fetch": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Queue a background fetch of the rates between every supported pair of currencies on the given day, replacing any already stored for it. Use it to backfill a day the daily fetch missed. The fetch runs at processAt, or as soon as a worker is free without it. A day may not be later than the day the fetch runs on, and only one fetch per day can be waiting at a time",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "currencies"
+                ],
+                "summary": "Fetch currency rates for a day",
+                "parameters": [
+                    {
+                        "description": "Day to fetch, and optionally when",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.FetchCurrencyRatesSchema"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.CurrencyRatesFetchSchema"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/v1/transactions": {
             "get": {
                 "security": [
@@ -1870,6 +1945,23 @@ const docTemplate = `{
                 }
             }
         },
+        "schemas.CurrencyRatesFetchSchema": {
+            "type": "object",
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "example": "2026-09-12"
+                },
+                "processAt": {
+                    "type": "string",
+                    "example": "2026-09-23T12:00:00Z"
+                },
+                "taskId": {
+                    "type": "string",
+                    "example": "currency:fetch_rates:2026-09-12"
+                }
+            }
+        },
         "schemas.DateStatisticsSchema": {
             "type": "object",
             "properties": {
@@ -1897,6 +1989,22 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/schemas.TransactionSchema"
                     }
+                }
+            }
+        },
+        "schemas.FetchCurrencyRatesSchema": {
+            "type": "object",
+            "required": [
+                "date"
+            ],
+            "properties": {
+                "date": {
+                    "type": "string",
+                    "example": "2026-09-12"
+                },
+                "processAt": {
+                    "type": "string",
+                    "example": "2026-09-23T12:00:00Z"
                 }
             }
         },

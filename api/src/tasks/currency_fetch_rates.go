@@ -23,6 +23,16 @@ func NewCurrencyFetchRatesTask(payload CurrencyFetchRatesPayload) (*asynq.Task, 
 	return NewTask(TypeCurrencyFetchRates, payload)
 }
 
+// CurrencyFetchRatesOptions are the queue, retry and timeout settings for a
+// fetch, shared by the daily cron entry and a fetch enqueued on demand.
+func CurrencyFetchRatesOptions() []asynq.Option {
+	return []asynq.Option{
+		asynq.Queue(QueueLow),
+		asynq.MaxRetry(8),
+		asynq.Timeout(5 * time.Minute),
+	}
+}
+
 func CurrencyFetchRatesHandler(fetch func(context.Context, time.Time) error) asynq.HandlerFunc {
 	return func(ctx context.Context, t *asynq.Task) error {
 		payload, err := Decode[CurrencyFetchRatesPayload](t)
