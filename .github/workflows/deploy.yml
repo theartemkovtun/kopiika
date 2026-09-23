@@ -2,21 +2,64 @@ name: deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      force:
+        description: Deploy both services even if nothing changed
+        type: boolean
+        default: false
 
 permissions:
   contents: read
   packages: write
+  actions: read
 
 concurrency:
   group: deploy
   cancel-in-progress: false
 
 jobs:
+  changes:
+    name: Detect changes
+    # Only main ships; the "Run workflow" branch picker would otherwise deploy
+    # any branch. Both deploy jobs need this one, so they are skipped with it.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.diff.outputs.api }}
+      app: ${{ steps.diff.outputs.app }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # The baseline is the last successful run on main. A run that skipped a
+      # service had no changes to it up to that commit, so diffing from there
+      # misses nothing; a failed run leaves the baseline where it was, so the
+      # next one redeploys. No baseline, or one lost to a force-push, deploys.
+      - id: diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          base=$(gh run list --workflow deploy.yml --branch main --status success \
+            --limit 1 --json headSha --jq '.[0].headSha // empty')
+          echo "Last successful deploy: ${base:-none}"
+          for dir in api app; do
+            if [ "$FORCE" = true ] || [ -z "$base" ] \
+              || ! git cat-file -e "$base^{commit}" 2>/dev/null \
+              || ! git diff --quiet "$base" HEAD -- "$dir"; then
+              changed=true
+            else
+              changed=false
+            fi
+            echo "$dir: $changed"
+            echo "$dir=$changed" >> "$GITHUB_OUTPUT"
+          done
+
   api:
     name: Deploy API
-    # Only main ships; the "Run workflow" branch picker would otherwise deploy
-    # any branch. The app job needs this one, so it is skipped along with it.
-    if: github.ref == 'refs/heads/main'
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
     env:
       IMAGE: ghcr.io/${{ github.repository_owner }}/kopiika-api:${{ github.sha }}
@@ -55,7 +98,14 @@ jobs:
 
   app:
     name: Deploy App
-    needs: api
+    # After the API, so it ships first, but not skipped along with it: a
+    # skipped need skips its dependents unless the condition says otherwise.
+    needs: [changes, api]
+    if: >-
+      !cancelled()
+      && needs.changes.result == 'success'
+      && needs.changes.outputs.app == 'true'
+      && needs.api.result != 'failure'
     runs-on: ubuntu-latest
     env:
       IMAGE: ghcr.io/${{ github.repository_owner }}/kopiika-app:${{ github.sha }}
