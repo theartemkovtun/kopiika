@@ -1,0 +1,95 @@
+name: deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  api:
+    name: Deploy API
+    # Only main ships; the "Run workflow" branch picker would otherwise deploy
+    # any branch. The app job needs this one, so it is skipped along with it.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/kopiika-api:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v7
+        with:
+          context: api
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE }}
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+
+      - name: Deploy to Render
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_API }}
+        # Without the secret the image is still pushed, just not deployed: the
+        # first run creates the package before Render can be pointed at it.
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::warning::RENDER_DEPLOY_HOOK_API is not set; pushed $IMAGE without deploying"
+            exit 0
+          fi
+          curl -fsS -X POST -G --data-urlencode "imgURL=$IMAGE" "$HOOK"
+
+  app:
+    name: Deploy App
+    needs: api
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ghcr.io/${{ github.repository_owner }}/kopiika-app:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # No build args: the NEXT_PUBLIC_ values are sentinels the entrypoint
+      # replaces at container start, from the service's own environment.
+      - uses: docker/build-push-action@v7
+        with:
+          context: app
+          platforms: linux/amd64
+          push: true
+          tags: ${{ env.IMAGE }}
+          labels: org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,scope=app,mode=max
+
+      - name: Deploy to Render
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_APP }}
+        # Without the secret the image is still pushed, just not deployed: the
+        # first run creates the package before Render can be pointed at it.
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::warning::RENDER_DEPLOY_HOOK_APP is not set; pushed $IMAGE without deploying"
+            exit 0
+          fi
+          curl -fsS -X POST -G --data-urlencode "imgURL=$IMAGE" "$HOOK"
