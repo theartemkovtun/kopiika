@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       force:
-        description: Deploy both services even if nothing changed
+        description: Migrate and deploy both services even if nothing changed
         type: boolean
         default: false
 
@@ -27,6 +27,7 @@ jobs:
     outputs:
       api: ${{ steps.diff.outputs.api }}
       app: ${{ steps.diff.outputs.app }}
+      migrations: ${{ steps.diff.outputs.migrations }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -36,6 +37,7 @@ jobs:
       # service had no changes to it up to that commit, so diffing from there
       # misses nothing; a failed run leaves the baseline where it was, so the
       # next one redeploys. No baseline, or one lost to a force-push, deploys.
+      # Migrations share the baseline, so a failed migration is retried too.
       - id: diff
         env:
           GH_TOKEN: ${{ github.token }}
@@ -44,7 +46,7 @@ jobs:
           base=$(gh run list --workflow deploy.yml --branch main --status success \
             --limit 1 --json headSha --jq '.[0].headSha // empty')
           echo "Last successful deploy: ${base:-none}"
-          for dir in api app; do
+          for dir in api app api/migrations; do
             if [ "$FORCE" = true ] || [ -z "$base" ] \
               || ! git cat-file -e "$base^{commit}" 2>/dev/null \
               || ! git diff --quiet "$base" HEAD -- "$dir"; then
@@ -53,13 +55,37 @@ jobs:
               changed=false
             fi
             echo "$dir: $changed"
-            echo "$dir=$changed" >> "$GITHUB_OUTPUT"
+            echo "${dir##*/}=$changed" >> "$GITHUB_OUTPUT"
           done
+
+  migrate:
+    name: Migrate database
+    needs: changes
+    if: needs.changes.outputs.migrations == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ariga/setup-atlas@v0
+
+      - name: Apply migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::DATABASE_URL is not set; not deploying against an unmigrated database"
+            exit 1
+          fi
+          atlas migrate apply --dir file://api/migrations --url "$DATABASE_URL"
 
   api:
     name: Deploy API
-    needs: changes
-    if: needs.changes.outputs.api == 'true'
+    needs: [changes, migrate]
+    if: >-
+      !cancelled()
+      && needs.changes.result == 'success'
+      && needs.changes.outputs.api == 'true'
+      && needs.migrate.result != 'failure'
     runs-on: ubuntu-latest
     env:
       IMAGE: ghcr.io/${{ github.repository_owner }}/kopiika-api:${{ github.sha }}
@@ -100,11 +126,12 @@ jobs:
     name: Deploy App
     # After the API, so it ships first, but not skipped along with it: a
     # skipped need skips its dependents unless the condition says otherwise.
-    needs: [changes, api]
+    needs: [changes, migrate, api]
     if: >-
       !cancelled()
       && needs.changes.result == 'success'
       && needs.changes.outputs.app == 'true'
+      && needs.migrate.result != 'failure'
       && needs.api.result != 'failure'
     runs-on: ubuntu-latest
     env:
