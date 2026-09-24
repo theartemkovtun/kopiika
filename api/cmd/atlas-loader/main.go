@@ -16,6 +16,7 @@ func main() {
 		&models.Account{},
 		&models.Category{},
 		&models.Transaction{},
+		&models.TransactionTemplate{},
 	)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to load gorm schema: %v\n", err)
