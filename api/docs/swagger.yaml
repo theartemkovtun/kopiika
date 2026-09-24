@@ -283,6 +283,21 @@ definitions:
     - value
     - year
     type: object
+  schemas.CreateTransactionTemplateSchema:
+    properties:
+      title:
+        example: Morning coffee
+        maxLength: 64
+        type: string
+      value:
+        description: Value is the client's serialized transaction form; the API does
+          not read it.
+        example: '{"type":"outcome","value":"85","currency":"uah"}'
+        type: string
+    required:
+    - title
+    - value
+    type: object
   schemas.CurrencyRatesFetchSchema:
     properties:
       date:
@@ -409,6 +424,18 @@ definitions:
         type: string
       type:
         example: outcome
+        type: string
+    type: object
+  schemas.TransactionTemplateSchema:
+    properties:
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      title:
+        example: Morning coffee
+        type: string
+      value:
+        example: '{"type":"outcome","value":"85","currency":"uah"}'
         type: string
     type: object
   schemas.TransactionsConfigurationSchema:
@@ -562,6 +589,21 @@ definitions:
     - title
     - type
     - value
+    type: object
+  schemas.UpdateTransactionTemplateSchema:
+    properties:
+      id:
+        example: 123e4567-e89b-12d3-a456-426614174000
+        type: string
+      title:
+        example: Morning coffee
+        maxLength: 64
+        type: string
+      value:
+        example: '{"type":"outcome","value":"85","currency":"uah"}'
+        type: string
+    required:
+    - id
     type: object
   schemas.UpdateUserSchema:
     properties:
@@ -1125,6 +1167,168 @@ paths:
       summary: Fetch currency rates for a day
       tags:
       - currencies
+  /v1/templates:
+    get:
+      consumes:
+      - application/json
+      description: List the authenticated user's transaction templates, newest first.
+        Unpaginated
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/schemas.TransactionTemplateSchema'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List transaction templates
+      tags:
+      - templates
+    post:
+      consumes:
+      - application/json
+      description: Create a new transaction template owned by the authenticated user.
+        The value is stored as sent and never read by the API
+      parameters:
+      - description: Template to create
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.CreateTransactionTemplateSchema'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/schemas.TransactionTemplateSchema'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create transaction template
+      tags:
+      - templates
+    put:
+      consumes:
+      - application/json
+      description: Update one of the authenticated user's transaction templates. The
+        id travels in the body; only the other fields present in the payload are changed
+      parameters:
+      - description: Template id and fields to update
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.UpdateTransactionTemplateSchema'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.TransactionTemplateSchema'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update transaction template
+      tags:
+      - templates
+  /v1/templates/{templateId}:
+    delete:
+      consumes:
+      - application/json
+      description: Soft delete one of the authenticated user's transaction templates.
+        Idempotent
+      parameters:
+      - description: Template id
+        in: path
+        name: templateId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete transaction template
+      tags:
+      - templates
   /v1/transactions:
     get:
       consumes:
