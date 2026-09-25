@@ -5,11 +5,17 @@ import (
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 
 	"kopiika-api-go/src/core"
 	"kopiika-api-go/src/models"
 	"kopiika-api-go/src/schemas"
 )
+
+// ErrCategoryNotHideable is returned when a user tries to hide one of their own
+// categories. Only the global defaults can be hidden; a user's own category is
+// deleted instead.
+var ErrCategoryNotHideable = errors.New("only default categories can be hidden")
 
 func toCategorySchema(category models.Category) schemas.CategorySchema {
 	return schemas.CategorySchema{
@@ -23,7 +29,7 @@ func toCategorySchema(category models.Category) schemas.CategorySchema {
 // ListCategories returns the user's own categories together with the global
 // defaults, which are the rows with no owner. It is unpaginated, as the Python
 // endpoint is. Each category reports how many of the current user's own
-// transactions reference it.
+// transactions reference it, and whether the user has hidden it.
 func ListCategories(userId uuid.UUID) ([]schemas.CategorySchema, error) {
 	var categories []models.Category
 
@@ -51,10 +57,23 @@ func ListCategories(userId uuid.UUID) ([]schemas.CategorySchema, error) {
 		countByCategory[c.CategoryId] = c.Total
 	}
 
+	var hiddenIds []int
+	if err := core.DB.Model(&models.HiddenCategory{}).
+		Where("user_id = ?", userId).
+		Pluck("category_id", &hiddenIds).Error; err != nil {
+		return nil, err
+	}
+
+	hidden := make(map[int]bool, len(hiddenIds))
+	for _, id := range hiddenIds {
+		hidden[id] = true
+	}
+
 	response := make([]schemas.CategorySchema, 0, len(categories))
 	for _, category := range categories {
 		schema := toCategorySchema(category)
 		schema.Transactions = countByCategory[category.Id]
+		schema.Hidden = hidden[category.Id]
 		response = append(response, schema)
 	}
 
@@ -102,17 +121,67 @@ func UpdateCategory(userId uuid.UUID, categoryId int, schema schemas.UpdateCateg
 		}
 	}
 
-	var transactionsCount int64
-	if err := core.DB.Model(&models.Transaction{}).
-		Where("user_id = ? AND category_id = ? AND deleted_at IS NULL", userId, category.Id).
-		Count(&transactionsCount).Error; err != nil {
+	transactionsCount, err := countCategoryTransactions(userId, category.Id)
+	if err != nil {
 		return schemas.CategorySchema{}, err
 	}
 
 	result := toCategorySchema(category)
-	result.Transactions = int(transactionsCount)
+	result.Transactions = transactionsCount
 
 	return result, nil
+}
+
+// SetCategoryHidden hides or unhides a global default category for the user.
+// A hidden category is still listed, and the transactions already labelled with
+// it are untouched; it only stops being offered, and accepted, for new ones.
+// Both directions are idempotent.
+func SetCategoryHidden(userId uuid.UUID, categoryId int, hidden bool) (schemas.CategorySchema, error) {
+	var category models.Category
+	if err := core.DB.First(&category, "id = ? AND (user_id = ? OR user_id IS NULL) AND deleted_at IS NULL", categoryId, userId).Error; err != nil {
+		return schemas.CategorySchema{}, err
+	}
+
+	if category.UserId != nil {
+		return schemas.CategorySchema{}, ErrCategoryNotHideable
+	}
+
+	if hidden {
+		row := models.HiddenCategory{UserId: userId, CategoryId: category.Id}
+		if err := core.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&row).Error; err != nil {
+			return schemas.CategorySchema{}, err
+		}
+	} else {
+		if err := core.DB.
+			Where("user_id = ? AND category_id = ?", userId, category.Id).
+			Delete(&models.HiddenCategory{}).Error; err != nil {
+			return schemas.CategorySchema{}, err
+		}
+	}
+
+	transactionsCount, err := countCategoryTransactions(userId, category.Id)
+	if err != nil {
+		return schemas.CategorySchema{}, err
+	}
+
+	result := toCategorySchema(category)
+	result.Transactions = transactionsCount
+	result.Hidden = hidden
+
+	return result, nil
+}
+
+// countCategoryTransactions is how many of the user's own transactions are
+// labelled with the category.
+func countCategoryTransactions(userId uuid.UUID, categoryId int) (int, error) {
+	var count int64
+	if err := core.DB.Model(&models.Transaction{}).
+		Where("user_id = ? AND category_id = ? AND deleted_at IS NULL", userId, categoryId).
+		Count(&count).Error; err != nil {
+		return 0, err
+	}
+
+	return int(count), nil
 }
 
 // DeleteCategory soft deletes one of the user's own categories. It is

@@ -19,7 +19,7 @@ import (
 // service, where the rest of it lives.
 //
 // Categories are the user's own plus the global defaults, which are the rows
-// with no owner.
+// with no owner, less the defaults the user has hidden.
 const transactionsConfigurationSQL = `
 SELECT
 	(
@@ -28,6 +28,10 @@ SELECT
 		) ORDER BY c.id), '[]'::json)
 		FROM categories c
 		WHERE (c.user_id = ? OR c.user_id IS NULL) AND c.deleted_at IS NULL
+			AND NOT EXISTS (
+				SELECT 1 FROM hidden_categories h
+				WHERE h.user_id = ? AND h.category_id = c.id
+			)
 	) AS categories,
 	(
 		SELECT coalesce(json_agg(json_build_object(
@@ -49,7 +53,7 @@ func TransactionsConfiguration(db *gorm.DB, userId uuid.UUID) ([]models.Category
 		Accounts   []byte
 	}
 
-	err := db.Raw(transactionsConfigurationSQL, userId, userId).Scan(&row).Error
+	err := db.Raw(transactionsConfigurationSQL, userId, userId, userId).Scan(&row).Error
 	if err != nil {
 		return nil, nil, err
 	}

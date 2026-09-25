@@ -34,6 +34,10 @@ func writeTransactionError(c *gin.Context, err error) bool {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Category does not exist",
 		})
+	case errors.Is(err, services.ErrCategoryHidden):
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Category is hidden",
+		})
 	case errors.Is(err, services.ErrAccountCurrencyMismatch):
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid currency for the selected account",
@@ -51,7 +55,7 @@ func writeTransactionError(c *gin.Context, err error) bool {
 
 // CreateTransaction handles creating a new transaction
 // @Summary Create transaction
-// @Description Create a transaction for the authenticated user. When it names an account, the account's balance moves with it: income adds the value, outcome subtracts it, and the transaction currency must match the account's
+// @Description Create a transaction for the authenticated user. When it names an account, the account's balance moves with it: income adds the value, outcome subtracts it, and the transaction currency must match the account's. A default category the user has hidden is refused
 // @Tags transactions
 // @Accept json
 // @Produce json
@@ -89,7 +93,7 @@ func CreateTransaction(c *gin.Context) {
 
 // UpdateTransaction handles updating a transaction
 // @Summary Update transaction
-// @Description Update one of the authenticated user's transactions, identified by the id in the body. Every field is replaced, so an omitted description, category or account clears it. The date cannot be changed. Balances are rebalanced, including when the transaction moves between accounts
+// @Description Update one of the authenticated user's transactions, identified by the id in the body. Every field is replaced, so an omitted description, category or account clears it. The date cannot be changed. Balances are rebalanced, including when the transaction moves between accounts. A hidden default category may be kept but not newly assigned
 // @Tags transactions
 // @Accept json
 // @Produce json
@@ -363,7 +367,7 @@ func GetLatestTransactions(c *gin.Context) {
 
 // GetTransactionsConfiguration handles fetching the transaction form options
 // @Summary Get transactions configuration
-// @Description Get the categories the authenticated user may label a transaction with and the accounts they may post it to, in one response. Tags are not ported and come back as an empty array
+// @Description Get the categories the authenticated user may label a transaction with and the accounts they may post it to, in one response. Default categories the user has hidden are left out. Tags are not ported and come back as an empty array
 // @Tags transactions
 // @Accept json
 // @Produce json
