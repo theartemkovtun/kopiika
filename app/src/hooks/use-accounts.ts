@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { accounts, queryKeys } from "@/api/endpoints";
 import type { CreateAccountPayload, UpdateAccountPayload } from "@/api/types";
+import { track } from "@/lib/analytics";
 
 /**
  * Every account with its balance, plus their combined worth in the user's own
@@ -37,7 +38,8 @@ export function useCreateAccount() {
 
     return useMutation({
         mutationFn: (payload: CreateAccountPayload) => accounts.create(payload),
-        onSuccess: () => {
+        onSuccess: (_, payload) => {
+            track("account_created", { currency: payload.currency });
             void queryClient.invalidateQueries({
                 queryKey: queryKeys.accounts.all,
             });
@@ -68,6 +70,7 @@ export function useUpdateAccount() {
             payload: UpdateAccountPayload;
         }) => accounts.update(accountId, payload),
         onSuccess: () => {
+            track("account_updated", {});
             void queryClient.invalidateQueries({
                 queryKey: queryKeys.accounts.all,
             });
@@ -119,6 +122,7 @@ export function useDeleteAccount() {
     return useMutation({
         mutationFn: (accountId: string) => accounts.remove(accountId),
         onSuccess: () => {
+            track("account_deleted", {});
             void queryClient.invalidateQueries({
                 queryKey: queryKeys.accounts.all,
             });

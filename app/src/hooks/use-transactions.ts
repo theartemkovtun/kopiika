@@ -14,6 +14,7 @@ import type {
     ListTransactionsQuery,
     UpdateTransactionPayload,
 } from "@/api/types";
+import { track } from "@/lib/analytics";
 import { monthRange } from "@/lib/dates";
 
 /**
@@ -84,7 +85,15 @@ export function useCreateTransaction() {
     return useMutation({
         mutationFn: (payload: CreateTransactionPayload) =>
             transactions.create(payload),
-        onSuccess: () => invalidateLedger(queryClient),
+        onSuccess: (_, payload) => {
+            track("transaction_created", {
+                type: payload.type,
+                has_category: payload.categoryId != null,
+                has_account: payload.accountId != null,
+                has_description: Boolean(payload.description),
+            });
+            invalidateLedger(queryClient);
+        },
     });
 }
 
@@ -151,7 +160,10 @@ export function useUpdateTransaction() {
     return useMutation({
         mutationFn: (payload: UpdateTransactionPayload) =>
             transactions.update(payload),
-        onSuccess: () => invalidateLedger(queryClient),
+        onSuccess: (_, payload) => {
+            track("transaction_updated", { type: payload.type });
+            invalidateLedger(queryClient);
+        },
     });
 }
 
@@ -161,7 +173,10 @@ export function useDeleteTransaction() {
     return useMutation({
         mutationFn: (transactionId: string) =>
             transactions.remove(transactionId),
-        onSuccess: () => invalidateLedger(queryClient),
+        onSuccess: () => {
+            track("transaction_deleted", {});
+            invalidateLedger(queryClient);
+        },
     });
 }
 

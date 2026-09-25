@@ -8,6 +8,7 @@ import "../globals.css";
 import { routing } from "@/i18n/routing";
 import { fontVariables } from "@/lib/fonts";
 import { ConfigureAmplify } from "@/providers/amplify-provider";
+import { TrackPageViews } from "@/providers/analytics";
 import { QueryProvider } from "@/providers/query-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -48,6 +49,7 @@ export default async function LocaleLayout({
                     <QueryProvider>
                         <ThemeProvider>
                             <ConfigureAmplify />
+                            <TrackPageViews />
                             {children}
                             <Toaster position="bottom-right" />
                         </ThemeProvider>

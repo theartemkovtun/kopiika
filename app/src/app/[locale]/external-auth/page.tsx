@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 
 import { useRouter } from "@/i18n/navigation";
+import { track } from "@/lib/analytics";
 
 /**
  * Where Cognito's hosted UI lands after a federated sign-in.
@@ -38,7 +39,11 @@ export default function ExternalAuthPage() {
         };
 
         fetchAuthSession()
-            .then((session) => send(session.tokens ? "/" : "/login"))
+            .then((session) => {
+                if (!session.tokens) return send("/login");
+                track("signed_in", { method: "google" });
+                send("/");
+            })
             .catch(() => send("/login"));
 
         return () => {

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { categories, queryKeys } from "@/api/endpoints";
 import type { CreateCategoryPayload, UpdateCategoryPayload } from "@/api/types";
+import { track } from "@/lib/analytics";
 
 /**
  * The category reads and writes the Categories screen needs.
@@ -52,7 +53,10 @@ export function useCreateCategory() {
     return useMutation({
         mutationFn: (payload: CreateCategoryPayload) =>
             categories.create(payload),
-        onSuccess: settle,
+        onSuccess: () => {
+            track("category_created", {});
+            settle();
+        },
     });
 }
 
@@ -75,7 +79,10 @@ export function useUpdateCategory() {
             categoryId: number;
             payload: UpdateCategoryPayload;
         }) => categories.update(categoryId, payload),
-        onSuccess: settle,
+        onSuccess: () => {
+            track("category_updated", {});
+            settle();
+        },
     });
 }
 
@@ -93,6 +100,7 @@ export function useDeleteCategory() {
     return useMutation({
         mutationFn: (categoryId: number) => categories.remove(categoryId),
         onSuccess: () => {
+            track("category_deleted", {});
             void queryClient.invalidateQueries({
                 queryKey: queryKeys.categories.all,
             });

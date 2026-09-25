@@ -6,6 +6,7 @@ import { createContext, use, useEffect, useRef } from "react";
 import { ApiError } from "@/api/client";
 import { queryKeys, users } from "@/api/endpoints";
 import type { UpdateUserPayload, User } from "@/api/types";
+import { identify, track } from "@/lib/analytics";
 
 type UserContextValue = {
     /** Undefined until the read lands. Past `AccountGate` it never is. */
@@ -55,6 +56,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         mutationFn: () => users.setup({ countryCode: detectCountryCode() }),
         onSuccess: (created) => {
             queryClient.setQueryData(queryKeys.user, created);
+            track("signed_up", {});
 
             // On a first sign-in the screen's own reads go out beside this one
             // and are answered 401 for the same reason: there was no row yet.
@@ -84,6 +86,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
             // Genuinely unauthenticated: middleware will send them to /login.
         });
     }, [error, setupUser]);
+
+    // Every event from here on carries the user. Keyed on the fields sent, so
+    // a language or currency change re-identifies rather than going stale.
+    useEffect(() => {
+        if (user) identify(user);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id, user?.language, user?.currency]);
 
     // The provider itself holds nothing back. Most of a screen is *about* the
     // account — a figure, a currency, a balance — but the parts that are not,

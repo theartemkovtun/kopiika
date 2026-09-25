@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import { createContext, use, useCallback, useMemo, useState } from "react";
 
 import { useUser } from "./user-context";
+import { track } from "@/lib/analytics";
 import type { SupportedLocale } from "@/lib/locales";
 import {
     type FormatOptions,
@@ -78,6 +79,7 @@ export function PreferencesProvider({
 
     const setShowCents = useCallback((next: boolean) => {
         setShowCentsState(next);
+        track("cents_toggled", { show_cents: next });
         try {
             window.localStorage.setItem(CENTS_STORAGE_KEY, String(next));
         } catch {
@@ -91,6 +93,7 @@ export function PreferencesProvider({
             // what makes it stick on the next device, not what makes it apply.
             router.replace(pathname, { locale: next, scroll: false });
             void updateUser({ language: next }).catch(() => {});
+            track("language_changed", { language: next });
         },
         [pathname, router, updateUser],
     );
@@ -98,6 +101,7 @@ export function PreferencesProvider({
     const setCurrency = useCallback(
         (next: string) => {
             void updateUser({ currency: next.toLowerCase() });
+            track("currency_changed", { currency: next.toLowerCase() });
         },
         [updateUser],
     );

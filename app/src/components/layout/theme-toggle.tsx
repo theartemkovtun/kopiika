@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { buttonVariants } from "@/components/ui/button";
 import { MoonIcon, SunIcon } from "@/components/icons";
+import { track } from "@/lib/analytics";
 
 /**
  * Flips between light and dark, wiping the new theme in from the button.
@@ -32,7 +33,10 @@ export function ThemeToggle() {
             aria-label={t("theme")}
             title={t("theme")}
             theme={resolvedTheme === "dark" ? "dark" : "light"}
-            onThemeChange={setTheme}
+            onThemeChange={(theme) => {
+                setTheme(theme);
+                track("theme_changed", { theme });
+            }}
             className={buttonVariants({ variant: "icon", size: "icon" })}
         >
             <SunIcon className="dark:hidden" />

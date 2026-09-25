@@ -20,6 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useLocalItem } from "@/hooks/use-stored-item";
 import { REMEMBER_STORAGE_KEY, setRememberMe } from "@/lib/amplify/remember";
+import { track } from "@/lib/analytics";
 import { authErrorKey, isErrorNamed } from "@/lib/auth/errors";
 import { setPendingConfirmation } from "@/lib/auth/pending";
 import { MIN_PASSWORD_LENGTH, isValidEmail } from "@/lib/auth/validate";
@@ -94,6 +95,7 @@ export default function LoginPage() {
             });
 
             if (isSignedIn) {
+                track("signed_in", { method: "password" });
                 // Left pending: the screen is on its way out, and a button
                 // that springs back to "Sign in" first reads as a failure.
                 router.replace("/");
