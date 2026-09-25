@@ -11,6 +11,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { Wordmark } from "./wordmark";
 import { Button } from "@/components/ui/button";
 import { Link, useRouter, usePathname } from "@/i18n/navigation";
+import { resetIdentity, track } from "@/lib/analytics";
 
 /**
  * The desktop rail: a fixed 208px column that does not scroll with the page.
@@ -33,6 +34,8 @@ export function AppSidebar({ className }: { className?: string }) {
     const onSettings = pathname === "/settings";
 
     async function logout() {
+        track("signed_out", {});
+        resetIdentity();
         await signOut();
         router.replace("/login");
     }

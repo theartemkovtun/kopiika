@@ -59,6 +59,10 @@ Paths in this section are relative to `app/`.
   in the design is on a dropdown panel.
 - **Emphasis** is a rule or a fill, never a colour shift: an active item takes
   `text-blue` plus a heavier border, not a brighter hue.
+- **Analytics**: call `track` from `@/lib/analytics`, in a hook's
+  `onSuccess` rather than in `src/api/`, and add the event to its
+  `AnalyticsEvents` type first. Metadata is enums and booleans only — never an
+  amount, a title, a description or a name.
 - **Adding a shadcn component**: `bunx shadcn@latest add <name>` writes
   `import { cn } from "cn"` — that is correct here, `cn` is shadcn's own
   package and the single import path for it. Then restyle to the design;

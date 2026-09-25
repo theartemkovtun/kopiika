@@ -126,10 +126,10 @@ src/
   hooks/          react-query hooks over src/api, one file per resource,
                   plus the two the signed-out screens need
   i18n/           next-intl routing, navigation helpers, request config
-  lib/            accounts, auth, categories, dates, fonts, locales, money,
-                  nav
+  lib/            accounts, analytics, auth, categories, dates, fonts,
+                  locales, money, nav
   middlewares/    locale → auth, composed in src/middleware.ts
-  providers/      query, theme, amplify
+  providers/      query, theme, amplify, analytics (page views)
 messages/         en.json, uk.json
 public/images/currencies/  a flag per currency code, the `flag-icons` set
 ```
@@ -213,6 +213,23 @@ submit button, green or red, which is where the design puts it.
 
 The shell is rendered _outside_ these providers: the sidebar needs no user, so
 it paints immediately and only the page content waits.
+
+### Analytics
+
+Product events go to Statsig through `@/lib/analytics`, the only module that
+imports the SDK. `NEXT_PUBLIC_STATSIG_CLIENT_KEY` switches it on; without a key
+every call is a no-op.
+
+- The event catalogue is the `AnalyticsEvents` type in that file. A new event
+  or field is added there first, then sent with `track`.
+- Writes are tracked in the hooks' `onSuccess`, never in `src/api/`, so every
+  call site is covered. Page views come from `TrackPageViews` in the root
+  layout, with the locale stripped and ids folded to `:id`.
+- The user is identified by id (the Cognito sub) plus language and currency;
+  no email or name.
+- **Metadata is enums and booleans only.** Never an amount, a title, a
+  description, a name or a colour: the screens are full of the user's money,
+  and none of it goes to a third party.
 
 ### Two things to know about the API
 
