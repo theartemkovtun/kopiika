@@ -223,10 +223,13 @@ every call is a no-op.
 - The event catalogue is the `AnalyticsEvents` type in that file. A new event
   or field is added there first, then sent with `track`.
 - Writes are tracked in the hooks' `onSuccess`, never in `src/api/`, so every
-  call site is covered. Page views come from `TrackPageViews` in the root
+  call site is covered. Page views come from `<Analytics />` in the root
   layout, with the locale stripped and ids folded to `:id`.
 - The user is identified by id (the Cognito sub) plus language and currency;
-  no email or name.
+  no email or name. The id comes from the Amplify session, on load and on each
+  sign-in or sign-out, and events are held until it is known — so the first
+  page view of a signed-in visit is attributed too. The user record adds
+  language and currency once it lands.
 - **Metadata is enums and booleans only.** Never an amount, a title, a
   description, a name or a colour: the screens are full of the user's money,
   and none of it goes to a third party.

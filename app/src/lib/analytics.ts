@@ -59,8 +59,33 @@ const CLIENT_KEY = process.env.NEXT_PUBLIC_STATSIG_CLIENT_KEY ?? "";
 let client: StatsigClient | null = null;
 
 /**
+ * Who the events belong to is not known on a cold load: the session sits in
+ * Amplify's cookies and takes a promise to read. Until `identifyById` answers
+ * — with the sub, or with null for a visitor who is signed out — events wait
+ * here rather than going out anonymous, so a signed-in user's first page view
+ * carries their id like every other.
+ *
+ * If nothing ever answers, the wait gives up after `SETTLE_TIMEOUT_MS` and
+ * sends what it holds anonymously: late and unattributed beats lost.
+ */
+let settled = false;
+let held: Array<() => void> = [];
+const SETTLE_TIMEOUT_MS = 5000;
+
+/** The id Statsig was last given, so a repeat does not drop custom fields. */
+let currentUserId: string | null = null;
+
+function settle() {
+    settled = true;
+    const queued = held;
+    held = [];
+    queued.forEach((send) => send());
+}
+
+/**
  * The client, created on first use in the browser. Before sign-in it logs
- * against Statsig's own anonymous stableID; `identify` attaches the user.
+ * against Statsig's own anonymous stableID; `identifyById` and `identify`
+ * attach the user.
  */
 function getClient(): StatsigClient | null {
     if (client) return client;
@@ -82,6 +107,7 @@ function getClient(): StatsigClient | null {
         );
         // Not awaited: events logged before it resolves are queued.
         void client.initializeAsync().catch(() => {});
+        window.setTimeout(settle, SETTLE_TIMEOUT_MS);
     } catch {
         client = null;
     }
@@ -101,49 +127,61 @@ export function track<E extends AnalyticsEvent>(
     const statsig = getClient();
     if (!statsig) return;
 
+    // Statsig's metadata is string-valued.
+    const values = Object.fromEntries(
+        Object.entries(metadata).map(([key, value]) => [key, String(value)]),
+    );
+    const send = () => {
+        try {
+            statsig.logEvent(event, undefined, values);
+        } catch {
+            // Dropped, not thrown.
+        }
+    };
+
+    if (settled) send();
+    else held.push(send);
+}
+
+function setUser(userId: string | null, custom?: Record<string, string>) {
+    const statsig = getClient();
+    if (!statsig) return;
+
     try {
-        // Statsig's metadata is string-valued.
-        const values = Object.fromEntries(
-            Object.entries(metadata).map(([key, value]) => [
-                key,
-                String(value),
-            ]),
-        );
-        statsig.logEvent(event, undefined, values);
+        statsig.updateUserSync(userId ? { userID: userId, custom } : {});
+        currentUserId = userId;
     } catch {
-        // Dropped, not thrown.
+        // Events still go out, just without the user.
     }
+    settle();
 }
 
 /**
- * Attaches the signed-in user to every event from here on. The id is the
- * Cognito sub, which is also the API's user id; no email or name is sent.
+ * What the session says, before the user record has loaded: the Cognito sub,
+ * or null when signed out. Answered by `<Analytics />` on load and on every
+ * sign-in or sign-out; releases any held events.
+ *
+ * A repeat of the id already set is a no-op, so it cannot strip the language
+ * and currency `identify` added.
+ */
+export function identifyById(userId: string | null) {
+    if (userId === currentUserId && settled) return;
+    setUser(userId);
+}
+
+/**
+ * The full identity, once the user record is in: the id (the Cognito sub,
+ * which is also the API's user id) plus language and currency. No email or
+ * name is sent.
  *
  * Sync rather than async: there are no gates to re-evaluate, so there is
  * nothing to wait on the network for.
  */
 export function identify(user: User) {
-    const statsig = getClient();
-    if (!statsig) return;
-
-    try {
-        statsig.updateUserSync({
-            userID: user.id,
-            custom: { language: user.language, currency: user.currency },
-        });
-    } catch {
-        // Events still go out, just without the user.
-    }
+    setUser(user.id, { language: user.language, currency: user.currency });
 }
 
 /** Back to anonymous, on sign-out. */
 export function resetIdentity() {
-    const statsig = getClient();
-    if (!statsig) return;
-
-    try {
-        statsig.updateUserSync({});
-    } catch {
-        // As above.
-    }
+    setUser(null);
 }
