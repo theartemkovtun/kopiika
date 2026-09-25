@@ -120,6 +120,15 @@ export type Category = {
      * `categories.list` and nowhere else.
      */
     transactions: number;
+    /**
+     * Whether the user has hidden this global default. A hidden category is
+     * still listed here and still names the entries filed under it, but the
+     * entry form's configuration leaves it out and the API refuses to file a
+     * new entry under it. Always false on the user's own categories, which are
+     * deleted rather than hidden — and, like `transactions`, only
+     * `GET /v1/categories` fills it in.
+     */
+    hidden: boolean;
 };
 
 export type CreateCategoryPayload = {

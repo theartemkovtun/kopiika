@@ -139,6 +139,10 @@
     "categoryList": {
         "title": "Categories",
         "yoursTag": "Yours",
+        "hiddenTag": "Hidden",
+        "hide": "Hide",
+        "show": "Show",
+        "hideFailed": "Not saved",
         "addCategory": "New category",
         "name": "Name",
         "nameHint": "e.g. Pets",

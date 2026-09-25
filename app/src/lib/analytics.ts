@@ -45,6 +45,8 @@ export type AnalyticsEvents = {
     category_created: NoMetadata;
     category_updated: NoMetadata;
     category_deleted: NoMetadata;
+    /** A global default hidden (`true`) or shown again (`false`). */
+    category_visibility_changed: { hidden: boolean };
 
     language_changed: { language: string };
     currency_changed: { currency: string };
