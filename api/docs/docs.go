@@ -454,7 +454,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "List the authenticated user's own categories together with the global defaults, ordered by id. Unpaginated",
+                "description": "List the authenticated user's own categories together with the global defaults, ordered by id, hidden defaults included and marked. Unpaginated",
                 "consumes": [
                     "application/json"
                 ],
@@ -682,6 +682,88 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/categories/{categoryId}/hidden": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Hide or unhide a global default category for the authenticated user. A hidden category is still listed, and existing transactions keep it, but it is left out of the transactions configuration and cannot be given to a transaction. Idempotent. The user's own categories cannot be hidden",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "categories"
+                ],
+                "summary": "Hide or unhide category",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Category id",
+                        "name": "categoryId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Whether the category is hidden",
+                        "name": "payload",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/schemas.SetCategoryHiddenSchema"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/schemas.CategorySchema"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1147,7 +1229,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Update one of the authenticated user's transactions, identified by the id in the body. Every field is replaced, so an omitted description, category or account clears it. The date cannot be changed. Balances are rebalanced, including when the transaction moves between accounts",
+                "description": "Update one of the authenticated user's transactions, identified by the id in the body. Every field is replaced, so an omitted description, category or account clears it. The date cannot be changed. Balances are rebalanced, including when the transaction moves between accounts. A hidden default category may be kept but not newly assigned",
                 "consumes": [
                     "application/json"
                 ],
@@ -1220,7 +1302,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Create a transaction for the authenticated user. When it names an account, the account's balance moves with it: income adds the value, outcome subtracts it, and the transaction currency must match the account's",
+                "description": "Create a transaction for the authenticated user. When it names an account, the account's balance moves with it: income adds the value, outcome subtracts it, and the transaction currency must match the account's. A default category the user has hidden is refused",
                 "consumes": [
                     "application/json"
                 ],
@@ -1286,7 +1368,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Get the categories the authenticated user may label a transaction with and the accounts they may post it to, in one response. Tags are not ported and come back as an empty array",
+                "description": "Get the categories the authenticated user may label a transaction with and the accounts they may post it to, in one response. Default categories the user has hidden are left out. Tags are not ported and come back as an empty array",
                 "consumes": [
                     "application/json"
                 ],
@@ -1981,6 +2063,11 @@ const docTemplate = `{
                     "type": "string",
                     "example": "#43A047"
                 },
+                "hidden": {
+                    "description": "Hidden is true for a global default the user has hidden. Their own\ncategories cannot be hidden, so it is always false for those.",
+                    "type": "boolean",
+                    "example": false
+                },
                 "icon": {
                     "type": "string",
                     "example": "shopping-cart"
@@ -2005,6 +2092,11 @@ const docTemplate = `{
                 "hexColor": {
                     "type": "string",
                     "example": "#43A047"
+                },
+                "hidden": {
+                    "description": "Hidden is true for a global default the user has hidden. Their own\ncategories cannot be hidden, so it is always false for those.",
+                    "type": "boolean",
+                    "example": false
                 },
                 "icon": {
                     "type": "string",
@@ -2033,6 +2125,11 @@ const docTemplate = `{
                 "hexColor": {
                     "type": "string",
                     "example": "#43A047"
+                },
+                "hidden": {
+                    "description": "Hidden is true for a global default the user has hidden. Their own\ncategories cannot be hidden, so it is always false for those.",
+                    "type": "boolean",
+                    "example": false
                 },
                 "icon": {
                     "type": "string",
@@ -2340,6 +2437,19 @@ const docTemplate = `{
                 "status": {
                     "type": "string",
                     "example": "ok"
+                }
+            }
+        },
+        "schemas.SetCategoryHiddenSchema": {
+            "type": "object",
+            "required": [
+                "hidden"
+            ],
+            "properties": {
+                "hidden": {
+                    "description": "A pointer so that an explicit false passes the required check.",
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },

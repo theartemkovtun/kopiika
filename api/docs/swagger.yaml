@@ -120,6 +120,12 @@ definitions:
       hexColor:
         example: '#43A047'
         type: string
+      hidden:
+        description: |-
+          Hidden is true for a global default the user has hidden. Their own
+          categories cannot be hidden, so it is always false for those.
+        example: false
+        type: boolean
       icon:
         example: shopping-cart
         type: string
@@ -138,6 +144,12 @@ definitions:
       hexColor:
         example: '#43A047'
         type: string
+      hidden:
+        description: |-
+          Hidden is true for a global default the user has hidden. Their own
+          categories cannot be hidden, so it is always false for those.
+        example: false
+        type: boolean
       icon:
         example: shopping-cart
         type: string
@@ -158,6 +170,12 @@ definitions:
       hexColor:
         example: '#43A047'
         type: string
+      hidden:
+        description: |-
+          Hidden is true for a global default the user has hidden. Their own
+          categories cannot be hidden, so it is always false for those.
+        example: false
+        type: boolean
       icon:
         example: shopping-cart
         type: string
@@ -386,6 +404,15 @@ definitions:
       status:
         example: ok
         type: string
+    type: object
+  schemas.SetCategoryHiddenSchema:
+    properties:
+      hidden:
+        description: A pointer so that an explicit false passes the required check.
+        example: true
+        type: boolean
+    required:
+    - hidden
     type: object
   schemas.TransactionSchema:
     properties:
@@ -953,7 +980,7 @@ paths:
       consumes:
       - application/json
       description: List the authenticated user's own categories together with the
-        global defaults, ordered by id. Unpaginated
+        global defaults, ordered by id, hidden defaults included and marked. Unpaginated
       produces:
       - application/json
       responses:
@@ -1113,6 +1140,62 @@ paths:
       security:
       - BearerAuth: []
       summary: Update category
+      tags:
+      - categories
+  /v1/categories/{categoryId}/hidden:
+    put:
+      consumes:
+      - application/json
+      description: Hide or unhide a global default category for the authenticated
+        user. A hidden category is still listed, and existing transactions keep it,
+        but it is left out of the transactions configuration and cannot be given to
+        a transaction. Idempotent. The user's own categories cannot be hidden
+      parameters:
+      - description: Category id
+        in: path
+        name: categoryId
+        required: true
+        type: integer
+      - description: Whether the category is hidden
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/schemas.SetCategoryHiddenSchema'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/schemas.CategorySchema'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Hide or unhide category
       tags:
       - categories
   /v1/currencies/rates/fetch:
@@ -1415,7 +1498,8 @@ paths:
       - application/json
       description: 'Create a transaction for the authenticated user. When it names
         an account, the account''s balance moves with it: income adds the value, outcome
-        subtracts it, and the transaction currency must match the account''s'
+        subtracts it, and the transaction currency must match the account''s. A default
+        category the user has hidden is refused'
       parameters:
       - description: Transaction to create
         in: body
@@ -1459,7 +1543,8 @@ paths:
       description: Update one of the authenticated user's transactions, identified
         by the id in the body. Every field is replaced, so an omitted description,
         category or account clears it. The date cannot be changed. Balances are rebalanced,
-        including when the transaction moves between accounts
+        including when the transaction moves between accounts. A hidden default category
+        may be kept but not newly assigned
       parameters:
       - description: Transaction to update
         in: body
@@ -1596,8 +1681,9 @@ paths:
       consumes:
       - application/json
       description: Get the categories the authenticated user may label a transaction
-        with and the accounts they may post it to, in one response. Tags are not ported
-        and come back as an empty array
+        with and the accounts they may post it to, in one response. Default categories
+        the user has hidden are left out. Tags are not ported and come back as an
+        empty array
       produces:
       - application/json
       responses:

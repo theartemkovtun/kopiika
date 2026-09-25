@@ -50,7 +50,7 @@ func CreateCategory(c *gin.Context) {
 
 // ListCategories handles listing the categories available to the user
 // @Summary List categories
-// @Description List the authenticated user's own categories together with the global defaults, ordered by id. Unpaginated
+// @Description List the authenticated user's own categories together with the global defaults, ordered by id, hidden defaults included and marked. Unpaginated
 // @Tags categories
 // @Accept json
 // @Produce json
@@ -111,6 +111,63 @@ func UpdateCategory(c *gin.Context) {
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		c.JSON(http.StatusNotFound, gin.H{
 			"error": "Category not found",
+		})
+		return
+	}
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to update category",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, category)
+}
+
+// SetCategoryHidden handles hiding or unhiding a default category
+// @Summary Hide or unhide category
+// @Description Hide or unhide a global default category for the authenticated user. A hidden category is still listed, and existing transactions keep it, but it is left out of the transactions configuration and cannot be given to a transaction. Idempotent. The user's own categories cannot be hidden
+// @Tags categories
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param categoryId path int true "Category id"
+// @Param payload body schemas.SetCategoryHiddenSchema true "Whether the category is hidden"
+// @Success 200 {object} schemas.CategorySchema
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /v1/categories/{categoryId}/hidden [put]
+func SetCategoryHidden(c *gin.Context) {
+	userId, _ := c.Get("user_id")
+
+	categoryId, err := strconv.Atoi(c.Param("categoryId"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid category id",
+		})
+		return
+	}
+
+	var payload schemas.SetCategoryHiddenSchema
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid request body",
+		})
+		return
+	}
+
+	category, err := services.SetCategoryHidden(userId.(uuid.UUID), categoryId, *payload.Hidden)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		c.JSON(http.StatusNotFound, gin.H{
+			"error": "Category not found",
+		})
+		return
+	}
+	if errors.Is(err, services.ErrCategoryNotHideable) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Only default categories can be hidden",
 		})
 		return
 	}

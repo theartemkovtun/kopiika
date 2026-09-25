@@ -28,6 +28,10 @@ var ErrAccountNotFound = errors.New("account does not exist")
 // neither the user's own nor a global default.
 var ErrCategoryNotFound = errors.New("category does not exist")
 
+// ErrCategoryHidden is returned when a transaction would be newly labelled with
+// a default category the user has hidden.
+var ErrCategoryHidden = errors.New("category is hidden")
+
 // ErrAccountCurrencyMismatch is returned when a transaction would be posted to
 // an account denominated in another currency.
 var ErrAccountCurrencyMismatch = errors.New("transaction currency does not match the account currency")
@@ -129,6 +133,27 @@ func ensureCategoryExists(db *gorm.DB, userId uuid.UUID, categoryId int) error {
 	return nil
 }
 
+// ensureCategoryNotHidden checks the user has not hidden the category. It is
+// checked only when a transaction is given a category it does not already
+// have: hiding stops new use, and must not lock the user out of editing the
+// transactions that were labelled before it.
+func ensureCategoryNotHidden(db *gorm.DB, userId uuid.UUID, categoryId int) error {
+	var count int64
+
+	err := db.Model(&models.HiddenCategory{}).
+		Where("user_id = ? AND category_id = ?", userId, categoryId).
+		Count(&count).Error
+	if err != nil {
+		return err
+	}
+
+	if count > 0 {
+		return fmt.Errorf("%w: %d", ErrCategoryHidden, categoryId)
+	}
+
+	return nil
+}
+
 func toTransactionSchema(transaction models.Transaction, converter CurrencyConverter) (schemas.TransactionSchema, error) {
 	localized, ok := converter.Convert(transaction.Value, transaction.Currency)
 	if !ok {
@@ -207,6 +232,9 @@ func CreateTransaction(userId uuid.UUID, schema schemas.CreateTransactionSchema)
 			if err := ensureCategoryExists(db, userId, *transaction.CategoryId); err != nil {
 				return err
 			}
+			if err := ensureCategoryNotHidden(db, userId, *transaction.CategoryId); err != nil {
+				return err
+			}
 		}
 
 		if transaction.AccountId != nil {
@@ -242,6 +270,15 @@ func UpdateTransaction(userId uuid.UUID, schema schemas.UpdateTransactionSchema)
 		if schema.CategoryId != nil {
 			if err := ensureCategoryExists(db, userId, *schema.CategoryId); err != nil {
 				return err
+			}
+
+			// Keeping a hidden category the transaction already has is
+			// allowed; moving it onto one is not.
+			unchanged := existing.CategoryId != nil && *existing.CategoryId == *schema.CategoryId
+			if !unchanged {
+				if err := ensureCategoryNotHidden(db, userId, *schema.CategoryId); err != nil {
+					return err
+				}
 			}
 		}
 
