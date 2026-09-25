@@ -122,6 +122,19 @@ function DialogBody({
         transaction.account ? transaction.account.id : NONE,
     );
 
+    // The configuration leaves hidden categories out, and an entry already
+    // filed under one keeps it — so without adding it back, the picker would
+    // hold a value none of its options match and draw a blank. The API accepts
+    // the unchanged category on an update, so it stays choosable here, and
+    // only here.
+    const pickable = (() => {
+        const listed = configuration?.categories ?? [];
+        const own = transaction.category;
+        return own && !listed.some(({ id }) => id === own.id)
+            ? [...listed, own]
+            : listed;
+    })();
+
     const currency = transaction.amount.currency;
     // The API refuses an entry whose currency is not its account's own.
     const payable = (configuration?.accounts ?? []).filter(
@@ -306,19 +319,17 @@ function DialogBody({
                                         <SelectItem value={NONE}>
                                             {tCommon("noCategory")}
                                         </SelectItem>
-                                        {configuration?.categories.map(
-                                            (category) => (
-                                                <SelectItem
-                                                    key={category.id}
-                                                    value={String(category.id)}
-                                                >
-                                                    {categoryLabel(
-                                                        category,
-                                                        tCategories,
-                                                    )}
-                                                </SelectItem>
-                                            ),
-                                        )}
+                                        {pickable.map((category) => (
+                                            <SelectItem
+                                                key={category.id}
+                                                value={String(category.id)}
+                                            >
+                                                {categoryLabel(
+                                                    category,
+                                                    tCategories,
+                                                )}
+                                            </SelectItem>
+                                        ))}
                                     </SelectContent>
                                 </Select>
                             </DetailRow>

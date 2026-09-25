@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
     useCategories,
     useDeleteCategory,
+    useSetCategoryHidden,
     useUpdateCategory,
 } from "@/hooks/use-categories";
 import {
@@ -39,21 +40,19 @@ import { storedColor } from "@/lib/charts";
  * global marks: the two halves of the list are a fact about the data, not a
  * grouping applied here, so there is no heading over either.
  *
- * **A built-in row carries no action.** Names and colours on the global rows
- * are fixed — they are shared by every user, and `PUT`/`DELETE` match on the
- * owner, so the API answers 404 rather than writing one. The design's Hide is
- * out: nothing in the API stores which categories a user has put away, and a
- * per-browser flag would be a setting that silently does not travel.
+ * **A built-in row carries Hide and nothing else.** Names and colours on the
+ * global rows are fixed — they are shared by every user, and `PUT`/`DELETE`
+ * match on the owner, so the API answers 404 rather than writing one. What a
+ * user can do with a default they have no use for is put it away: a hidden row
+ * stays in this list, faded and tagged, with Show to bring it back, and drops
+ * out of the entry form's picker. The user's own rows are never hidden — they
+ * are deleted instead, and the API refuses the one for the other.
  *
  * Editing happens in the row rather than on a screen of its own, which is why
  * this is one component and not a list plus a form: the row is the thing being
  * changed, and replacing it in place is what the design draws.
  */
 export function CategoryList() {
-    const t = useTranslations("categoryList");
-    const tCategories = useTranslations("categories");
-    const tCommon = useTranslations("common");
-
     const { data: categories } = useCategories();
 
     // The row open for editing, and the row queued for deletion. Both by id —
@@ -88,65 +87,22 @@ export function CategoryList() {
                                 onDone={() => setEditing(null)}
                             />
                         ) : (
-                            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-5 px-4 py-[15px] sm:grid-cols-[minmax(0,1fr)_150px_168px]">
-                                <div className="flex min-w-0 items-center gap-[14px]">
-                                    <span
-                                        aria-hidden
-                                        className="size-3 flex-none rounded-full"
-                                        style={{
-                                            background: storedColor(
-                                                category.hexColor,
-                                                index,
-                                            ),
-                                        }}
-                                    />
-                                    <span
-                                        className={cn(
-                                            "min-w-0 truncate text-base tracking-[-0.012em] text-ink",
-                                            isGlobalCategory(category)
-                                                ? "font-normal"
-                                                : "font-medium",
-                                        )}
-                                    >
-                                        {categoryLabel(category, tCategories)}
-                                    </span>
-                                </div>
-
-                                {/* Blank on a built-in: the design tags only
-                                    the user's own rows, and the absence of the
-                                    tag is what says a row is not theirs. */}
-                                <span className="hidden text-[10.5px] tracking-[0.12em] whitespace-nowrap text-mute uppercase sm:block">
-                                    {isGlobalCategory(category)
-                                        ? ""
-                                        : t("yoursTag")}
-                                </span>
-
-                                <div className="flex items-center justify-self-end">
-                                    {isGlobalCategory(category) ? null : (
-                                        <span className="flex items-center gap-4">
-                                            <Button
-                                                variant="quiet"
-                                                onClick={() => {
-                                                    setEditing(category.id);
-                                                    setDeleting(null);
-                                                }}
-                                            >
-                                                {tCommon("edit")}
-                                            </Button>
-                                            <Button
-                                                variant="quiet"
-                                                onClick={() => {
-                                                    setDeleting(category.id);
-                                                    setEditing(null);
-                                                }}
-                                                className="hover:border-red hover:text-red"
-                                            >
-                                                {tCommon("delete")}
-                                            </Button>
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
+                            <CategoryRow
+                                category={category}
+                                index={index}
+                                onEdit={() => {
+                                    setEditing(category.id);
+                                    setDeleting(null);
+                                }}
+                                onDelete={() => {
+                                    setDeleting(category.id);
+                                    setEditing(null);
+                                }}
+                                onHide={() => {
+                                    setEditing(null);
+                                    setDeleting(null);
+                                }}
+                            />
                         )}
                     </div>
                 ))}
@@ -157,6 +113,114 @@ export function CategoryList() {
                 onClose={() => setDeleting(null)}
             />
         </>
+    );
+}
+
+/**
+ * A row at rest: the dot, the name, the tag, and whatever the row can do.
+ *
+ * Each row owns its own hide request rather than sharing one across the list,
+ * so a row being saved locks its own button and no other, and a failure stays
+ * on the row it belongs to while the user carries on with the rest.
+ */
+function CategoryRow({
+    category,
+    index,
+    onEdit,
+    onDelete,
+    onHide,
+}: {
+    category: Category;
+    /** Its place in the list, which picks the fallback colour. */
+    index: number;
+    onEdit: () => void;
+    onDelete: () => void;
+    /** Called as the hide goes out, to close whatever else is open. */
+    onHide: () => void;
+}) {
+    const t = useTranslations("categoryList");
+    const tCategories = useTranslations("categories");
+    const tCommon = useTranslations("common");
+
+    const visibility = useSetCategoryHidden();
+
+    return (
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-5 px-4 py-[15px] sm:grid-cols-[minmax(0,1fr)_150px_168px]">
+            <div className="flex min-w-0 items-center gap-[14px]">
+                <span
+                    aria-hidden
+                    className={cn(
+                        "size-3 flex-none rounded-full",
+                        category.hidden && "opacity-36",
+                    )}
+                    style={{
+                        background: storedColor(category.hexColor, index),
+                    }}
+                />
+                <span
+                    className={cn(
+                        "min-w-0 truncate text-base tracking-[-0.012em]",
+                        category.hidden ? "text-mute" : "text-ink",
+                        isGlobalCategory(category)
+                            ? "font-normal"
+                            : "font-medium",
+                    )}
+                >
+                    {categoryLabel(category, tCategories)}
+                </span>
+            </div>
+
+            {/* Blank on a built-in that is showing: the design tags only the
+                user's own rows and the hidden defaults, and the absence of the
+                tag is what says a row is an ordinary built-in. A failed hide
+                takes the slot, since it is about this row and no other. */}
+            <span
+                role="status"
+                className={cn(
+                    "hidden text-[10.5px] tracking-[0.12em] whitespace-nowrap uppercase sm:block",
+                    visibility.isError ? "text-red" : "text-mute",
+                )}
+            >
+                {visibility.isError
+                    ? t("hideFailed")
+                    : !isGlobalCategory(category)
+                      ? t("yoursTag")
+                      : category.hidden
+                        ? t("hiddenTag")
+                        : ""}
+            </span>
+
+            <div className="flex items-center justify-self-end">
+                {isGlobalCategory(category) ? (
+                    <Button
+                        variant="quiet"
+                        disabled={visibility.isPending}
+                        onClick={() => {
+                            onHide();
+                            visibility.mutate({
+                                categoryId: category.id,
+                                hidden: !category.hidden,
+                            });
+                        }}
+                    >
+                        {category.hidden ? t("show") : t("hide")}
+                    </Button>
+                ) : (
+                    <span className="flex items-center gap-4">
+                        <Button variant="quiet" onClick={onEdit}>
+                            {tCommon("edit")}
+                        </Button>
+                        <Button
+                            variant="quiet"
+                            onClick={onDelete}
+                            className="hover:border-red hover:text-red"
+                        >
+                            {tCommon("delete")}
+                        </Button>
+                    </span>
+                )}
+            </div>
+        </div>
     );
 }
 
@@ -419,9 +483,11 @@ export function CategoryListFallback() {
                             </span>
                         </div>
 
-                        {/* A global row carries neither the tag nor the
-                            actions, so both columns are held open and empty —
-                            exactly as they are once the read lands. */}
+                        {/* Both columns are held open and empty. Whether a
+                            default is hidden is part of what has not arrived
+                            yet, so its tag cannot be drawn, and a Hide on a
+                            row of grey bars would read as a control that does
+                            nothing. */}
                         <span className="hidden sm:block" />
                         <span />
                     </div>

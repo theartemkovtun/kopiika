@@ -70,6 +70,10 @@ export const categories = {
     update: (categoryId: number, payload: UpdateCategoryPayload) =>
         api.put<Category>(`/v1/categories/${categoryId}`, payload),
 
+    /** Global defaults only: one of the user's own answers 400. Idempotent. */
+    setHidden: (categoryId: number, hidden: boolean) =>
+        api.put<Category>(`/v1/categories/${categoryId}/hidden`, { hidden }),
+
     remove: (categoryId: number) => api.delete(`/v1/categories/${categoryId}`),
 };
 

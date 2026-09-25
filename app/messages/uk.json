@@ -139,6 +139,10 @@
     "categoryList": {
         "title": "Категорії",
         "yoursTag": "Ваша",
+        "hiddenTag": "Приховано",
+        "hide": "Приховати",
+        "show": "Показати",
+        "hideFailed": "Не збережено",
         "addCategory": "Нова категорія",
         "name": "Назва",
         "nameHint": "напр. Тварини",

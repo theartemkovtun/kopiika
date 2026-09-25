@@ -15,8 +15,8 @@ import { track } from "@/lib/analytics";
  * Every write here drops two trees, and the second is the one that is easy to
  * forget. The entry form's category picker comes out of
  * `transactions/configuration`, which is held for five minutes, so a category
- * created, renamed or deleted without dropping it would not reach the form
- * until that expired. The rest of the transactions tree is left alone on
+ * created, renamed, hidden or deleted without dropping it would not reach the
+ * form until that expired. The rest of the transactions tree is left alone on
  * purpose: none of these writes moves an amount, and the ledger rows that name
  * a category carry only its id.
  */
@@ -37,14 +37,17 @@ export function useCategories() {
 function useCategoryWrite() {
     const queryClient = useQueryClient();
 
-    return () => {
-        void queryClient.invalidateQueries({
-            queryKey: queryKeys.categories.all,
-        });
-        void queryClient.invalidateQueries({
-            queryKey: queryKeys.transactions.configuration(),
-        });
-    };
+    // Resolves once both have re-read, for a write that wants to stay pending
+    // until the screen shows its result; the others let it run on.
+    return () =>
+        Promise.all([
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.categories.all,
+            }),
+            queryClient.invalidateQueries({
+                queryKey: queryKeys.transactions.configuration(),
+            }),
+        ]);
 }
 
 export function useCreateCategory() {
@@ -55,7 +58,7 @@ export function useCreateCategory() {
             categories.create(payload),
         onSuccess: () => {
             track("category_created", {});
-            settle();
+            void settle();
         },
     });
 }
@@ -81,7 +84,36 @@ export function useUpdateCategory() {
         }) => categories.update(categoryId, payload),
         onSuccess: () => {
             track("category_updated", {});
-            settle();
+            void settle();
+        },
+    });
+}
+
+/**
+ * Hiding one of the global defaults, or showing it again.
+ *
+ * The flag is per user and never touches an entry: the ones already filed
+ * under a hidden category keep it, which is why only the picker's tree goes
+ * along with the list — hiding takes the category out of
+ * `transactions/configuration`, and nothing else.
+ */
+export function useSetCategoryHidden() {
+    const settle = useCategoryWrite();
+
+    return useMutation({
+        mutationFn: ({
+            categoryId,
+            hidden,
+        }: {
+            categoryId: number;
+            hidden: boolean;
+        }) => categories.setHidden(categoryId, hidden),
+        // Returned, so the mutation stays pending until the list has re-read:
+        // otherwise the row's button comes back still reading Hide for the
+        // moment between the response and the refetch.
+        onSuccess: (_, { hidden }) => {
+            track("category_visibility_changed", { hidden });
+            return settle();
         },
     });
 }
