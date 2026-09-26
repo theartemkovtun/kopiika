@@ -1,0 +1,32 @@
+name: App lint
+description: Typecheck, lint and check the formatting of app/.
+
+# Needs the repository checked out.
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v5
+      with:
+        node-version: 24
+        cache: npm
+        cache-dependency-path: app/package-lock.json
+
+    - shell: bash
+      working-directory: app
+      run: npm ci
+
+    - name: Typecheck
+      shell: bash
+      working-directory: app
+      run: npm run typecheck
+
+    - name: ESLint
+      shell: bash
+      working-directory: app
+      run: npm run lint
+
+    - name: Prettier
+      shell: bash
+      working-directory: app
+      run: npm run format:check

@@ -29,19 +29,25 @@ One PR does one job: it may change at most one of `.github/`, `api/` and
 `app/` (files at the repo root go with any of them). The `PR Scope` check
 fails a PR that touches more than one; split it instead.
 
-The `PR Build Images` check builds the Docker image of each side a PR changes
-(both when `.github/` changes, neither for root files) without pushing it, and
-passes when there was nothing to build.
+Every PR check lives in one workflow, `.github/workflows/pr.yml`.
+`PR Scope` runs first; if it passes, it reports which areas changed, and the
+checks below run in parallel, each only when its area changed. A skipped
+check starts no runner, and the one required check is `PR Checks`, which
+fails unless `PR Scope` passed and every other check passed or was skipped.
+Each check's steps are a composite action in `.github/actions/`, so another
+workflow can reuse one without copying it (`deploy.yml` builds its images
+with `build-image`).
 
-CI runs `golangci-lint run` in `api/` on every PR that changes `api/` (the
-required `Go Linter` check, which passes without linting otherwise), which
-covers both linters and formatters. Run `make lint` in `api/` before
-pushing, and `make fmt` to fix formatting.
-The same workflow runs the `Atlas Migrations` check on the same PRs (passing
-without checking otherwise): `atlas migrate validate`, then
-`atlas migrate diff`, which fails the PR if it generates a migration. That
-is, a model change must ship with its migration; `make migrate-validate` and
-`make migrate-diff` run the same checks locally.
+- `Go Linter` (when `api/` changes) runs `golangci-lint run` in `api/`,
+  which covers both linters and formatters. Run `make lint` in `api/` before
+  pushing, and `make fmt` to fix formatting.
+- `Atlas Migrations` (when `api/` changes) runs `atlas migrate validate`, then
+  `atlas migrate diff`, which fails the PR if it generates a migration. That
+  is, a model change must ship with its migration; `make migrate-validate`
+  and `make migrate-diff` run the same checks locally.
+- `App Linter` (when `app/` changes) typechecks, lints and checks formatting.
+- `Build API` and `Build App` build the Docker image of each side a PR
+  changes (both when `.github/` changes) without pushing it.
 
 ---
 
