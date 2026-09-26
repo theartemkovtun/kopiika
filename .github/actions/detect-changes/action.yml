@@ -2,8 +2,8 @@ name: Detect changes
 description: Report which of .github/, api/ and app/ a pull request changes.
 
 # Needs the repository checked out with full history (fetch-depth: 0), both to
-# find this action and to diff. Three dots diff from the merge base, as in the
-# PR Scope check, so commits landed on main since the branch was cut do not
+# find this action and to diff. Three dots diff from the merge base, as in
+# check-scope, so commits landed on main since the branch was cut do not
 # count.
 
 outputs:
