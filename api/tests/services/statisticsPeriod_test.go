@@ -1,18 +1,14 @@
-package services
+package services_test
 
 import (
 	"testing"
-	"time"
-)
 
-func mustDate(t *testing.T, value string) time.Time {
-	t.Helper()
-	parsed, err := time.Parse("2006-01-02", value)
-	if err != nil {
-		t.Fatalf("invalid date %q: %v", value, err)
-	}
-	return parsed
-}
+	"github.com/stretchr/testify/assert"
+
+	"kopiika-api-go/src/schemas"
+	"kopiika-api-go/src/services"
+	"kopiika-api-go/tests/testutil"
+)
 
 func TestPreviousPeriodRange(t *testing.T) {
 	cases := []struct {
@@ -126,21 +122,12 @@ func TestPreviousPeriodRange(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			fromDate := mustDate(t, tc.fromDate)
-			toDate := mustDate(t, tc.toDate)
-			today := mustDate(t, tc.today)
+			gotFromDate, gotToDate := services.PreviousPeriodRange(
+				testutil.MustDate(t, tc.fromDate), testutil.MustDate(t, tc.toDate), testutil.MustDate(t, tc.today),
+			)
 
-			gotFromDate, gotToDate := previousPeriodRange(fromDate, toDate, today)
-
-			wantFromDate := mustDate(t, tc.wantFromDate)
-			wantToDate := mustDate(t, tc.wantToDate)
-
-			if !gotFromDate.Equal(wantFromDate) {
-				t.Errorf("fromDate = %s, want %s", gotFromDate.Format("2006-01-02"), wantFromDate.Format("2006-01-02"))
-			}
-			if !gotToDate.Equal(wantToDate) {
-				t.Errorf("toDate = %s, want %s", gotToDate.Format("2006-01-02"), wantToDate.Format("2006-01-02"))
-			}
+			assert.Equal(t, tc.wantFromDate, gotFromDate.Format(schemas.DateLayout), "fromDate")
+			assert.Equal(t, tc.wantToDate, gotToDate.Format(schemas.DateLayout), "toDate")
 		})
 	}
 }

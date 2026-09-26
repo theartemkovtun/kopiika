@@ -12,9 +12,17 @@ import (
 // server and the scheduler so all three talk to the same Redis.
 var RedisOpt asynq.RedisConnOpt
 
+// TaskQueue is the part of *asynq.Client the API uses, so a test can stand
+// in for Redis.
+type TaskQueue interface {
+	EnqueueContext(ctx context.Context, task *asynq.Task, opts ...asynq.Option) (*asynq.TaskInfo, error)
+	Ping() error
+	Close() error
+}
+
 // Queue enqueues background tasks. Code outside core goes through
 // tasks.Enqueue rather than calling it directly.
-var Queue *asynq.Client
+var Queue TaskQueue
 
 func InitQueue() error {
 	opt, err := asynq.ParseRedisURI(Config.RedisUrl)

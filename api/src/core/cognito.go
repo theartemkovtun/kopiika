@@ -17,10 +17,16 @@ import (
 	"github.com/google/uuid"
 )
 
-var (
-	jwks          keyfunc.Keyfunc
-	cognitoClient *cognitoidentityprovider.Client
-)
+var jwks keyfunc.Keyfunc
+
+// CognitoUsers is the part of the Cognito user pool API the API calls, so a
+// test can stand in for AWS.
+type CognitoUsers interface {
+	ListUsers(ctx context.Context, params *cognitoidentityprovider.ListUsersInput, optFns ...func(*cognitoidentityprovider.Options)) (*cognitoidentityprovider.ListUsersOutput, error)
+}
+
+// Cognito reads the user pool. InitCognito sets it to the AWS SDK client.
+var Cognito CognitoUsers
 
 // InitCognito initializes the JWKS for Cognito token validation and the Cognito SDK client
 func InitCognito() error {
@@ -43,7 +49,7 @@ func InitCognito() error {
 	if err != nil {
 		return fmt.Errorf("failed to load AWS config: %w", err)
 	}
-	cognitoClient = cognitoidentityprovider.NewFromConfig(cfg)
+	Cognito = cognitoidentityprovider.NewFromConfig(cfg)
 
 	return nil
 }
@@ -123,7 +129,7 @@ func firstNonEmpty(values ...string) string {
 // their sub, so addressing them by sub directly would fail for exactly the users
 // whose provider this is trying to report.
 func GetCognitoUserDetails(userID uuid.UUID) (CognitoUserDetails, error) {
-	if cognitoClient == nil {
+	if Cognito == nil {
 		return CognitoUserDetails{}, errors.New("cognito client not initialized")
 	}
 
@@ -137,7 +143,7 @@ func GetCognitoUserDetails(userID uuid.UUID) (CognitoUserDetails, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cognitoCallTimeout)
 	defer cancel()
 
-	out, err := cognitoClient.ListUsers(ctx, &cognitoidentityprovider.ListUsersInput{
+	out, err := Cognito.ListUsers(ctx, &cognitoidentityprovider.ListUsersInput{
 		UserPoolId: aws.String(Config.CognitoUserPoolID),
 		Filter:     aws.String(fmt.Sprintf(`sub = "%s"`, userID.String())),
 		Limit:      aws.Int32(1),

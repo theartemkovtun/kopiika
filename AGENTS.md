@@ -138,13 +138,48 @@ annotation change.
 
 ```bash
 cd api
-make fmt && make lint && go build ./...
+make fmt && make lint && make test && go build ./...
 ```
 
 Formatting and linting both run through golangci-lint v2 (`brew install golangci-lint`),
 configured in `.golangci.yml`: gofumpt + gci for formatting (imports grouped stdlib,
 third-party, `kopiika-api-go`), and the standard linters plus a few extras for linting.
 `make fmt-check` reports formatting drift without rewriting files.
+
+## Testing
+
+`make test` runs `go test ./tests/...`, reusing cached results when nothing changed;
+`make test force=1` runs every test again. It needs a running Docker daemon for any test
+that touches the database.
+
+- **Every test lives under `tests/`, one package per layer it tests**, as
+  `_test.go` files only: `tests/services/` (`package services_test`) tests
+  `src/services/` and `tests/core/` (`package core_test`) tests `src/core/`,
+  each through the layer's exported API. Export a helper only when it is a
+  unit worth naming (`services.PreviousPeriodRange`); do not add test hooks
+  to `src/`. The next layer (controllers, queries) gets a sibling directory
+  on the same recipe.
+- **`tests/testutil/` is the shared harness**, a normal package the test
+  packages import: `UseDB`, the `Use…` mock helpers, `MustDate` and `Run`.
+  Helpers that only one package needs stay unexported in that package.
+- **testify**: `require` for setup and anything later lines depend on,
+  `assert` for the checks, `mock` for third-party services. Table-driven with
+  `t.Run`. No `t.Parallel()`: tests swap `core` globals.
+- **The database is real.** `testutil.UseDB(t)` starts a `postgres:16-alpine`
+  container on first use, with every file in `migrations/` applied, so the
+  schema is the production one, including the `currency` schema. Each test
+  then runs in its own transaction, which is rolled back when the test ends.
+  A statement that fails aborts that transaction, so assert a database error
+  last. The connection comes from the container alone; tests never read
+  `.env`. Each test package is its own binary, so each package that uses the
+  database starts its own container and needs a `TestMain` that calls
+  `testutil.Run(m)` to stop it (see `tests/services/main_test.go`).
+- **Third-party services are mocked.** `testutil.UseQueue(t)`,
+  `testutil.UseCognito(t)` and `testutil.UseRatesAPI(t)` swap `core.Queue`,
+  `core.Cognito` and `core.RatesAPI` for a testify mock, and check on cleanup
+  that every `On(...)` was met. A service a test does not mock stays nil, so
+  an unexpected call fails the test instead of reaching the real thing. The
+  RapidAPI client itself is tested against an `httptest` server.
 
 ## Database Migrations (Atlas)
 
@@ -190,7 +225,8 @@ re-run `make migrate-diff` on a no-op and confirm it reports no changes.
   `tasks.Enqueue` and the shared `NewTask` / `Decode` in `tasks.go`
 - `src/worker/` - handler wiring (`mux.go`), worker server and cron registry (`schedule.go`)
 - `src/middleware/` - `RequireAuth` / `OptionalAuth`
-- `src/core/` - config, database, Cognito and telemetry initialization
+- `src/core/` - config, database, telemetry, and the clients for third-party services
+  (Cognito, the Redis task queue, RapidAPI)
 - `cmd/atlas-loader/` - feeds the GORM schema to Atlas
 
 ### Authentication
@@ -208,6 +244,9 @@ creates the local row on first login, seeding name and picture from the user poo
 - Controllers never touch `core.DB`; services never write HTTP responses
 - Model to DTO conversion goes through a `toXSchema` helper in the service
 - Global `core.DB` for database access
+- Third-party services are reached only through interface-typed globals in `core`
+  (`Queue`, `Cognito`, `RatesAPI`), which `Init*` sets at boot and tests replace with
+  mocks. A new integration adds one, holding only the methods the API calls
 - Soft deletes via `deleted_at`; queries must filter `deleted_at IS NULL`
 - Currency codes are stored **lower case** (`uah`, `usd`) everywhere — that is what
   the rates table holds and what clients send. Normalize input with
