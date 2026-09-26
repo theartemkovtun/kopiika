@@ -15,37 +15,19 @@ jobs:
   changes:
     name: Detect changes
     runs-on: ubuntu-latest
+    # Each side builds when its own directory changed. A change to .github/
+    # builds both, since a workflow edit can break either build; files at the
+    # repo root build neither.
     outputs:
-      api: ${{ steps.diff.outputs.api }}
-      app: ${{ steps.diff.outputs.app }}
+      api: ${{ steps.diff.outputs.api == 'true' || steps.diff.outputs.workflows == 'true' }}
+      app: ${{ steps.diff.outputs.app == 'true' || steps.diff.outputs.workflows == 'true' }}
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      # Each side builds when its own directory changed. A change to .github/
-      # builds both, since a workflow edit can break either build; files at the
-      # repo root build neither. Three dots diff from the merge base, as in the
-      # PR Scope check.
       - id: diff
-        env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-          HEAD: ${{ github.event.pull_request.head.sha }}
-        run: |
-          files=$(git diff --name-only --no-renames "$BASE...$HEAD")
-          workflows=false
-          if echo "$files" | grep -q '^\.github/'; then
-            workflows=true
-          fi
-          for dir in api app; do
-            if [ "$workflows" = true ] || echo "$files" | grep -q "^$dir/"; then
-              changed=true
-            else
-              changed=false
-            fi
-            echo "$dir: $changed"
-            echo "$dir=$changed" >> "$GITHUB_OUTPUT"
-          done
+        uses: ./.github/actions/detect-changes
 
   # The images are built, not pushed: nothing deploys a PR build. cache-from
   # reads the cache the deploy workflow writes on main; PR builds do not write
