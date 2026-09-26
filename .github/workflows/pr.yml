@@ -44,6 +44,16 @@ jobs:
 
       - uses: ./.github/actions/go-lint
 
+  go-test:
+    name: API Tests
+    needs: scope
+    if: needs.scope.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ./.github/actions/go-test
+
   migrations:
     name: Atlas Migrations
     needs: scope
@@ -94,7 +104,7 @@ jobs:
   # so a cancelled run has to fail here instead.
   checks:
     name: PR Checks
-    needs: [scope, go-lint, migrations, app-lint, build-api, build-app]
+    needs: [scope, go-lint, go-test, migrations, app-lint, build-api, build-app]
     if: always()
     runs-on: ubuntu-latest
     steps:

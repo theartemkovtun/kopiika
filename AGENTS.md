@@ -41,6 +41,8 @@ with `build-image`).
 - `Go Linter` (when `api/` changes) runs `golangci-lint run` in `api/`,
   which covers both linters and formatters. Run `make lint` in `api/` before
   pushing, and `make fmt` to fix formatting.
+- `API Tests` (when `api/` changes) runs `make test force=1` in `api/`, the
+  suite under `api/tests/`, against a throwaway Postgres in Docker.
 - `Atlas Migrations` (when `api/` changes) runs `atlas migrate validate`, then
   `atlas migrate diff`, which fails the PR if it generates a migration. That
   is, a model change must ship with its migration; `make migrate-validate`
