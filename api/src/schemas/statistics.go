@@ -75,7 +75,7 @@ type AccountTransactionCountSchema struct {
 
 // AmountWithPreviousPeriodDiffSchema is a monetary figure alongside how much
 // it moved against the comparable period immediately before the requested
-// range — see previousPeriodRange for what "comparable" means for a given
+// range — see services.PreviousPeriodRange for what "comparable" means for a given
 // range.
 type AmountWithPreviousPeriodDiffSchema struct {
 	AmountSchema

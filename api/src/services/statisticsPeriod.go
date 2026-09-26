@@ -61,7 +61,7 @@ func addYearsClamped(t time.Time, years int) time.Time {
 	return time.Date(newYear, month, day, 0, 0, 0, 0, time.UTC)
 }
 
-// previousPeriodRange is the comparable period immediately before
+// PreviousPeriodRange is the comparable period immediately before
 // [fromDate, toDate], for the previousPeriodDiff figures.
 //
 // A range that is exactly a calendar month or a calendar year, and has
@@ -85,7 +85,7 @@ func addYearsClamped(t time.Time, years int) time.Time {
 // comparison is the one that lines up length for length with the previous
 // period — the to-date comparison would clamp to a shorter previous
 // month/year and quietly compare a shorter span.
-func previousPeriodRange(fromDate, toDate, today time.Time) (time.Time, time.Time) {
+func PreviousPeriodRange(fromDate, toDate, today time.Time) (time.Time, time.Time) {
 	switch {
 	case fromDate.Equal(startOfYear(fromDate)) && toDate.Equal(endOfYear(fromDate)) && !toDate.After(today):
 		return addYearsClamped(fromDate, -1), addYearsClamped(toDate, -1)

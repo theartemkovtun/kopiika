@@ -1,10 +1,14 @@
-.PHONY: run build swagger migrate-diff migrate-new migrate-apply migrate-rehash migrate-status migrate-validate lint fmt fmt-check
+.PHONY: run build test swagger migrate-diff migrate-new migrate-apply migrate-rehash migrate-status migrate-validate lint fmt fmt-check
 
 run:
 	go run .
 
 build:
 	swag init --parseInternal && go build -o kopiika-api-go .
+
+# make test force=1 skips the test cache and runs every test again
+test:
+	go test $(if $(force),-count=1) ./tests/...
 
 swagger:
 	swag init --parseInternal

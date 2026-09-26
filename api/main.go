@@ -98,6 +98,8 @@ func main() {
 	var workerSrv *asynq.Server
 	var scheduler *asynq.PeriodicTaskManager
 	if role.RunsWorker() {
+		core.InitRatesAPI()
+
 		workerSrv = worker.NewServer()
 		if err := workerSrv.Start(worker.NewMux()); err != nil {
 			fatal(ctx, shutdown, "failed to start task worker", err)

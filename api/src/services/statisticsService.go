@@ -114,7 +114,7 @@ func GetTransactionsStatistics(
 
 	now := time.Now().UTC()
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-	previousFromDate, previousToDate := previousPeriodRange(fromDate, toDate, today)
+	previousFromDate, previousToDate := PreviousPeriodRange(fromDate, toDate, today)
 
 	previousStatistics, err := queries.TransactionsStatistics(core.DB, userId, previousFromDate, previousToDate)
 	if err != nil {
