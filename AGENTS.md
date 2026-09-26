@@ -29,7 +29,7 @@ One PR does one job: it may change at most one of `.github/`, `api/` and
 `app/` (files at the repo root go with any of them). The `PR Scope` check
 fails a PR that touches more than one; split it instead.
 
-Every PR check lives in one workflow, `.github/workflows/pr-checks.yml`.
+Every PR check lives in one workflow, `.github/workflows/pr.yml`.
 `PR Scope` runs first; if it passes, it reports which areas changed, and the
 checks below run in parallel, each only when its area changed. A skipped
 check starts no runner, and the one required check is `PR Checks`, which
