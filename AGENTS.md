@@ -33,8 +33,9 @@ The `PR Build Images` check builds the Docker image of each side a PR changes
 (both when `.github/` changes, neither for root files) without pushing it, and
 passes when there was nothing to build.
 
-CI runs `golangci-lint run` in `api/` on every PR (the required `Go Linter` check),
-which covers both linters and formatters. Run `make lint` in `api/` before
+CI runs `golangci-lint run` in `api/` on every PR that changes `api/` (the
+required `Go Linter` check, which passes without linting otherwise), which
+covers both linters and formatters. Run `make lint` in `api/` before
 pushing, and `make fmt` to fix formatting.
 The same workflow runs the `Atlas Migrations` check: `atlas migrate validate`,
 then `atlas migrate diff`, which fails the PR if it generates a migration. That

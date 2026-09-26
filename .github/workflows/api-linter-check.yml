@@ -17,13 +17,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # Lints only when the PR changes api/. The check is required, so the job
+      # always runs and skips its steps instead: a paths filter would leave the
+      # check pending forever, and a job skipped on a separate detection job's
+      # output would pass even when that detection failed. Three dots diff from
+      # the merge base, as in the PR Scope check.
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          files=$(git diff --name-only --no-renames "$BASE...$HEAD")
+          if echo "$files" | grep -q '^api/'; then
+            changed=true
+          else
+            changed=false
+            echo "No changes under api/, nothing to lint"
+          fi
+          echo "api=$changed" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-go@v6
+        if: steps.diff.outputs.api == 'true'
         with:
           go-version-file: api/go.mod
           cache-dependency-path: api/go.sum
 
       - uses: golangci/golangci-lint-action@v8
+        if: steps.diff.outputs.api == 'true'
         with:
           version: v2.13
           working-directory: api
