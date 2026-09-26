@@ -12,28 +12,78 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.diff.outputs.app }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # The linter runs only when the PR changes app/. Three dots diff from
+      # the merge base, as in the PR Scope check.
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          files=$(git diff --name-only --no-renames "$BASE...$HEAD")
+          if echo "$files" | grep -q '^app/'; then
+            changed=true
+          else
+            changed=false
+          fi
+          echo "app: $changed"
+          echo "app=$changed" >> "$GITHUB_OUTPUT"
+
+  # A skipped job counts as passing a required check, so the linter does not
+  # skip as a job: it runs even when change detection failed, fails in that
+  # case, and otherwise skips its steps when app/ did not change.
   lint:
     name: App Linter
+    needs: changes
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: app
     steps:
+      # These two run before checkout, when app/ may not exist yet.
+      - if: needs.changes.result != 'success'
+        working-directory: .
+        env:
+          CHANGES: ${{ needs.changes.result }}
+        run: |
+          echo "::error::Change detection did not succeed ($CHANGES)"
+          exit 1
+
+      - if: needs.changes.outputs.app != 'true'
+        working-directory: .
+        run: echo "No changes under app/, nothing to lint"
+
       - uses: actions/checkout@v5
+        if: needs.changes.outputs.app == 'true'
 
       - uses: actions/setup-node@v5
+        if: needs.changes.outputs.app == 'true'
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: app/package-lock.json
 
-      - run: npm ci
+      - if: needs.changes.outputs.app == 'true'
+        run: npm ci
 
       - name: Typecheck
+        if: needs.changes.outputs.app == 'true'
         run: npm run typecheck
 
       - name: ESLint
+        if: needs.changes.outputs.app == 'true'
         run: npm run lint
 
       - name: Prettier
+        if: needs.changes.outputs.app == 'true'
         run: npm run format:check
