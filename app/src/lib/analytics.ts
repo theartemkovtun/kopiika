@@ -3,8 +3,8 @@ import { StatsigClient } from "@statsig/js-client";
 import type { TransactionType, User } from "@/api/types";
 
 /**
- * Product events, sent to Statsig. This module is the only thing that touches
- * the SDK; everything else calls `track`.
+ * Product events, sent to Statsig. This module owns the SDK client; everything
+ * else calls `track`, or reads an experiment with `useExperiment`.
  *
  * What is sent is deliberately thin. The screens are full of balances, amounts
  * and names the user typed, and none of that belongs in an analytics store, so
@@ -87,9 +87,9 @@ function settle() {
 /**
  * The client, created on first use in the browser. Before sign-in it logs
  * against Statsig's own anonymous stableID; `identifyById` and `identify`
- * attach the user.
+ * attach the user. Null on the server and when tracking is off.
  */
-function getClient(): StatsigClient | null {
+export function getClient(): StatsigClient | null {
     if (client) return client;
     if (typeof window === "undefined") return null;
     if (!CLIENT_KEY.startsWith("client-")) return null;
@@ -149,12 +149,14 @@ function setUser(userId: string | null, custom?: Record<string, string>) {
     const statsig = getClient();
     if (!statsig) return;
 
-    try {
-        statsig.updateUserSync(userId ? { userID: userId, custom } : {});
-        currentUserId = userId;
-    } catch {
-        // Events still go out, just without the user.
-    }
+    // Async, so experiment values are fetched now rather than only cached for
+    // the next visit. The user is set synchronously, so released events carry it.
+    currentUserId = userId;
+    void statsig
+        .updateUserAsync(userId ? { userID: userId, custom } : {})
+        .catch(() => {
+            // Events still go out; experiments read their defaults.
+        });
     settle();
 }
 
@@ -175,9 +177,6 @@ export function identifyById(userId: string | null) {
  * The full identity, once the user record is in: the id (the Cognito sub,
  * which is also the API's user id) plus language and currency. No email or
  * name is sent.
- *
- * Sync rather than async: there are no gates to re-evaluate, so there is
- * nothing to wait on the network for.
  */
 export function identify(user: User) {
     setUser(user.id, { language: user.language, currency: user.currency });

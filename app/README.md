@@ -217,8 +217,8 @@ it paints immediately and only the page content waits.
 
 ### Analytics
 
-Product events go to Statsig through `@/lib/analytics`, the only module that
-imports the SDK. `NEXT_PUBLIC_STATSIG_CLIENT_KEY` switches it on; without a key
+Product events go to Statsig through `@/lib/analytics`, which owns the SDK
+client; `useExperiment` is the only other thing that reads it. `NEXT_PUBLIC_STATSIG_CLIENT_KEY` switches it on; without a key
 every call is a no-op.
 
 - The event catalogue is the `AnalyticsEvents` type in that file. A new event
@@ -234,6 +234,14 @@ every call is a no-op.
 - **Metadata is enums and booleans only.** Never an amount, a title, a
   description, a name or a colour: the screens are full of the user's money,
   and none of it goes to a third party.
+- **Experiments** are read with `useExperiment(name)` from
+  `@/hooks/use-experiment`, which runs on the analytics client and re-renders
+  when the user's values change. With no key there is no client, and `.get`
+  answers with the default its caller passes — so that default is the
+  control. The read logs the exposure unless `logExposure: false`; then call
+  the `trackExperiment` it returns once the change is on screen. It logs only
+  when the user has an id and their values have loaded, since experiments are
+  assigned by user id, so only users who saw their group are counted.
 
 ### Two things to know about the API
 

@@ -81,6 +81,10 @@ Paths in this section are relative to `app/`.
   `onSuccess` rather than in `src/api/`, and add the event to its
   `AnalyticsEvents` type first. Metadata is enums and booleans only — never an
   amount, a title, a description or a name.
+- **Experiments**: `useExperiment` from `@/hooks/use-experiment`, not a
+  Statsig React package. To log the exposure only once the change is on
+  screen, pass `logExposure: false` and call the `trackExperiment` it returns.
+  The default passed to `.get` is the control.
 - **Adding a shadcn component**: `bunx shadcn@latest add <name>` writes
   `import { cn } from "cn"` — that is correct here, `cn` is shadcn's own
   package and the single import path for it. Then restyle to the design;

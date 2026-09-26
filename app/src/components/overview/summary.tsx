@@ -2,13 +2,15 @@
 
 import { useTranslations } from "next-intl";
 import { cn } from "cn";
-import { useState } from "react";
+import { TrendingDown, TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { RollingNumber } from "@/components/ui/rolling-number";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePeriod } from "@/contexts/period-context";
 import { usePreferences } from "@/contexts/preferences-context";
 import { useDateFormat } from "@/hooks/use-date-format";
+import { useExperiment } from "@/hooks/use-experiment";
 import { useStatistics } from "@/hooks/use-statistics";
 import { MINUS, toNumber } from "@/lib/money";
 
@@ -23,6 +25,9 @@ import { MINUS, toNumber } from "@/lib/money";
  * A comparison note sits under each figure — "−₴4,000 vs Aug 12" — using the
  * `previousPeriodDiff` the statistics endpoint already computed against the
  * comparable previous period, so drawing it costs nothing beyond the one read.
+ *
+ * Group B of `exp_overview_previous_period_trend` adds a trend arrow after each
+ * note, green when the move is good — so less spent is a green arrow down.
  */
 export function OverviewSummary() {
     const t = useTranslations("overview");
@@ -33,6 +38,17 @@ export function OverviewSummary() {
     const { rowLabel } = useDateFormat();
 
     const { data, isPlaceholderData } = useStatistics(range);
+    const { experiment: trendExperiment, trackExperiment: trackTrend } =
+        useExperiment("exp_overview_previous_period_trend", {
+            logExposure: false,
+        });
+    const showTrend = trendExperiment.get("show_trend", false);
+
+    // Exposed only once the notes the arrows sit in have figures to show.
+    const hasData = data !== undefined;
+    useEffect(() => {
+        if (hasData) trackTrend();
+    }, [hasData, trackTrend]);
 
     // `comparison` switches the moment a month is picked, but `data` keeps
     // showing the outgoing period's figures until the new read lands (see
@@ -69,6 +85,12 @@ export function OverviewSummary() {
             ? null
             : `${formatValue(toNumber(diff), undefined, { signed: true })} ${against}`;
 
+    // Null in the control and while in flight.
+    const trend = (diff: string | undefined, moreIsBetter: boolean) =>
+        showTrend && diff !== undefined
+            ? { change: toNumber(diff), moreIsBetter }
+            : null;
+
     return (
         <Band>
             <Figure
@@ -83,6 +105,7 @@ export function OverviewSummary() {
                 }
                 tone="text-green"
                 note={change(shown.data?.income.previousPeriodDiff)}
+                trend={trend(shown.data?.income.previousPeriodDiff, true)}
             />
             <Figure
                 label={tCommon("spent")}
@@ -96,6 +119,7 @@ export function OverviewSummary() {
                 }
                 tone="text-red"
                 note={change(shown.data?.outcome.previousPeriodDiff)}
+                trend={trend(shown.data?.outcome.previousPeriodDiff, false)}
                 divided
             />
             <Figure
@@ -112,6 +136,7 @@ export function OverviewSummary() {
                 }
                 tone={kept >= 0 ? "text-green" : "text-red"}
                 note={change(shown.data?.difference.previousPeriodDiff)}
+                trend={trend(shown.data?.difference.previousPeriodDiff, true)}
                 divided
             />
         </Band>
@@ -169,6 +194,7 @@ function Figure({
     value,
     tone,
     note,
+    trend,
     divided = false,
 }: {
     label: string;
@@ -181,6 +207,8 @@ function Figure({
     tone?: string;
     /** The comparison note — see `OverviewSummary`. Null while in flight. */
     note: string | null;
+    /** The experiment's trend arrow; null in the control and while in flight. */
+    trend?: { change: number; moreIsBetter: boolean } | null;
     /** Carries the rule that separates it from the figure before it. */
     divided?: boolean;
 }) {
@@ -220,9 +248,33 @@ function Figure({
                 {note === null ? (
                     <Skeleton className="h-[1em] w-[140px] bg-rule2" />
                 ) : (
-                    note
+                    <>
+                        {note}
+                        {trend && trend.change !== 0 && (
+                            <TrendIcon {...trend} />
+                        )}
+                    </>
                 )}
             </div>
         </div>
+    );
+}
+
+function TrendIcon({
+    change,
+    moreIsBetter,
+}: {
+    change: number;
+    moreIsBetter: boolean;
+}) {
+    const Icon = change > 0 ? TrendingUp : TrendingDown;
+    return (
+        <Icon
+            aria-hidden
+            className={cn(
+                "ml-1.5 inline size-[14px] align-[-2px]",
+                change > 0 === moreIsBetter ? "text-green" : "text-red",
+            )}
+        />
     );
 }
