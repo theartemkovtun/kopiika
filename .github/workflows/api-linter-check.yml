@@ -12,24 +12,71 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  lint:
-    name: Go Linter
+  changes:
+    name: Detect changes
     runs-on: ubuntu-latest
+    outputs:
+      api: ${{ steps.diff.outputs.api }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # The checks below run only when the PR changes api/. Three dots diff
+      # from the merge base, as in the PR Scope check.
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          files=$(git diff --name-only --no-renames "$BASE...$HEAD")
+          if echo "$files" | grep -q '^api/'; then
+            changed=true
+          else
+            changed=false
+          fi
+          echo "api: $changed"
+          echo "api=$changed" >> "$GITHUB_OUTPUT"
+
+  # Go Linter is a required check, and a skipped job counts as passing, so
+  # neither check skips as a job: each runs even when change detection
+  # failed, fails in that case, and otherwise skips its steps when api/ did
+  # not change.
+  lint:
+    name: Go Linter
+    needs: changes
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - if: needs.changes.result != 'success'
+        env:
+          CHANGES: ${{ needs.changes.result }}
+        run: |
+          echo "::error::Change detection did not succeed ($CHANGES)"
+          exit 1
+
+      - if: needs.changes.outputs.api != 'true'
+        run: echo "No changes under api/, nothing to lint"
+
+      - uses: actions/checkout@v5
+        if: needs.changes.outputs.api == 'true'
 
       - uses: actions/setup-go@v6
+        if: needs.changes.outputs.api == 'true'
         with:
           go-version-file: api/go.mod
           cache-dependency-path: api/go.sum
 
       - uses: golangci/golangci-lint-action@v8
+        if: needs.changes.outputs.api == 'true'
         with:
           version: v2.13
           working-directory: api
 
   migrations:
     name: Atlas Migrations
+    needs: changes
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -40,24 +87,42 @@ jobs:
       DATABASE_URL: postgres://unused
       ATLAS_NO_UPDATE_NOTIFIER: "1"
     steps:
+      # These two run before checkout, when api/ may not exist yet.
+      - if: needs.changes.result != 'success'
+        working-directory: .
+        env:
+          CHANGES: ${{ needs.changes.result }}
+        run: |
+          echo "::error::Change detection did not succeed ($CHANGES)"
+          exit 1
+
+      - if: needs.changes.outputs.api != 'true'
+        working-directory: .
+        run: echo "No changes under api/, nothing to check"
+
       - uses: actions/checkout@v5
+        if: needs.changes.outputs.api == 'true'
 
       # The desired schema comes from `go run ./cmd/atlas-loader`.
       - uses: actions/setup-go@v6
+        if: needs.changes.outputs.api == 'true'
         with:
           go-version-file: api/go.mod
           cache-dependency-path: api/go.sum
 
       - uses: ariga/setup-atlas@v0
+        if: needs.changes.outputs.api == 'true'
 
       # Replays every migration on the dev database and checks atlas.sum.
       - name: Validate
+        if: needs.changes.outputs.api == 'true'
         run: atlas migrate validate --env dev --var "DATABASE_URL=$DATABASE_URL"
 
       # A model change without its migration makes diff write a new file. This
       # also catches atlas.hcl losing its search_path scope, which would emit a
       # DROP SCHEMA "currency" CASCADE.
       - name: Check models against migrations
+        if: needs.changes.outputs.api == 'true'
         run: |
           atlas migrate diff drift --env dev --var "DATABASE_URL=$DATABASE_URL"
           changes=$(git status --porcelain -- migrations)
