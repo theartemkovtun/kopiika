@@ -64,23 +64,46 @@ jobs:
       ATLAS_NO_UPDATE_NOTIFIER: "1"
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # Checks only when the PR changes api/, detected the same way as in the
+      # Go Linter job. git diff prints paths from the repo root, whatever the
+      # working directory.
+      - id: diff
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          files=$(git diff --name-only --no-renames "$BASE...$HEAD")
+          if echo "$files" | grep -q '^api/'; then
+            changed=true
+          else
+            changed=false
+            echo "No changes under api/, nothing to check"
+          fi
+          echo "api=$changed" >> "$GITHUB_OUTPUT"
 
       # The desired schema comes from `go run ./cmd/atlas-loader`.
       - uses: actions/setup-go@v6
+        if: steps.diff.outputs.api == 'true'
         with:
           go-version-file: api/go.mod
           cache-dependency-path: api/go.sum
 
       - uses: ariga/setup-atlas@v0
+        if: steps.diff.outputs.api == 'true'
 
       # Replays every migration on the dev database and checks atlas.sum.
       - name: Validate
+        if: steps.diff.outputs.api == 'true'
         run: atlas migrate validate --env dev --var "DATABASE_URL=$DATABASE_URL"
 
       # A model change without its migration makes diff write a new file. This
       # also catches atlas.hcl losing its search_path scope, which would emit a
       # DROP SCHEMA "currency" CASCADE.
       - name: Check models against migrations
+        if: steps.diff.outputs.api == 'true'
         run: |
           atlas migrate diff drift --env dev --var "DATABASE_URL=$DATABASE_URL"
           changes=$(git status --porcelain -- migrations)
