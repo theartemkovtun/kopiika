@@ -36,6 +36,10 @@ passes when there was nothing to build.
 CI runs `golangci-lint run` in `api/` on every PR (the required `Go Linter` check),
 which covers both linters and formatters. Run `make lint` in `api/` before
 pushing, and `make fmt` to fix formatting.
+The same workflow runs the `Atlas Migrations` check: `atlas migrate validate`,
+then `atlas migrate diff`, which fails the PR if it generates a migration. That
+is, a model change must ship with its migration; `make migrate-validate` and
+`make migrate-diff` run the same checks locally.
 
 ---
 

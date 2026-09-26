@@ -27,3 +27,43 @@ jobs:
         with:
           version: v2.13
           working-directory: api
+
+  migrations:
+    name: Atlas Migrations
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    env:
+      # validate and diff only touch Atlas's throwaway dev database, but
+      # atlas.hcl declares DATABASE_URL, so it needs a value.
+      DATABASE_URL: postgres://unused
+      ATLAS_NO_UPDATE_NOTIFIER: "1"
+    steps:
+      - uses: actions/checkout@v5
+
+      # The desired schema comes from `go run ./cmd/atlas-loader`.
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: api/go.mod
+          cache-dependency-path: api/go.sum
+
+      - uses: ariga/setup-atlas@v0
+
+      # Replays every migration on the dev database and checks atlas.sum.
+      - name: Validate
+        run: atlas migrate validate --env dev --var "DATABASE_URL=$DATABASE_URL"
+
+      # A model change without its migration makes diff write a new file. This
+      # also catches atlas.hcl losing its search_path scope, which would emit a
+      # DROP SCHEMA "currency" CASCADE.
+      - name: Check models against migrations
+        run: |
+          atlas migrate diff drift --env dev --var "DATABASE_URL=$DATABASE_URL"
+          changes=$(git status --porcelain -- migrations)
+          if [ -n "$changes" ]; then
+            echo "$changes"
+            git ls-files --others --exclude-standard -- migrations | xargs cat
+            echo "::error::The GORM models and api/migrations are out of sync. Run make migrate-diff name=<name> in api/ and commit the migration."
+            exit 1
+          fi
