@@ -1,20 +1,21 @@
 # syntax=docker/dockerfile:1
 
 # ---- dependencies ---------------------------------------------------------
-# bun.lock is this repo's lockfile, so bun does the install. Its own layer:
-# editing source does not re-resolve the dependency graph.
-FROM oven/bun:1.3-alpine AS deps
+# The image installs from package-lock.json, as CI does; bun.lock is only for
+# local development. Its own layer: editing source does not re-resolve the
+# dependency graph.
+FROM node:24-alpine AS deps
 
 WORKDIR /app
 
-COPY package.json bun.lock ./
+COPY package.json package-lock.json ./
 
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci
 
 # ---- build ----------------------------------------------------------------
-# Node runs `next build`, not bun: same musl base as the deps stage, so the
-# native binaries (next-swc, lightningcss) that bun resolved still load.
+# Same musl base as the deps stage, so the native binaries (next-swc,
+# lightningcss) that npm resolved still load.
 FROM node:24-alpine AS builder
 
 WORKDIR /app

@@ -38,7 +38,8 @@ docker build -t kopiika-app .
 docker run -p 3000:3000 --env-file .env.local kopiika-app
 ```
 
-Three stages: bun installs from `bun.lock`, node runs `next build`, and the
+Three stages: npm installs from `package-lock.json` (bun is for local
+development only, so keep both lockfiles in step), node runs `next build`, and the
 runtime stage keeps only what `output: "standalone"` produced — the server, its
 pruned `node_modules`, `.next/static`, `public/` — on `node:24-alpine` as the
 unprivileged `node` user. About 225 MB.
