@@ -5,9 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { cn } from "cn";
 
+import { ChartTooltip } from "@/components/overview/chart-tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePeriod } from "@/contexts/period-context";
-import { usePreferences } from "@/contexts/preferences-context";
 import { useStatistics } from "@/hooks/use-statistics";
 import { TOOLTIP, storedColor } from "@/lib/charts";
 import { categoryLabel } from "@/lib/categories";
@@ -35,7 +35,6 @@ export function CategoryBreakdown() {
     const tCategories = useTranslations("categories");
 
     const { range, yearView } = usePeriod();
-    const { formatValue } = usePreferences();
     const { data } = useStatistics(range);
 
     // Largest first is the API's order. The colour is resolved once, here, so
@@ -89,9 +88,24 @@ export function CategoryBreakdown() {
                                 <Tooltip
                                     {...TOOLTIP}
                                     cursor={false}
-                                    formatter={(value) =>
-                                        formatValue(Number(value))
-                                    }
+                                    content={({ active, payload }) => {
+                                        const slice = payload?.[0]?.payload as
+                                            (typeof slices)[number] | undefined;
+                                        if (!active || !slice) return null;
+
+                                        return (
+                                            <ChartTooltip
+                                                rows={[
+                                                    {
+                                                        name: slice.name,
+                                                        value: slice.value,
+                                                        kind: "expense",
+                                                        color: slice.color,
+                                                    },
+                                                ]}
+                                            />
+                                        );
+                                    }}
                                 />
                                 <Pie
                                     data={slices}
