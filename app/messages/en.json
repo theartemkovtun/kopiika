@@ -327,6 +327,20 @@
             "November",
             "December"
         ],
+        "monthsOf": [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December"
+        ],
         "weekdaysShort": [
             "Sun",
             "Mon",
