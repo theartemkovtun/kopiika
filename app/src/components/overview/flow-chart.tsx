@@ -13,12 +13,13 @@ import {
 } from "recharts";
 import { cn } from "cn";
 
+import { ChartTooltip } from "@/components/overview/chart-tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import { type Period, usePeriod } from "@/contexts/period-context";
-import { usePreferences } from "@/contexts/preferences-context";
+import { useDateFormat } from "@/hooks/use-date-format";
 import { useStatistics } from "@/hooks/use-statistics";
 import { AXIS_TICK, TOOLTIP } from "@/lib/charts";
-import { daysInMonth, fromIsoDate } from "@/lib/dates";
+import { daysInMonth, fromIsoDate, toIsoDate } from "@/lib/dates";
 import { toNumber } from "@/lib/money";
 
 /**
@@ -60,7 +61,7 @@ export function FlowChart() {
     const calendar = useTranslations("calendar");
 
     const { range, year, month, yearView } = usePeriod();
-    const { formatValue } = usePreferences();
+    const { dayLabel, monthLabel } = useDateFormat();
     const { data } = useStatistics(range);
 
     const [series, setSeries] = useState<Series>("expense");
@@ -68,10 +69,19 @@ export function FlowChart() {
     const monthsShort = calendar.raw("monthsShort") as string[];
 
     const bars = useMemo(() => {
+        // `name` is the axis tick; `label` is the same bucket written out in
+        // full, for the tooltip — "5" on the axis is plenty, but a figure
+        // read on its own wants its date.
         const buckets = yearView
-            ? monthsShort.map((name) => ({ name, income: 0, outcome: 0 }))
+            ? monthsShort.map((name, index) => ({
+                  name,
+                  label: monthLabel(toIsoDate(year, index, 1)),
+                  income: 0,
+                  outcome: 0,
+              }))
             : Array.from({ length: daysInMonth(year, month) }, (_, index) => ({
                   name: String(index + 1),
+                  label: dayLabel(toIsoDate(year, month, index + 1)),
                   income: 0,
                   outcome: 0,
               }));
@@ -86,7 +96,7 @@ export function FlowChart() {
         }
 
         return buckets;
-    }, [data, month, monthsShort, year, yearView]);
+    }, [data, dayLabel, month, monthLabel, monthsShort, year, yearView]);
 
     // Two questions, because they have different answers: whether the period
     // holds anything at all — which is what decides if there is a series worth
@@ -269,9 +279,39 @@ export function FlowChart() {
                             {seriesFlow ? (
                                 <Tooltip
                                     {...TOOLTIP}
-                                    formatter={(value) =>
-                                        formatValue(Number(value))
-                                    }
+                                    content={({ active, payload }) => {
+                                        const bar = payload?.[0]?.payload as
+                                            (typeof bars)[number] | undefined;
+                                        if (!active || !bar) return null;
+
+                                        return (
+                                            <ChartTooltip
+                                                label={bar.label}
+                                                rows={(
+                                                    [
+                                                        {
+                                                            name: tCommon(
+                                                                "income",
+                                                            ),
+                                                            value: bar.income,
+                                                            kind: "income",
+                                                        },
+                                                        {
+                                                            name: tCommon(
+                                                                "expenses",
+                                                            ),
+                                                            value: bar.outcome,
+                                                            kind: "expense",
+                                                        },
+                                                    ] as const
+                                                ).filter(
+                                                    (row) =>
+                                                        series === "both" ||
+                                                        row.kind === series,
+                                                )}
+                                            />
+                                        );
+                                    }}
                                 />
                             ) : null}
                             {/* Left mounted through the empty state: a bar of

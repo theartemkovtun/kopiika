@@ -82,22 +82,10 @@ export const AXIS_TICK = {
 } as const;
 
 /**
- * The tooltip: a hairline box on the page ground, square and unshadowed. One
- * family throughout, with the figure held tabular so a hovered column does not
- * jitter as the digits under the pointer change width.
+ * The tooltip's hover cursor, a column filled one step off the page ground.
+ * The box itself is `ChartTooltip`, drawn as HTML so a figure can carry its
+ * own sign and colour.
  */
 export const TOOLTIP = {
     cursor: { fill: "var(--rule2)" },
-    contentStyle: {
-        background: "var(--bg)",
-        border: "1px solid var(--rule)",
-        borderRadius: 0,
-        fontFamily: "var(--font-google-sans), sans-serif",
-        fontFeatureSettings: '"tnum" 1',
-        fontSize: 12,
-        color: "var(--ink)",
-        boxShadow: "none",
-    },
-    itemStyle: { color: "var(--ink)" },
-    labelStyle: { color: "var(--mute)" },
 } as const;

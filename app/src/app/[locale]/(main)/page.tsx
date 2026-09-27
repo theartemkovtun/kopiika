@@ -83,6 +83,8 @@ export default function OverviewPage({
 
     const months = calendar.raw("months") as string[];
     const monthsShort = calendar.raw("monthsShort") as string[];
+    // The month a day is "of" — genitive in Ukrainian, "27 вересня".
+    const monthsOf = calendar.raw("monthsOf") as string[];
 
     // The server render has no `window`, so the context above falls back to
     // today; `searchParams` is known there too, so that's what the title and
@@ -132,7 +134,7 @@ export default function OverviewPage({
             ? t("yearToDate", {
                   date:
                       locale === "uk"
-                          ? `${String(today.day).padStart(2, "0")}.${String(today.month + 1).padStart(2, "0")}`
+                          ? `${today.day} ${monthsOf[today.month]}`
                           : `${monthsShort[today.month]} ${today.day}`,
               })
             : t("fullYear")
